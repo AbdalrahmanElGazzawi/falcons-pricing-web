@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: qErr?.message || 'Quote insert failed' }, { status: 500 });
   }
 
-  // 2. Insert lines
+  // 2. Insert lines — including per-line axis overrides and computed social/floor prices
   const lineRows = lines.map((l: any) => ({
     quote_id: quote.id,
     sort_order: l.sort_order ?? 0,
@@ -42,6 +42,16 @@ export async function POST(req: Request) {
     platform: l.platform,
     base_rate: l.base_rate ?? 0,
     qty: l.qty ?? 1,
+    // Per-line axis overrides (null = inherit campaign axes)
+    line_content_type: l.line_content_type ?? null,
+    line_eng: l.line_eng ?? null,
+    line_audience: l.line_audience ?? null,
+    line_seasonality: l.line_seasonality ?? null,
+    line_language: l.line_language ?? null,
+    line_authority: l.line_authority ?? null,
+    // Computed snapshot
+    social_price: l.social_price ?? 0,
+    floor_price: l.floor_price ?? 0,
     final_unit: l.final_unit ?? 0,
     final_amount: l.final_amount ?? 0,
   }));
