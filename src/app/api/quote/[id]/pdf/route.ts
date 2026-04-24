@@ -1,29 +1,27 @@
 import { NextResponse } from 'next/server';
 import PDFDocument from 'pdfkit';
+import path from 'node:path';
+import fs from 'node:fs';
 import { createServiceClient } from '@/lib/supabase-server';
 import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
-// Brand colors
-const NAVY = '#0B2340';
+// Brand colours pulled from the Team Falcons quotation template
 const GREEN = '#2ED06E';
+const GREEN_DARK = '#1D9E75';
 const INK = '#0F172A';
 const LABEL = '#475569';
+const LIGHT = '#F1F5F9';
 const LINE = '#E2E8F0';
 
-function fmt(n: number, ccy = 'SAR') {
+function fmtMoney(n: number, ccy = 'SAR') {
   return `${ccy} ${Math.round(n).toLocaleString('en-US')}`;
-}
-function pct(n: number) {
-  return `${(n * 100).toFixed(0)}%`;
 }
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
-  // Allow both authenticated staff and public (token-based) access via ?token=
   const url = new URL(req.url);
   const token = url.searchParams.get('token');
-
   const sb = createServiceClient();
 
   let quote;
@@ -36,137 +34,182 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const { data } = await sb.from('quotes').select('*').eq('id', params.id).single();
     quote = data;
   }
-
   if (!quote) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const [{ data: lines }, { data: addons }] = await Promise.all([
-    sb.from('quote_lines').select('*').eq('quote_id', quote.id).order('sort_order'),
-    sb.from('quote_addons').select('addon_id, uplift_pct, addons(label)').eq('quote_id', quote.id),
-  ]);
+  const { data: lines } = await sb.from('quote_lines').select('*').eq('quote_id', quote.id).order('sort_order');
 
-  // Build PDF in-memory
-  const doc = new PDFDocument({ size: 'A4', margin: 50 });
+  const currency = quote.currency || 'SAR';
+  const vatRate = Number(quote.vat_rate || 0.15);
+  const subtotal = Number(quote.pre_vat || quote.subtotal || 0);
+  const vatAmount = Number(quote.vat_amount || subtotal * vatRate);
+  const total = Number(quote.total || subtotal + vatAmount);
+
+  // Build PDF
+  const doc = new PDFDocument({ size: 'A4', margin: 0 });
   const chunks: Buffer[] = [];
   doc.on('data', (c: Buffer) => chunks.push(c));
   const done = new Promise<Buffer>(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
 
-  // ── Header band
-  doc.rect(0, 0, doc.page.width, 110).fill(NAVY);
-  doc.fillColor('white').fontSize(18).font('Helvetica-Bold').text('Team Falcons', 50, 35);
-  doc.fontSize(10).font('Helvetica').fillColor('#9CA3AF').text('Pricing OS · Quotation', 50, 58);
+  const W = doc.page.width;
+  const H = doc.page.height;
+  const MARGIN = 40;
 
-  doc.fontSize(9).fillColor('#9CA3AF').text(quote.quote_number, 50, 80);
-  doc.fontSize(10).fillColor('white').text(
+  // ═══ GREEN BANNER (top) ═══
+  doc.rect(0, 0, W, 72).fill(GREEN);
+
+  // Logo
+  try {
+    const logoPath = path.join(process.cwd(), 'public', 'falcon-mark.png');
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, MARGIN, 14, { width: 44, height: 44 });
+    }
+  } catch { /* no logo */ }
+
+  doc.fillColor('white').font('Helvetica-Bold').fontSize(22).text('TEAM FALCONS', MARGIN + 56, 22);
+  doc.font('Helvetica').fontSize(10).fillColor('#e7faf0').text('Pricing OS  ·  Quotation', MARGIN + 56, 48);
+
+  // ═══ INFO BLOCK ═══
+  let y = 98;
+  const labelCol = MARGIN;
+  const valueCol = MARGIN + 110;
+  const rightLabelCol = W - 240;
+  const rightValueCol = W - 130;
+
+  doc.fillColor(LABEL).font('Helvetica').fontSize(9);
+  doc.text('Employee Mail:', labelCol, y);
+  doc.fillColor(INK).font('Helvetica-Bold').text(quote.owner_email || '—', valueCol, y);
+
+  doc.fillColor(LABEL).font('Helvetica').text('Date:', rightLabelCol, y);
+  doc.fillColor(INK).font('Helvetica-Bold').text(
     new Date(quote.sent_at || quote.created_at).toLocaleDateString('en-GB'),
-    doc.page.width - 150, 80, { width: 100, align: 'right' }
+    rightValueCol, y
   );
 
-  // ── Client block
-  doc.fillColor(INK).fontSize(14).font('Helvetica-Bold').text(quote.client_name, 50, 140);
-  if (quote.campaign) doc.fontSize(10).font('Helvetica').fillColor(LABEL).text(`Campaign: ${quote.campaign}`, 50, 160);
+  y += 16;
+  doc.fillColor(LABEL).font('Helvetica').text('Approved By:', labelCol, y);
+  doc.fillColor(INK).font('Helvetica-Bold').text('—', valueCol, y);
 
-  const headerInfo = [
-    ['Currency', quote.currency],
-    ['VAT', pct(quote.vat_rate)],
-    ['Status', String(quote.status).replace(/_/g, ' ')],
-  ];
-  let infoY = 140;
-  headerInfo.forEach(([k, v]) => {
-    doc.fontSize(9).fillColor(LABEL).text(k, doc.page.width - 200, infoY);
-    doc.fontSize(10).fillColor(INK).text(v, doc.page.width - 100, infoY);
-    infoY += 16;
+  doc.fillColor(LABEL).font('Helvetica').text('Quote #:', rightLabelCol, y);
+  doc.fillColor(INK).font('Helvetica-Bold').text(quote.quote_number || '—', rightValueCol, y);
+
+  y += 16;
+  doc.fillColor(LABEL).font('Helvetica').text('Client:', labelCol, y);
+  doc.fillColor(INK).font('Helvetica-Bold').text(quote.client_name || '—', valueCol, y);
+
+  if (quote.campaign) {
+    doc.fillColor(LABEL).font('Helvetica').text('Campaign:', rightLabelCol, y);
+    doc.fillColor(INK).font('Helvetica-Bold').text(quote.campaign, rightValueCol, y);
+  }
+
+  y += 30;
+
+  // ═══ LINE ITEMS TABLE ═══
+  const tableX = MARGIN;
+  const tableW = W - MARGIN * 2;
+  const col = {
+    desc: tableX + 10,
+    unit: tableX + tableW * 0.55,
+    qty:  tableX + tableW * 0.73,
+    amt:  tableX + tableW * 0.82,
+  };
+  const colEnd = tableX + tableW - 10;
+
+  // Table header (green background)
+  doc.rect(tableX, y, tableW, 24).fill(GREEN_DARK);
+  doc.fillColor('white').font('Helvetica-Bold').fontSize(10);
+  doc.text('Description', col.desc, y + 8);
+  doc.text('Unit cost', col.unit, y + 8, { width: tableW * 0.16, align: 'right' });
+  doc.text('Qty', col.qty, y + 8, { width: tableW * 0.07, align: 'right' });
+  doc.text('Amount', col.amt, y + 8, { width: colEnd - col.amt, align: 'right' });
+
+  y += 24;
+
+  // Rows
+  doc.font('Helvetica').fontSize(10).fillColor(INK);
+  const rowH = 22;
+  (lines || []).forEach((l: any, idx: number) => {
+    if (idx % 2 === 0) {
+      doc.rect(tableX, y, tableW, rowH).fill(LIGHT);
+    }
+    doc.fillColor(INK).font('Helvetica').fontSize(10);
+    doc.text(`${l.talent_name} — ${l.platform}`, col.desc, y + 7, { width: tableW * 0.5 });
+    doc.text(fmtMoney(Number(l.final_unit || 0), currency), col.unit, y + 7, { width: tableW * 0.16, align: 'right' });
+    doc.text(`${Number(l.qty || 1)}`, col.qty, y + 7, { width: tableW * 0.07, align: 'right' });
+    doc.text(fmtMoney(Number(l.final_amount || 0), currency), col.amt, y + 7, { width: colEnd - col.amt, align: 'right' });
+    y += rowH;
   });
 
-  // ── Line items table
-  let y = 210;
-  doc.fontSize(11).font('Helvetica-Bold').fillColor(INK).text('Line items', 50, y);
-  y += 18;
+  if (!lines || lines.length === 0) {
+    doc.fillColor(LABEL).font('Helvetica-Oblique').fontSize(10);
+    doc.text('No line items', col.desc, y + 10);
+    y += rowH;
+  }
 
-  // Header row
-  doc.rect(50, y, doc.page.width - 100, 22).fill('#F8FAFC');
-  doc.fontSize(8).fillColor(LABEL).font('Helvetica-Bold');
-  doc.text('TALENT', 60, y + 7);
-  doc.text('DELIVERABLE', 200, y + 7);
-  doc.text('QTY', 360, y + 7, { width: 30, align: 'right' });
-  doc.text('UNIT', 410, y + 7, { width: 60, align: 'right' });
-  doc.text('TOTAL', 480, y + 7, { width: 70, align: 'right' });
-  y += 22;
+  doc.moveTo(tableX, y).lineTo(tableX + tableW, y).strokeColor(LINE).lineWidth(0.5).stroke();
+  y += 28;
 
-  doc.font('Helvetica').fontSize(10);
-  for (const l of (lines || [])) {
-    if (y > doc.page.height - 200) {
-      doc.addPage();
-      y = 50;
+  // ═══ NOTES + TOTALS BLOCK ═══
+  const notesX = MARGIN;
+  const notesW = tableW * 0.5;
+  const totalsX = MARGIN + tableW * 0.58;
+  const totalsW = tableW * 0.42;
+  const blockTop = y;
+
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(11).text('Special notes and instructions', notesX, y);
+  y += 16;
+  doc.fillColor(LABEL).font('Helvetica').fontSize(9);
+  const notes = quote.notes ||
+    '1. Payment within 30 days\n2. 50% down payment on acceptance\n3. Tax invoice issued upon receipt of payment';
+  doc.text(notes, notesX, y, { width: notesW - 10, lineGap: 4 });
+
+  // Totals on the right
+  let ty = blockTop;
+  const totalsLabelX = totalsX + 10;
+
+  const drawTotalRow = (label: string, value: string, bold = false, highlighted = false) => {
+    if (highlighted) {
+      doc.rect(totalsX, ty - 2, totalsW, 26).fill(GREEN);
+      doc.fillColor('white').font('Helvetica-Bold').fontSize(13);
+      doc.text(label, totalsLabelX, ty + 5);
+      doc.text(value, totalsLabelX, ty + 5, { width: totalsW - 20, align: 'right' });
+      ty += 26;
+    } else {
+      doc.fillColor(bold ? INK : LABEL).font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(10);
+      doc.text(label, totalsLabelX, ty + 2);
+      doc.fillColor(INK).font(bold ? 'Helvetica-Bold' : 'Helvetica');
+      doc.text(value, totalsLabelX, ty + 2, { width: totalsW - 20, align: 'right' });
+      ty += 20;
     }
-    doc.fillColor(INK).text(l.talent_name, 60, y, { width: 130 });
-    doc.fillColor(LABEL).fontSize(8).text(l.talent_type, 60, y + 13);
-    doc.fontSize(10).fillColor(INK).text(l.platform, 200, y, { width: 150 });
-    doc.text(String(l.qty), 360, y, { width: 30, align: 'right' });
-    doc.text(fmt(l.final_unit, quote.currency), 410, y, { width: 60, align: 'right' });
-    doc.font('Helvetica-Bold').text(fmt(l.final_amount, quote.currency), 480, y, { width: 70, align: 'right' });
-    doc.font('Helvetica');
-    y += 28;
-    doc.strokeColor(LINE).lineWidth(0.5).moveTo(50, y - 4).lineTo(doc.page.width - 50, y - 4).stroke();
-  }
+  };
 
-  // ── Add-ons
-  if (addons && addons.length > 0) {
-    y += 12;
-    doc.fontSize(10).font('Helvetica-Bold').fillColor(INK).text('Includes rights packages:', 50, y);
-    y += 16;
-    doc.font('Helvetica').fontSize(9).fillColor(LABEL);
-    for (const a of addons as any[]) {
-      doc.text(`• ${a.addons?.label || `Package #${a.addon_id}`}`, 60, y);
-      doc.fillColor(GREEN).text(`+${pct(a.uplift_pct)}`, doc.page.width - 100, y, { width: 50, align: 'right' });
-      doc.fillColor(LABEL);
-      y += 14;
-    }
-  }
+  drawTotalRow('SUBTOTAL', fmtMoney(subtotal, currency), true);
+  drawTotalRow(`(TAX RATE)  ${(vatRate * 100).toFixed(0)}%`, '', false);
+  drawTotalRow('TAX', fmtMoney(vatAmount, currency), false);
+  ty += 4;
+  drawTotalRow('TOTAL', fmtMoney(total, currency), true, true);
 
-  // ── Totals block
-  y += 24;
-  if (y > doc.page.height - 180) { doc.addPage(); y = 50; }
-  const boxX = doc.page.width - 250;
-  doc.rect(boxX, y, 200, 110).fill('#F8FAFC');
-  doc.fontSize(9).fillColor(LABEL).font('Helvetica-Bold').text('SUMMARY', boxX + 14, y + 12);
+  y = Math.max(ty, y + 90);
 
-  const totalsRows = [
-    ['Subtotal', fmt(quote.subtotal, quote.currency)],
-    [`VAT (${pct(quote.vat_rate)})`, fmt(quote.vat_amount, quote.currency)],
-  ];
-  let ty = y + 32;
-  for (const [k, v] of totalsRows) {
-    doc.font('Helvetica').fontSize(10).fillColor(LABEL).text(k, boxX + 14, ty);
-    doc.fillColor(INK).text(v, boxX + 100, ty, { width: 90, align: 'right' });
-    ty += 16;
-  }
-  doc.strokeColor(LINE).moveTo(boxX + 14, ty + 2).lineTo(boxX + 186, ty + 2).stroke();
-  ty += 8;
-  doc.font('Helvetica-Bold').fontSize(12).fillColor(INK).text('TOTAL', boxX + 14, ty);
-  doc.fillColor(GREEN).text(fmt(quote.total, quote.currency), boxX + 80, ty, { width: 110, align: 'right' });
-
-  // ── Notes
-  if (quote.notes) {
-    y += 130;
-    if (y > doc.page.height - 100) { doc.addPage(); y = 50; }
-    doc.fontSize(10).font('Helvetica-Bold').fillColor(INK).text('Notes', 50, y);
-    y += 14;
-    doc.font('Helvetica').fontSize(9).fillColor(LABEL).text(quote.notes, 50, y, { width: doc.page.width - 100 });
-  }
-
-  // ── Footer
-  const fy = doc.page.height - 40;
-  doc.fontSize(8).fillColor(LABEL).font('Helvetica')
-    .text('Team Falcons · Pricing OS · This quotation is valid for 14 days from issue date.',
-          50, fy, { width: doc.page.width - 100, align: 'center' });
+  // ═══ ADDRESS FOOTER (green band at bottom) ═══
+  const footerH = 50;
+  const footerY = H - footerH;
+  doc.rect(0, footerY, W, footerH).fill(GREEN);
+  doc.fillColor('white').font('Helvetica').fontSize(9);
+  doc.text('King Abdulaziz Road, Riyadh, Saudi Arabia, Al-Yasmeen District', MARGIN, footerY + 12, {
+    width: W - MARGIN * 2, align: 'center',
+  });
+  doc.fontSize(8).fillColor('#e7faf0');
+  doc.text('Phone: +966 53370 4233  ·  Sales@falcons.sa  ·  store.falcons.sa', MARGIN, footerY + 28, {
+    width: W - MARGIN * 2, align: 'center',
+  });
 
   doc.end();
-  const pdfBuf = await done;
+  const buf = await done;
 
-  return new NextResponse(pdfBuf as any, {
+  return new NextResponse(new Uint8Array(buf), {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="${quote.quote_number}.pdf"`,
+      'Content-Disposition': `inline; filename="${quote.quote_number || 'quote'}.pdf"`,
       'Cache-Control': 'no-store',
     },
   });
