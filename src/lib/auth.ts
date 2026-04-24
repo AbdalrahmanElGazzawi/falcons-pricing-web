@@ -14,8 +14,9 @@ export async function requireAuth() {
     .eq('id', user.id)
     .single();
 
+  // Hard bounce: any user without an active profile goes to the revoked page.
   if (!profile || !profile.is_active) {
-    return { user, profile: null as any, supabase, denied: true };
+    redirect('/access-revoked');
   }
   return { user, profile, supabase, denied: false };
 }

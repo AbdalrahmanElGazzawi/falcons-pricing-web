@@ -19,7 +19,16 @@ export async function POST(req: Request) {
 
   const sb = createServiceClient();
 
-  // Send invitation email via Supabase Admin API
+  // 1. Add to invite allowlist FIRST. Trigger rejects anyone not in here,
+  //    so the order matters: allowlist → invite → profile upsert.
+  const { error: allowErr } = await sb.from('invited_emails').upsert({
+    email: email.toLowerCase(),
+    invited_role: role,
+    invited_by: profile.id,
+  }, { onConflict: 'email' });
+  if (allowErr) return NextResponse.json({ error: 'Allowlist write failed: ' + allowErr.message }, { status: 500 });
+
+  // 2. Send invitation email via Supabase Admin API
   const { data, error } = await sb.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || ''}/auth/callback`,
     data: { full_name, role },
