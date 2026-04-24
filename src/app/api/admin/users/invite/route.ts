@@ -1,0 +1,51 @@
+import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth';
+import { createServiceClient } from '@/lib/supabase-server';
+
+export const runtime = 'nodejs';
+
+export async function POST(req: Request) {
+  const { denied, profile } = await requireAdmin();
+  if (denied) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+
+  let body: any;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+
+  const { email, full_name, role } = body || {};
+  if (!email || !role) return NextResponse.json({ error: 'email + role required' }, { status: 400 });
+  if (!['admin', 'sales', 'finance', 'viewer'].includes(role)) {
+    return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+  }
+
+  const sb = createServiceClient();
+
+  // Send invitation email via Supabase Admin API
+  const { data, error } = await sb.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || ''}/auth/callback`,
+    data: { full_name, role },
+  });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Pre-create the profile row with the assigned role so handle_new_user
+  // doesn't override it. Insert if not exists, otherwise patch.
+  if (data?.user?.id) {
+    await sb.from('profiles').upsert({
+      id: data.user.id,
+      email,
+      full_name: full_name ?? null,
+      role,
+      is_active: true,
+    }, { onConflict: 'id' });
+  }
+
+  await sb.from('audit_log').insert({
+    actor_id: profile.id,
+    actor_email: profile.email,
+    action: 'user.invite',
+    entity_type: 'profile',
+    entity_id: data?.user?.id ?? null,
+    diff: { email, role, full_name },
+  });
+
+  return NextResponse.json({ ok: true, user_id: data?.user?.id });
+}

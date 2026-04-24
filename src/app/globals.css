@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+html, body {
+  font-family: var(--font-sans);
+  background: #F7F9FB;
+  color: #222C3B;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { cursor: pointer; }
+
+/* card utility */
+.card { @apply bg-white rounded-xl border border-line shadow-card; }
+.card-p { @apply p-5; }
+
+.btn { @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition; }
+.btn-primary { @apply bg-green text-white hover:bg-greenDark; }
+.btn-ghost { @apply bg-transparent border border-line text-ink hover:bg-bg; }
+.btn-navy  { @apply bg-navy text-white hover:bg-navyDark; }
+.btn-danger { @apply bg-danger text-white hover:opacity-90; }
+
+.input { @apply w-full px-3 py-2 rounded-lg border border-line bg-white text-sm text-ink placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-green/40 focus:border-green; }
+.label { @apply text-xs font-medium uppercase tracking-wide text-label mb-1 block; }
+
+.chip { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium; }
+.chip-gold { @apply bg-gold/15 text-gold; }
+.chip-mint { @apply bg-green/15 text-greenDark; }
+.chip-peach { @apply bg-amber/20 text-amber; }
+.chip-sky { @apply bg-blue-100 text-blue-700; }
+.chip-grey { @apply bg-slate-100 text-slate-600; }
+
+.tier-S { @apply bg-gold/15 text-gold border-gold/40; }
+.tier-1 { @apply bg-green/15 text-greenDark border-green/40; }
+.tier-2 { @apply bg-amber/15 text-amber border-amber/40; }
+.tier-3 { @apply bg-blue-100 text-blue-700 border-blue-200; }
+.tier-4 { @apply bg-slate-100 text-slate-600 border-slate-200; }
