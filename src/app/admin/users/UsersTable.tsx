@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Trash2 } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
 
 type Row = {
@@ -36,6 +36,24 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         alert(j.error || 'Update failed');
+      }
+      router.refresh();
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function remove(id: string, email: string) {
+    const ok = confirm(
+      `Remove ${email}?\n\nThis deletes the account, clears them from the invite allowlist, and ends all their sessions. Their historic quotes are kept. To restore, send a fresh invite.`
+    );
+    if (!ok) return;
+    setBusy(id);
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        alert(j.error || 'Remove failed');
       }
       router.refresh();
     } finally {
@@ -117,6 +135,7 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Joined</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -149,11 +168,22 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
                   <td className="px-4 py-3 text-label text-xs">
                     {new Date(u.created_at).toLocaleDateString('en-GB')}
                   </td>
+                  <td className="px-4 py-3 text-right">
+                    {!isSelf && (
+                      <button
+                        disabled={busy === u.id}
+                        onClick={() => remove(u.id, u.email)}
+                        title="Remove user"
+                        className="inline-flex items-center gap-1 text-xs text-danger hover:bg-red-50 px-2 py-1 rounded-md transition">
+                        <Trash2 size={13} /> Remove
+                      </button>
+                    )}
+                  </td>
                 </tr>
               );
             })}
             {users.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-10 text-center text-label">No users yet.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-label">No users yet.</td></tr>
             )}
           </tbody>
         </table>
