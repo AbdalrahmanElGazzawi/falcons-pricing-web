@@ -116,6 +116,10 @@ function LoginInner() {
         <div className="text-center text-white/50 text-xs mt-4">
           Need access? Contact your admin.
         </div>
+
+        <div className="text-center text-white/30 text-[10px] mt-6 tracking-wide">
+          Built by Abdalrahman elGazzawi
+        </div>
       </div>
     </div>
   );

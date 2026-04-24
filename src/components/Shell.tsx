@@ -80,6 +80,9 @@ export function Shell({
             className="mt-2 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white">
             <LogOut size={16} /> Sign out
           </button>
+          <div className="text-center text-white/30 text-[10px] mt-3 tracking-wide">
+            Built by Abdalrahman elGazzawi
+          </div>
         </div>
       </aside>
 
