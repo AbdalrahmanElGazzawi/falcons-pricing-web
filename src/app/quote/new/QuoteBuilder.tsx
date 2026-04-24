@@ -328,6 +328,38 @@ export function QuoteBuilder({
         <ArrowLeft size={14} /> Back
       </Link>
 
+      {/* Inline Add Deliverable panel (opens on + Player / + Creator / row click) */}
+      {panel && (
+        <LinePanel
+          mode={panel.mode}
+          talent_type={panel.talent_type}
+          draft={panel.draft}
+          players={players}
+          creators={creators}
+          globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
+          currency={currency}
+          addonsUpliftPct={addonsUpliftPct}
+          preview={panelPreview}
+          onSelectTalent={(id) => {
+            const next = applyTalentToDraft(panel.draft, panel.talent_type, id);
+            patchPanelDraft({
+              talent_id: next.talent_id,
+              talent_name: next.talent_name,
+              platform: next.platform,
+              platform_label: next.platform_label,
+              base_rate: next.base_rate,
+              irl: next.irl,
+              floorShare: next.floorShare,
+            });
+          }}
+          onChangePlatform={changePanelPlatform}
+          onPatch={patchPanelDraft}
+          onCancel={closePanel}
+          onCommit={() => commitPanel(false)}
+          onCommitAndAddAnother={() => commitPanel(true)}
+        />
+      )}
+
       {/* Header card */}
       <div className="card card-p">
         <h2 className="font-semibold mb-4">Quote header</h2>
@@ -563,37 +595,6 @@ export function QuoteBuilder({
         </div>
       </div>
 
-      {/* Slide-over line panel */}
-      {panel && (
-        <LinePanel
-          mode={panel.mode}
-          talent_type={panel.talent_type}
-          draft={panel.draft}
-          players={players}
-          creators={creators}
-          globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
-          currency={currency}
-          addonsUpliftPct={addonsUpliftPct}
-          preview={panelPreview}
-          onSelectTalent={(id) => {
-            const next = applyTalentToDraft(panel.draft, panel.talent_type, id);
-            patchPanelDraft({
-              talent_id: next.talent_id,
-              talent_name: next.talent_name,
-              platform: next.platform,
-              platform_label: next.platform_label,
-              base_rate: next.base_rate,
-              irl: next.irl,
-              floorShare: next.floorShare,
-            });
-          }}
-          onChangePlatform={changePanelPlatform}
-          onPatch={patchPanelDraft}
-          onCancel={closePanel}
-          onCommit={() => commitPanel(false)}
-          onCommitAndAddAnother={() => commitPanel(true)}
-        />
-      )}
     </div>
   );
 }
@@ -648,25 +649,24 @@ function LinePanel({
   const canCommit = draft.talent_id !== null && draft.platform !== '' && draft.base_rate > 0;
 
   return (
-    <div className="fixed inset-0 z-40 flex" role="dialog" aria-modal="true">
-      <div className="flex-1 bg-ink/40 backdrop-blur-sm" onClick={onCancel} />
-      <div className="w-full max-w-[560px] bg-white h-full shadow-2xl border-l border-line flex flex-col">
-        <div className="px-5 py-4 border-b border-line flex items-center justify-between sticky top-0 bg-white z-10">
-          <div>
-            <div className="text-xs text-label uppercase tracking-wide">
-              {mode === 'add' ? `Add ${talent_type}` : `Edit ${talent_type} line`}
-            </div>
-            <div className="font-semibold text-ink">
-              {draft.talent_name || 'Select talent'}
-              {tierCode && <span className="ml-2 text-xs text-label font-normal">· {tierCode}</span>}
-            </div>
+    <div className="rounded-xl border border-line bg-white shadow-sm overflow-hidden mb-6" role="region" aria-label="Add deliverable">
+      <div className="bg-gradient-to-r from-navy via-navyDark to-navy px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="text-[10px] tracking-widest text-green font-semibold">
+            {mode === 'add' ? `+ ADD ${talent_type.toUpperCase()}` : `EDIT ${talent_type.toUpperCase()}`}
           </div>
-          <button onClick={onCancel} className="p-1 text-mute hover:text-ink" aria-label="Close">
-            <X size={18} />
-          </button>
+          <div className="text-white font-semibold">
+            {draft.talent_name || 'Select talent'}
+            {tierCode && <span className="ml-2 text-xs text-white/60 font-normal">· {tierCode}</span>}
+          </div>
         </div>
+        <button onClick={onCancel} className="text-white/70 hover:text-white p-1" aria-label="Close">
+          <X size={16} />
+        </button>
+      </div>
 
-        <div className="flex-1 overflow-y-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr,340px] divide-x divide-line">
+        <div>
           {mode === 'add' && !draft.talent_id && (
             <div className="p-5 space-y-3">
               <label className="label">Choose {talent_type}</label>
@@ -787,50 +787,52 @@ function LinePanel({
           )}
         </div>
 
-        {draft.talent_id && draft.platform && (
-          <div className="border-t border-line bg-bg/60">
-            <div className="px-5 py-4">
-              <div className="text-xs text-label uppercase tracking-wide mb-2">Live pricing preview</div>
-              {preview ? (
-                <div className="space-y-1 text-sm">
-                  <Row label="Base rate" value={fmtMoney(draft.base_rate, currency)} muted />
-                  <Row label="Social price" value={fmtMoney(preview.socialPrice, currency)} muted />
-                  <Row label="Authority floor" value={fmtMoney(preview.floorPrice, currency)} muted />
-                  <Row label="Confidence cap" value={`× ${preview.confCap.toFixed(2)}`} muted />
-                  {addonsUpliftPct > 0 && (
-                    <Row label={`Rights uplift`} value={`+${fmtPct(addonsUpliftPct, 0)}`} muted />
-                  )}
-                  <div className="border-t border-line pt-2 mt-2">
-                    <Row label="Unit price" value={fmtMoney(preview.finalUnit, currency)} />
+        </div>
+
+        <div className="bg-bg/60 flex flex-col">
+          <div className="px-5 py-4 flex-1">
+            <div className="text-[10px] tracking-widest text-label uppercase font-semibold mb-3">Live pricing preview</div>
+            {draft.talent_id && draft.platform && preview ? (
+              <div className="space-y-1 text-sm">
+                <Row label="Base rate" value={fmtMoney(draft.base_rate, currency)} muted />
+                <Row label="Social price" value={fmtMoney(preview.socialPrice, currency)} muted />
+                <Row label="Authority floor" value={fmtMoney(preview.floorPrice, currency)} muted />
+                <Row label="Confidence cap" value={`× ${preview.confCap.toFixed(2)}`} muted />
+                {addonsUpliftPct > 0 && (
+                  <Row label={`Rights uplift`} value={`+${fmtPct(addonsUpliftPct, 0)}`} muted />
+                )}
+                <div className="border-t border-line pt-2 mt-2">
+                  <Row label="Unit price" value={fmtMoney(preview.finalUnit, currency)} />
+                  <div className="mt-2 rounded-lg bg-green/10 px-3 py-2 border border-green/30">
                     <Row label="Line total" value={fmtMoney(preview.finalAmount, currency)} bold />
                   </div>
                 </div>
-              ) : (
-                <div className="text-xs text-mute">Pick a deliverable to preview pricing.</div>
-              )}
-            </div>
-            <div className="px-5 py-3 border-t border-line bg-white flex items-center justify-end gap-2">
-              <button onClick={onCancel} className="btn btn-ghost text-sm">Cancel</button>
-              {mode === 'add' && (
-                <button
-                  onClick={onCommitAndAddAnother}
-                  disabled={!canCommit}
-                  className="btn btn-ghost text-sm"
-                  title="Add this deliverable and open a new panel for the same talent"
-                >
-                  <Plus size={14} /> Add & another
-                </button>
-              )}
-              <button
-                onClick={onCommit}
-                disabled={!canCommit}
-                className="btn btn-primary text-sm"
-              >
-                <Check size={14} /> {mode === 'add' ? 'Add to quote' : 'Save line'}
-              </button>
-            </div>
+              </div>
+            ) : (
+              <div className="text-xs text-mute">Pick a talent and deliverable to preview pricing.</div>
+            )}
           </div>
-        )}
+          <div className="px-5 py-3 border-t border-line bg-white flex items-center justify-end gap-2 flex-wrap">
+            <button onClick={onCancel} className="btn btn-ghost text-sm">Cancel</button>
+            {mode === 'add' && (
+              <button
+                onClick={onCommitAndAddAnother}
+                disabled={!canCommit}
+                className="btn btn-ghost text-sm"
+                title="Add this deliverable and open a new panel for the same talent"
+              >
+                <Plus size={14} /> Add & another
+              </button>
+            )}
+            <button
+              onClick={onCommit}
+              disabled={!canCommit}
+              className="btn btn-primary text-sm"
+            >
+              <Check size={14} /> {mode === 'add' ? 'Add to quote' : 'Save line'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

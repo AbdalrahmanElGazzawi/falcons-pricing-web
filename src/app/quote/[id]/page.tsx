@@ -45,8 +45,11 @@ export default async function QuoteDetail({ params }: { params: { id: string } }
         action={
           <div className="flex items-center gap-2">
             <span className={`chip ${statusColor(quote.status)} text-sm`}>{statusLabel(quote.status)}</span>
-            <a href={`/api/quote/${quote.id}/pdf`} className="btn btn-ghost" target="_blank" rel="noreferrer">
-              <Download size={14} /> PDF
+            <a href={`/client/${quote.client_token}`} className="btn btn-ghost" target="_blank" rel="noreferrer" title="View as client">
+              <ExternalLink size={14} /> Preview quotation
+            </a>
+            <a href={`/api/quote/${quote.id}/pdf`} className="btn btn-primary" target="_blank" rel="noreferrer">
+              <Download size={14} /> Download PDF
             </a>
           </div>
         }

@@ -138,8 +138,9 @@ export default async function ClientPortal({ params }: { params: { token: string
           </div>
         </div>
 
-        {/* Approve / Reject */}
-        {quote.status === 'sent_to_client' && !responded ? (
+        {/* Approve / Reject — client-side response is disabled for now.
+            All approvals are handled internally by Team Falcons staff. */}
+        {false && quote.status === 'sent_to_client' && !responded ? (
           <ClientResponse token={params.token} />
         ) : responded ? (
           <div className="card card-p text-center">
