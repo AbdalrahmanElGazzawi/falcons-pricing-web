@@ -787,8 +787,6 @@ function LinePanel({
           )}
         </div>
 
-        </div>
-
         <div className="bg-bg/60 flex flex-col">
           <div className="px-5 py-4 flex-1">
             <div className="text-[10px] tracking-widest text-label uppercase font-semibold mb-3">Live pricing preview</div>
