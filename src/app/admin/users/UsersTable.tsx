@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserPlus, Trash2 } from 'lucide-react';
+import { UserPlus, Trash2, KeyRound, Copy, Check as CheckIcon } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
 
 type Row = {
@@ -23,7 +23,9 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
   const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState<UserRole>('sales');
   const [inviteErr, setInviteErr] = useState<string | null>(null);
-  const [inviteOk, setInviteOk] = useState<string | null>(null);
+  const [inviteOk, setInviteOk] = useState<{ email: string; password: string } | null>(null);
+  const [resetResult, setResetResult] = useState<{ email: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function patch(id: string, body: any) {
     setBusy(id);
@@ -40,6 +42,32 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
       router.refresh();
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function resetPassword(id: string, email: string) {
+    const ok = confirm(
+      `Reset password for ${email}?\n\nA new temporary password will be generated and shown to you. You'll need to share it with the user through your preferred channel (Slack, WhatsApp, etc.). Their old password stops working immediately.`
+    );
+    if (!ok) return;
+    setBusy(id);
+    try {
+      const res = await fetch(`/api/admin/users/${id}/reset-password`, { method: 'POST' });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(j.error || 'Reset failed'); return; }
+      setResetResult({ email: j.email, password: j.temp_password });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function copyToClipboard(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      alert('Copy failed — please select and copy manually.');
     }
   }
 
@@ -77,7 +105,7 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.error || 'Invite failed');
-      setInviteOk(`Invitation sent to ${inviteEmail}`);
+      setInviteOk({ email: j.email || inviteEmail, password: j.temp_password });
       setInviteEmail(''); setInviteName('');
       router.refresh();
     } catch (e: any) {
@@ -122,8 +150,29 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
             <button onClick={() => setInviteOpen(false)} className="btn btn-ghost">Cancel</button>
           </div>
           {inviteErr && <div className="text-xs text-red-600">{inviteErr}</div>}
-          {inviteOk && <div className="text-xs text-green">{inviteOk}</div>}
         </div>
+      )}
+
+      {inviteOk && (
+        <TempPasswordCard
+          title="User invited — share this password"
+          email={inviteOk.email}
+          password={inviteOk.password}
+          onDismiss={() => setInviteOk(null)}
+          onCopy={copyToClipboard}
+          copied={copied}
+        />
+      )}
+
+      {resetResult && (
+        <TempPasswordCard
+          title="Password reset — share this new password"
+          email={resetResult.email}
+          password={resetResult.password}
+          onDismiss={() => setResetResult(null)}
+          onCopy={copyToClipboard}
+          copied={copied}
+        />
       )}
 
       <div className="card overflow-hidden">
@@ -168,15 +217,24 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
                   <td className="px-4 py-3 text-label text-xs">
                     {new Date(u.created_at).toLocaleDateString('en-GB')}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
                     {!isSelf && (
-                      <button
-                        disabled={busy === u.id}
-                        onClick={() => remove(u.id, u.email)}
-                        title="Remove user"
-                        className="inline-flex items-center gap-1 text-xs text-danger hover:bg-red-50 px-2 py-1 rounded-md transition">
-                        <Trash2 size={13} /> Remove
-                      </button>
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          disabled={busy === u.id}
+                          onClick={() => resetPassword(u.id, u.email)}
+                          title="Generate a new temp password"
+                          className="inline-flex items-center gap-1 text-xs text-label hover:text-ink hover:bg-bg px-2 py-1 rounded-md transition">
+                          <KeyRound size={13} /> Reset pw
+                        </button>
+                        <button
+                          disabled={busy === u.id}
+                          onClick={() => remove(u.id, u.email)}
+                          title="Remove user"
+                          className="inline-flex items-center gap-1 text-xs text-danger hover:bg-red-50 px-2 py-1 rounded-md transition">
+                          <Trash2 size={13} /> Remove
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -189,5 +247,49 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
         </table>
       </div>
     </>
+  );
+}
+
+function TempPasswordCard({
+  title, email, password, onDismiss, onCopy, copied,
+}: {
+  title: string;
+  email: string;
+  password: string;
+  onDismiss: () => void;
+  onCopy: (s: string) => void;
+  copied: boolean;
+}) {
+  const shareBlock = `Team Falcons Pricing OS\nURL: https://falcons-pricing-web.vercel.app\nEmail: ${email}\nTemp password: ${password}\n\nPlease change your password after first login (sidebar → Change password).`;
+  return (
+    <div className="card card-p mb-4 border-green/40 bg-green/5">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-semibold text-ink">{title}</h3>
+        <button onClick={onDismiss} className="text-xs text-label hover:text-ink">Dismiss</button>
+      </div>
+      <div className="text-xs text-label mb-3">
+        This password is shown <strong>once</strong>. Copy it and share with the user through your preferred channel (WhatsApp, Slack, etc.). They should change it on first login.
+      </div>
+      <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1 items-center mb-3 text-sm">
+        <span className="text-label">Email</span>
+        <span className="font-medium text-ink">{email}</span>
+        <span className="text-label">Temp password</span>
+        <code className="font-mono font-semibold text-ink bg-white border border-line rounded-md px-2 py-1 inline-block w-fit">{password}</code>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onCopy(password)}
+          className="btn btn-ghost text-sm"
+          title="Copy just the password">
+          {copied ? <CheckIcon size={14} /> : <Copy size={14} />} {copied ? 'Copied!' : 'Copy password'}
+        </button>
+        <button
+          onClick={() => onCopy(shareBlock)}
+          className="btn btn-ghost text-sm"
+          title="Copy the full share message with URL + email + password">
+          <Copy size={14} /> Copy share message
+        </button>
+      </div>
+    </div>
   );
 }

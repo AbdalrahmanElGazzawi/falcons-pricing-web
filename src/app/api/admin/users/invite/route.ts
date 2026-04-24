@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase-server';
+import { randomBytes } from 'node:crypto';
 
 export const runtime = 'nodejs';
+
+// Generate a human-readable temporary password: 3 letters + 4 digits + 1 symbol + 3 letters
+function generateTempPassword(): string {
+  const letters = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz'; // no O/0/I/l confusion
+  const digits = '23456789';
+  const symbols = '!@#$%&';
+  const pick = (chars: string, n: number, buf: Buffer) =>
+    Array.from({ length: n }, (_, i) => chars[buf[i] % chars.length]).join('');
+  const buf = randomBytes(11);
+  return pick(letters, 3, buf.subarray(0, 3)) + pick(digits, 4, buf.subarray(3, 7)) + pick(symbols, 1, buf.subarray(7, 8)) + pick(letters, 3, buf.subarray(8, 11));
+}
 
 export async function POST(req: Request) {
   const { denied, profile } = await requireAdmin();
@@ -20,7 +32,7 @@ export async function POST(req: Request) {
   const sb = createServiceClient();
 
   // 1. Add to invite allowlist FIRST. Trigger rejects anyone not in here,
-  //    so the order matters: allowlist → invite → profile upsert.
+  //    so the order matters: allowlist → create user → profile upsert.
   const { error: allowErr } = await sb.from('invited_emails').upsert({
     email: email.toLowerCase(),
     invited_role: role,
@@ -28,10 +40,15 @@ export async function POST(req: Request) {
   }, { onConflict: 'email' });
   if (allowErr) return NextResponse.json({ error: 'Allowlist write failed: ' + allowErr.message }, { status: 500 });
 
-  // 2. Send invitation email via Supabase Admin API
-  const { data, error } = await sb.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || ''}/auth/callback`,
-    data: { full_name, role },
+  // 2. Create the user with a random temporary password so they can sign in
+  //    immediately with email+password (no magic-link email to be eaten by Gmail
+  //    scanners). Admin shares the password with the invitee out-of-band.
+  const tempPassword = generateTempPassword();
+  const { data, error } = await sb.auth.admin.createUser({
+    email,
+    password: tempPassword,
+    email_confirm: true,
+    user_metadata: { full_name, role },
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -56,5 +73,10 @@ export async function POST(req: Request) {
     diff: { email, role, full_name },
   });
 
-  return NextResponse.json({ ok: true, user_id: data?.user?.id });
+  return NextResponse.json({
+    ok: true,
+    user_id: data?.user?.id,
+    temp_password: tempPassword,
+    email,
+  });
 }
