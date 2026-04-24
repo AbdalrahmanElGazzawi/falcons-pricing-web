@@ -43,7 +43,7 @@ export function Shell({
     <div className="min-h-screen flex">
       <aside className="w-60 bg-navy text-white flex flex-col flex-shrink-0">
         <div className="px-5 py-5 flex items-center gap-3 border-b border-white/10">
-          <div className="w-9 h-9 rounded-lg bg-green grid place-items-center text-white font-bold">F</div>
+          <img src="/falcon-mark.png" alt="Team Falcons" className="w-10 h-10" />
           <div>
             <div className="font-semibold text-sm leading-none">Team Falcons</div>
             <div className="text-white/50 text-[11px] mt-1">Pricing OS</div>

@@ -57,10 +57,10 @@ function LoginInner() {
     <div className="min-h-screen grid place-items-center p-6 bg-gradient-to-br from-navy via-navyDark to-navy">
       <div className="w-full max-w-md">
         <div className="flex items-center gap-3 mb-6 justify-center">
-          <div className="w-10 h-10 rounded-lg bg-green grid place-items-center text-white font-bold text-lg">F</div>
+          <img src="/falcon-mark.png" alt="Team Falcons" className="w-14 h-14" />
           <div>
-            <div className="text-white font-semibold text-lg leading-none">Team Falcons</div>
-            <div className="text-white/60 text-xs">Pricing OS</div>
+            <div className="text-white font-semibold text-xl leading-none">Team Falcons</div>
+            <div className="text-white/60 text-xs mt-1">Pricing OS</div>
           </div>
         </div>
 
