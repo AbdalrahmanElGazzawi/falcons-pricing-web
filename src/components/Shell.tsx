@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import type { UserRole } from '@/lib/types';
-import { LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog, Sparkles, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog, Sparkles, BookOpen, KeyRound } from 'lucide-react';
 
 const NAV = (role: UserRole) => [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -76,8 +76,12 @@ export function Shell({
             <div className="text-white/90 font-medium truncate">{email}</div>
             <div className="text-white/50 capitalize">{role}</div>
           </div>
-          <button onClick={signOut}
+          <Link href="/account/password"
             className="mt-2 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white">
+            <KeyRound size={16} /> Change password
+          </Link>
+          <button onClick={signOut}
+            className="mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white">
             <LogOut size={16} /> Sign out
           </button>
           <div className="text-center text-white/30 text-[10px] mt-3 tracking-wide">
