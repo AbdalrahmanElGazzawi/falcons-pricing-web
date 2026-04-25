@@ -288,8 +288,20 @@ export function Calculator({
         <div className="card overflow-hidden">
           <div className="bg-gradient-to-br from-green to-greenDark text-white p-5">
             <div className="text-[10px] tracking-widest opacity-80">QUICK ESTIMATE</div>
-            <div className="text-3xl font-extrabold mt-1 leading-tight">{fmtCurrency(computed.totals.total, currency, usdRate)}</div>
-            <div className="text-xs opacity-90 mt-1">VAT inclusive · {computed.rows.length} line{computed.rows.length === 1 ? '' : 's'}{currency === 'USD' && ` · @ ${usdRate} SAR/USD`}</div>
+            <div className="text-3xl font-extrabold mt-1 leading-tight tabular-nums">{fmtCurrency(computed.totals.total, currency, usdRate)}</div>
+            {/* Side-by-side SAR ↔ USD so the sales rep sees both at once */}
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/15 text-xs">
+              <div>
+                <div className="opacity-70">SAR</div>
+                <div className="font-semibold tabular-nums">{fmtCurrency(computed.totals.total, 'SAR', usdRate)}</div>
+              </div>
+              <div className="text-white/30 text-[10px]">/</div>
+              <div className="text-right">
+                <div className="opacity-70">USD</div>
+                <div className="font-semibold tabular-nums">{fmtCurrency(computed.totals.total, 'USD', usdRate)}</div>
+              </div>
+            </div>
+            <div className="text-[10px] opacity-90 mt-2">VAT inclusive · {computed.rows.length} line{computed.rows.length === 1 ? '' : 's'} · @ {usdRate} SAR/USD</div>
           </div>
           <div className="p-4 space-y-1.5 text-xs bg-white border-t border-line">
             <Row label="Subtotal" value={fmtCurrency(computed.totals.subtotal, currency, usdRate)} muted />

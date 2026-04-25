@@ -841,9 +841,9 @@ export function QuoteBuilder({
 
       {/* 3-tab strip */}
       <div className="flex items-center gap-1 border-b border-line overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        <TabButton active={view === 'campaign'} onClick={() => setView('campaign')}>① Campaign</TabButton>
-        <TabButton active={view === 'build'} onClick={() => setView('build')}>② Build</TabButton>
-        <TabButton active={view === 'summary'} onClick={() => setView('summary')}>③ Summary</TabButton>
+        <TabButton step={1} active={view === 'campaign'} complete={!!clientName.trim()} onClick={() => setView('campaign')}>Campaign</TabButton>
+        <TabButton step={2} active={view === 'build'} complete={lines.length > 0} badge={lines.length} onClick={() => setView('build')}>Build</TabButton>
+        <TabButton step={3} active={view === 'summary'} onClick={() => setView('summary')}>Summary</TabButton>
         <div className="ml-auto pb-2 hidden sm:flex items-center gap-3 text-xs text-label whitespace-nowrap">
           <span>{computed.rows.length} line{computed.rows.length === 1 ? '' : 's'}</span>
           <span className="text-ink font-semibold">{fmtCurrency(computed.totals.total, currency, usdRate)}</span>
@@ -1020,20 +1020,32 @@ function Row({ label, value, bold, muted }: {
   );
 }
 // ─── Tab strip ──────────────────────────────────────────────────────────────
-function TabButton({ active, onClick, children }: {
-  active: boolean; onClick: () => void; children: React.ReactNode;
+function TabButton({ active, onClick, step, children, badge, complete }: {
+  active: boolean; onClick: () => void; step: number;
+  children: React.ReactNode; badge?: number; complete?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       className={[
-        'relative px-4 py-2.5 text-sm font-medium transition',
-        active ? 'text-ink' : 'text-mute hover:text-ink',
+        'relative px-4 py-2.5 text-sm font-medium transition flex items-center gap-2',
+        active ? 'text-ink' : complete ? 'text-greenDark' : 'text-mute hover:text-ink',
       ].join(' ')}
     >
-      {children}
+      <span className={[
+        'w-5 h-5 rounded-full grid place-items-center text-[10px] font-bold transition',
+        active ? 'bg-green text-white' :
+        complete ? 'bg-green/20 text-greenDark' :
+                   'bg-bg text-mute border border-line',
+      ].join(' ')}>
+        {complete ? '✓' : step}
+      </span>
+      <span>{children}</span>
+      {typeof badge === 'number' && badge > 0 && !active && (
+        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-greenSoft text-greenDark tabular-nums">{badge}</span>
+      )}
       {active && (
-        <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-green rounded-full" />
+        <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-gradient-to-r from-green via-greenDark to-green rounded-full" />
       )}
     </button>
   );
