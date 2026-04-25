@@ -127,3 +127,14 @@ button { cursor: pointer; }
 /* horizontal scroll hint for tables on narrow screens */
 .data-table { min-width: 540px; }
 
+
+/* ─── i18n: Arabic font + RTL polish ───────────────────────────────────── */
+html[lang="ar"], html[lang="ar"] body {
+  font-family: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif;
+}
+
+/* Numeric tabulars stay LTR even inside RTL layout */
+html[dir="rtl"] .tabular-nums { direction: ltr; unicode-bidi: isolate; }
+
+/* Recharts SVG: keep LTR axis labels readable inside RTL pages */
+html[dir="rtl"] .recharts-wrapper { direction: ltr; }

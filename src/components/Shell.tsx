@@ -11,31 +11,33 @@ import {
   Inbox, HelpCircle, Search,
 } from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
+import { LocaleSwitcher } from './LocaleSwitcher';
+import { useLocale } from '@/lib/i18n/Locale';
 
 const WELCOME_KEY = 'falcons_welcome_seen_v1';
 
 const NAV = (role: UserRole, email: string) => [
-  { href: '/dashboard',         label: 'Dashboard',  icon: LayoutDashboard },
-  { href: '/quote/new',         label: 'New Quote',  icon: PlusCircle, highlight: true },
-  { href: '/calculator',        label: 'Calculator', icon: Calculator },
-  { href: '/quotes',            label: 'Quote Log',  icon: FileText },
-  { href: '/inquiries',         label: 'Inquiries',  icon: Inbox },
-  { href: '/roster/players',    label: 'Roster',     icon: Users },
-  { href: '/roster/creators',   label: 'Creators',   icon: Sparkles },
-  { href: '/admin/roadmap',     label: 'Roadmap',    icon: Map },
-  { href: '/welcome',           label: 'About',      icon: HelpCircle },
+  { href: '/dashboard',         key: 'nav.dashboard'  as const, icon: LayoutDashboard },
+  { href: '/quote/new',         key: 'nav.new_quote'  as const, icon: PlusCircle, highlight: true },
+  { href: '/calculator',        key: 'nav.calculator' as const, icon: Calculator },
+  { href: '/quotes',            key: 'nav.quote_log'  as const, icon: FileText },
+  { href: '/inquiries',         key: 'nav.inquiries'  as const, icon: Inbox },
+  { href: '/roster/players',    key: 'nav.roster'     as const, icon: Users },
+  { href: '/roster/creators',   key: 'nav.creators'   as const, icon: Sparkles },
+  { href: '/admin/roadmap',     key: 'nav.roadmap'    as const, icon: Map },
+  { href: '/welcome',           key: 'nav.about'      as const, icon: HelpCircle },
   ...(['admin','sales','finance'].includes(role) ? [
-    { href: '/admin/sales-log', label: 'Sales Log',  icon: ScrollText },
+    { href: '/admin/sales-log', key: 'nav.sales_log'  as const, icon: ScrollText },
   ] : []),
   ...(role === 'admin' ? [
-    { href: '/admin/users',       label: 'Users',       icon: UserCog },
-    { href: '/admin/tiers',       label: 'Tiers',       icon: Settings },
-    { href: '/admin/addons',      label: 'Add-ons',     icon: Settings },
-    { href: '/admin/assumptions', label: 'Assumptions', icon: BookOpen },
+    { href: '/admin/users',       key: 'nav.users'       as const, icon: UserCog },
+    { href: '/admin/tiers',       key: 'nav.tiers'       as const, icon: Settings },
+    { href: '/admin/addons',      key: 'nav.addons'      as const, icon: Settings },
+    { href: '/admin/assumptions', key: 'nav.assumptions' as const, icon: BookOpen },
   ] : []),
   ...(isSuperAdminEmail(email) ? [
-    { href: '/admin/pricing',   label: 'Pricing OS', icon: Calculator },
-    { href: '/admin/audit-log', label: 'Audit Log',  icon: ScrollText },
+    { href: '/admin/pricing',   key: 'nav.pricing_os' as const, icon: Calculator },
+    { href: '/admin/audit-log', key: 'nav.audit_log'  as const, icon: ScrollText },
   ] : []),
 ];
 
@@ -58,6 +60,7 @@ export function Shell({
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const { t } = useLocale();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Close drawer on route change
@@ -136,7 +139,7 @@ export function Shell({
           <img src="/falcon-mark.png" alt="Team Falcons" className="w-10 h-10" />
           <div className="min-w-0 flex-1">
             <div className="font-semibold text-sm leading-none">Team Falcons</div>
-            <div className="text-white/50 text-[11px] mt-1">Pricing OS</div>
+            <div className="text-white/50 text-[11px] mt-1">{t('nav.brand_tagline')}</div>
           </div>
           <button
             onClick={() => setDrawerOpen(false)}
@@ -159,7 +162,7 @@ export function Shell({
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs transition"
           >
             <Search size={14} />
-            <span className="flex-1 text-left">Search…</span>
+            <span className="flex-1 text-start">{t('nav.search')}</span>
             <kbd className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded">⌘K</kbd>
           </button>
         </div>
@@ -179,7 +182,7 @@ export function Shell({
                 ].join(' ')}
               >
                 <Icon size={16} />
-                {item.label}
+                {t(item.key)}
               </Link>
             );
           })}
@@ -197,13 +200,16 @@ export function Shell({
               )}
             </div>
           </div>
+          <div className="mt-2">
+            <LocaleSwitcher compact />
+          </div>
           <Link href="/account/password"
             className="mt-2 w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white">
-            <KeyRound size={16} /> Change password
+            <KeyRound size={16} /> {t('nav.change_pwd')}
           </Link>
           <button onClick={signOut}
             className="mt-1 w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white">
-            <LogOut size={16} /> Sign out
+            <LogOut size={16} /> {t('nav.sign_out')}
           </button>
           <div className="text-center text-white/30 text-[10px] mt-3 tracking-wide">
             Built by Abdalrahman elGazzawi
