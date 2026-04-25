@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "tsx scripts/seed.ts",
-    "import-roster": "tsx scripts/import-roster.ts"
+    "import-roster": "tsx scripts/import-roster.ts",
+    "reconcile-roster": "tsx scripts/reconcile-roster.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
