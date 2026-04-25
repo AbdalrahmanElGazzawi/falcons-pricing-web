@@ -174,7 +174,7 @@ export interface QuoteLine {
   final_amount: number;
 }
 
-export type PlatformGroup = 'Social Media' | 'Live & Stream' | 'On-Ground & Events' | 'Other';
+export type PlatformGroup = 'Social Media' | 'Live & Stream' | 'On-Ground & Events' | 'Other' | 'Campaign Archetypes';
 
 /**
  * Player deliverables. `manual: true` means there's no fixed per-player rate
@@ -212,21 +212,31 @@ export const PLAYER_PLATFORMS = [
 ] as const;
 
 export const CREATOR_PLATFORMS = [
-  { key: 'rate_x_post_quote', label: 'X Post / Quote' },
-  { key: 'rate_x_repost', label: 'X Repost' },
-  { key: 'rate_ig_post', label: 'IG Post' },
-  { key: 'rate_ig_story', label: 'IG Story' },
-  { key: 'rate_ig_reels', label: 'IG Reels' },
-  { key: 'rate_yt_full', label: 'YT Full Video' },
-  { key: 'rate_yt_preroll', label: 'YT 1–2min Pre-roll' },
-  { key: 'rate_yt_shorts', label: 'YT Shorts' },
-  { key: 'rate_snapchat', label: 'Snapchat' },
-  { key: 'rate_tiktok_ours', label: 'TikTok Our-side' },
-  { key: 'rate_tiktok_client', label: 'TikTok Client Vids' },
-  { key: 'rate_event_snap', label: 'Event + Snap' },
-  { key: 'rate_twitch_kick_live', label: 'Twitch / Kick Live' },
-  { key: 'rate_kick_irl', label: 'Kick IRL' },
-  { key: 'rate_telegram', label: 'Telegram' },
+  // Per-platform fixed rates (from creator's rate card)
+  { key: 'rate_x_post_quote',      label: 'X Post / Quote',      group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_x_repost',          label: 'X Repost',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_ig_post',           label: 'IG Post',             group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_ig_story',          label: 'IG Story',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_ig_reels',          label: 'IG Reels',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_yt_full',           label: 'YT Full Video',       group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_yt_preroll',        label: 'YT 1–2min Pre-roll',  group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_yt_shorts',         label: 'YT Shorts',           group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_snapchat',          label: 'Snapchat',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_tiktok_ours',       label: 'TikTok Our-side',     group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_tiktok_client',     label: 'TikTok Client Vids',  group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  // Live & On-Ground
+  { key: 'rate_twitch_kick_live',  label: 'Twitch / Kick Live',  group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_kick_irl',          label: 'Kick IRL',            group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_event_snap',        label: 'Event + Snap',        group: 'On-Ground & Events' as PlatformGroup,  manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_telegram',          label: 'Telegram Broadcast',  group: 'Other' as PlatformGroup,               manual: false, suggestedRange: null as null | [number, number] },
+  // Campaign archetypes — manual entries for creator-led packages.
+  // SAR ranges based on Saudi market norms; refine when Shikenso data lands.
+  { key: 'archetype_lifestyle',    label: 'Lifestyle Campaign',  group: 'Campaign Archetypes' as PlatformGroup, manual: true,  suggestedRange: [15000, 50000]  as [number, number] },
+  { key: 'archetype_dayinlife',    label: 'Day-in-the-Life',     group: 'Campaign Archetypes' as PlatformGroup, manual: true,  suggestedRange: [8000, 30000]   as [number, number] },
+  { key: 'archetype_ambassador',   label: 'Brand Ambassador (monthly)', group: 'Campaign Archetypes' as PlatformGroup, manual: true, suggestedRange: [20000, 75000]  as [number, number] },
+  { key: 'archetype_unboxing',     label: 'Product Unboxing',    group: 'Campaign Archetypes' as PlatformGroup, manual: true,  suggestedRange: [3000, 10000]   as [number, number] },
+  { key: 'archetype_event',        label: 'Event Activation',    group: 'Campaign Archetypes' as PlatformGroup, manual: true,  suggestedRange: [5000, 25000]   as [number, number] },
+  { key: 'archetype_always_on',    label: 'Always-On Partnership (quarter)', group: 'Campaign Archetypes' as PlatformGroup, manual: true, suggestedRange: [50000, 200000] as [number, number] },
 ] as const;
 
 // ── Sales Log (realized revenue ledger) ─────────────────────────────────────

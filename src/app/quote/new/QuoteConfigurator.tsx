@@ -149,10 +149,10 @@ export function QuoteConfigurator({
     if (selectedCreator) {
       return CREATOR_PLATFORMS.map(p => ({
         key: p.key, label: p.label,
-        rate: ((selectedCreator as any)[p.key] as number) || 0,
-        group: 'Social Media' as const, manual: false,
-        suggestedRange: null,
-      })).filter(d => d.rate > 0);
+        rate: p.manual ? 0 : ((selectedCreator as any)[p.key] as number) || 0,
+        group: p.group, manual: p.manual,
+        suggestedRange: (p as any).suggestedRange ?? null,
+      })).filter(d => d.manual || d.rate > 0);
     }
     return [];
   }, [selectedPlayer, selectedCreator]);
