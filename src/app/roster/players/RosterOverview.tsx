@@ -335,7 +335,7 @@ function RosterRow({
       </td>
 
       <td>
-        <span className={`chip border ${tierClass(p.tier_code)}`}>{p.tier_code || '—'}</span>
+        <span className={`chip border whitespace-nowrap ${tierClass(p.tier_code)}`}>{p.tier_code || '—'}</span>
       </td>
       <td className="text-label whitespace-nowrap">{p.game || '—'}</td>
       <td className="text-label whitespace-nowrap">{p.team || '—'}</td>

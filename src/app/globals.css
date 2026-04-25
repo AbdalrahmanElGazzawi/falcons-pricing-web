@@ -31,7 +31,7 @@ button { cursor: pointer; }
 .label { @apply text-xs font-medium uppercase tracking-wide text-label mb-1 block; }
 
 /* ─── chips (status, badges) ───────────────────────────────────────────── */
-.chip       { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium; }
+.chip       { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap; }
 .chip-gold  { @apply bg-gold/15 text-gold; }
 .chip-mint  { @apply bg-green/15 text-greenDark; }
 .chip-peach { @apply bg-amber/20 text-amber; }
