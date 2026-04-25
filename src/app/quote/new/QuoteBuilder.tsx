@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { computeLine, computeQuoteTotals, AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
 import { fmtMoney, fmtPct } from '@/lib/utils';
@@ -9,7 +9,7 @@ import {
 } from '@/lib/types';
 import { Trash2, Plus, Save, ArrowLeft, Pencil, Settings, Check } from 'lucide-react';
 import Link from 'next/link';
-import { PricingWizard } from './PricingWizard';
+import { QuoteConfigurator } from './QuoteConfigurator';
 import type { LineDraft } from './line-draft';
 import { Section } from '@/components/Section';
 import { PricingReference } from './PricingReference';
@@ -18,9 +18,12 @@ const SECTION_TITLES: Record<string, string> = {
   header: 'Quote header',
   globals: 'Campaign axes',
   addons: 'Add-ons',
+  configurator: 'Add deliverables',
   lines: 'Quote lines',
   notes_totals: 'Notes & totals',
 };
+
+const LS_KEY = 'falcons.quote-draft.v2';
 
 export function QuoteBuilder({
   players, creators, tiers, addons, ownerEmail,
@@ -42,7 +45,9 @@ export function QuoteBuilder({
   const [view, setView] = useState<'build' | 'preview' | 'reference'>('build');
 
   // ── Layout edit mode (super-admin only)
-  const [sectionOrder, setSectionOrder] = useState<string[]>(initialSectionOrder);
+  const [sectionOrder, setSectionOrder] = useState<string[]>(
+    initialSectionOrder.includes('configurator') ? initialSectionOrder : ['header','globals','addons','configurator','lines','notes_totals']
+  );
   const [editingLayout, setEditingLayout] = useState(false);
   const [layoutBusy, setLayoutBusy] = useState(false);
   const [layoutError, setLayoutError] = useState<string | null>(null);
@@ -117,6 +122,53 @@ export function QuoteBuilder({
     | { mode: 'edit'; initial: LineDraft }
     | null
   >(null);
+
+
+  // ── Auto-save draft to localStorage so a tab switch / reload doesn't lose work
+  const [hydrated, setHydrated] = useState(false);
+  const [draftFound, setDraftFound] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? window.localStorage.getItem(LS_KEY) : null;
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.clientName) setClientName(d.clientName);
+        if (d.clientEmail) setClientEmail(d.clientEmail);
+        if (d.campaign) setCampaign(d.campaign);
+        if (d.currency) setCurrency(d.currency);
+        if (typeof d.vatRate === 'number') setVatRate(d.vatRate);
+        if (d.notes) setNotes(d.notes);
+        if (typeof d.eng === 'number') setEng(d.eng);
+        if (typeof d.aud === 'number') setAud(d.aud);
+        if (typeof d.seas === 'number') setSeas(d.seas);
+        if (typeof d.ctype === 'number') setCtype(d.ctype);
+        if (typeof d.lang === 'number') setLang(d.lang);
+        if (typeof d.auth === 'number') setAuth(d.auth);
+        if (typeof d.obj === 'number') setObj(d.obj);
+        if (d.conf) setConf(d.conf);
+        if (Array.isArray(d.addonIds)) setAddonIds(new Set(d.addonIds));
+        if (Array.isArray(d.lines)) setLines(d.lines);
+        setDraftFound(true);
+      }
+    } catch {}
+    setHydrated(true);
+  }, []);
+
+
+  // Persist draft on every meaningful change (after initial hydration)
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      const draft = {
+        clientName, clientEmail, campaign, currency, vatRate, notes,
+        eng, aud, seas, ctype, lang, auth, obj, conf,
+        addonIds: Array.from(addonIds),
+        lines,
+      };
+      window.localStorage.setItem(LS_KEY, JSON.stringify(draft));
+    } catch {}
+  }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, notes,
+      eng, aud, seas, ctype, lang, auth, obj, conf, addonIds, lines]);
 
   function openAddWizard() { setWizard({ mode: 'add' }); }
   function openEditWizard(uid: string) {
@@ -244,6 +296,7 @@ export function QuoteBuilder({
         throw new Error(j.error || `Save failed (${res.status})`);
       }
       const j = await res.json();
+      try { window.localStorage.removeItem(LS_KEY); } catch {}
       router.push(`/quote/${j.id}`);
     } catch (e: any) {
       setError(e.message || 'Save failed');
@@ -357,34 +410,37 @@ export function QuoteBuilder({
         )}
       </div>
     ),
-    lines: wizard ? (
-      <PricingWizard
-        mode={wizard.mode}
-        initial={wizard.mode === 'edit' ? wizard.initial : undefined}
+    configurator: (
+      <QuoteConfigurator
         players={players}
         creators={creators}
         tiers={tiers}
         globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
         currency={currency}
         addonsUpliftPct={addonsUpliftPct}
-        onCancel={closeWizard}
-        onCommit={commitWizard}
-        onCommitAndAnother={wizard.mode === 'add' ? commitAndAnother : undefined}
+        initialEdit={wizard?.mode === 'edit' ? wizard.initial : null}
+        onCommit={(drafts) => {
+          if (wizard?.mode === 'edit' && drafts.length > 0) {
+            const updated = drafts[0];
+            setLines(ls => ls.map(l => l.uid === updated.uid ? updated : l));
+            closeWizard();
+          } else {
+            setLines(ls => [...ls, ...drafts]);
+          }
+        }}
+        onCancelEdit={wizard?.mode === 'edit' ? closeWizard : undefined}
       />
-    ) : (
+    ),
+    lines: (
       <div className="card">
         <div className="px-5 py-4 border-b border-line flex items-center justify-between">
           <h2 className="font-semibold">Quote lines</h2>
-          <div className="flex items-center gap-2">
-            <button className="btn btn-primary text-sm" onClick={openAddWizard}>
-              <Plus size={14} /> Add deliverable
-            </button>
-          </div>
+          <div className="text-xs text-mute">{computed.rows.length} added</div>
         </div>
 
         {computed.rows.length === 0 ? (
           <div className="px-5 py-12 text-center text-label text-sm">
-            No lines yet. Click <strong>+ Add deliverable</strong> to start the pricing wizard.
+            No lines yet. Use the <strong>Add deliverables</strong> section above.
           </div>
         ) : (
           <div className="overflow-x-auto">
