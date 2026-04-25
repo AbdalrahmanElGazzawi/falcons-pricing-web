@@ -69,6 +69,7 @@ function PlatformAnchorCard() {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         {[
           ['IG Reel',         '100%', 'anchor'],
+          ['IG Story',         '70%', 'ephemeral, swipe-up'],
           ['Twitch 2h',       '145%', 'live premium'],
           ['IRL appearance',  '220%', 'full-day cost'],
           ['TikTok',           '78%', 'higher ER, lower CPM'],

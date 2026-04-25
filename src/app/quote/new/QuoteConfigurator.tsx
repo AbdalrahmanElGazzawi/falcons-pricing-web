@@ -134,13 +134,14 @@ export function QuoteConfigurator({
   }, [tiers]);
 
   // ── Deliverables for the selected talent (grouped)
-  type Deliv = { key: string; label: string; rate: number; group: string; manual: boolean };
+  type Deliv = { key: string; label: string; rate: number; group: string; manual: boolean; suggestedRange: [number, number] | null };
   const deliverables: Deliv[] = useMemo(() => {
     if (selectedPlayer) {
       return PLAYER_PLATFORMS.map(p => ({
         key: p.key, label: p.label,
         rate: p.manual ? 0 : ((selectedPlayer as any)[p.key] as number) || 0,
         group: p.group, manual: p.manual,
+        suggestedRange: (p as any).suggestedRange ?? null,
       })).filter(d => d.manual || d.rate > 0);
     }
     if (selectedCreator) {
@@ -148,6 +149,7 @@ export function QuoteConfigurator({
         key: p.key, label: p.label,
         rate: ((selectedCreator as any)[p.key] as number) || 0,
         group: 'Social Media' as const, manual: false,
+        suggestedRange: null,
       })).filter(d => d.rate > 0);
     }
     return [];
@@ -456,7 +458,7 @@ const GROUP_ORDER = ['Social Media', 'Live & Stream', 'On-Ground & Events', 'Oth
 function DeliverableGroups({
   deliverables, picks, currency, onToggle, onQty, onRate,
 }: {
-  deliverables: Array<{ key: string; label: string; rate: number; group: string; manual: boolean }>;
+  deliverables: Array<{ key: string; label: string; rate: number; group: string; manual: boolean; suggestedRange: [number, number] | null }>;
   picks: Record<string, RowSel>;
   currency: string;
   onToggle: (k: string, manual: boolean) => void;
@@ -487,7 +489,11 @@ function DeliverableGroups({
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm text-ink">{d.label}</div>
                       <div className="text-xs text-mute">
-                        {d.manual ? <span className="italic">Manual rate</span> : `Base ${fmtMoney(d.rate, currency)}`}
+                        {d.manual
+                          ? (d.suggestedRange
+                              ? <span>Approx. <strong className="text-label">SAR {d.suggestedRange[0].toLocaleString()}–{d.suggestedRange[1].toLocaleString()}</strong></span>
+                              : <span className="italic">Manual rate</span>)
+                          : `Base ${fmtMoney(d.rate, currency)}`}
                       </div>
                     </div>
                     {checked && (
@@ -496,10 +502,11 @@ function DeliverableGroups({
                           <input
                             type="number" min={0}
                             value={sel?.manualRate || ''}
-                            placeholder="Rate"
+                            placeholder={d.suggestedRange ? `${d.suggestedRange[0].toLocaleString()}` : 'Rate'}
                             onChange={e => onRate(d.key, parseFloat(e.target.value) || 0)}
-                            className="input py-1 px-2 text-sm h-8 w-24"
+                            className="input py-1 px-2 text-sm h-8 w-28"
                             onClick={e => e.stopPropagation()}
+                            title={d.suggestedRange ? `Approx. range: SAR ${d.suggestedRange[0].toLocaleString()}–${d.suggestedRange[1].toLocaleString()}` : undefined}
                           />
                         )}
                         <input
