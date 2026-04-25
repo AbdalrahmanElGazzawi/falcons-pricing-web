@@ -7,7 +7,7 @@ import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
   type Player, type Creator, type Tier, type Addon,
 } from '@/lib/types';
-import { Trash2, Plus, Save, ArrowLeft, Pencil, Settings, Check } from 'lucide-react';
+import { Trash2, Plus, Save, ArrowLeft, Pencil, Settings, Check, X as XIcon, HelpCircle, Send } from 'lucide-react';
 import Link from 'next/link';
 import { QuoteConfigurator } from './QuoteConfigurator';
 import type { LineDraft } from './line-draft';
@@ -42,7 +42,8 @@ export function QuoteBuilder({
   const [error, setError] = useState<string | null>(null);
 
   // ── Build/Preview tab
-  const [view, setView] = useState<'build' | 'preview' | 'reference'>('build');
+  const [view, setView] = useState<'campaign' | 'build' | 'summary'>('build');
+  const [referenceOpen, setReferenceOpen] = useState(false);
 
   // ── Layout edit mode (super-admin only)
   const [sectionOrder, setSectionOrder] = useState<string[]>(
@@ -536,168 +537,195 @@ export function QuoteBuilder({
   const renderableOrder = sectionOrder.filter(id => sectionNodes[id]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:pb-0 pb-28">
+      {/* Top strip: back, reference button (super admin layout edit shows on Campaign tab only) */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-label hover:text-ink">
           <ArrowLeft size={14} /> Back
         </Link>
-        {canEditLayout && (
-          <div className="flex items-center gap-2">
-            {layoutError && <span className="text-xs text-red-600">{layoutError}</span>}
-            {layoutBusy && <span className="text-xs text-label">Saving layout…</span>}
-            {editingLayout ? (
-              <button
-                onClick={() => setEditingLayout(false)}
-                className="btn btn-primary text-sm"
-              >
-                <Check size={14} /> Done editing
-              </button>
-            ) : (
-              <button
-                onClick={() => setEditingLayout(true)}
-                className="btn btn-ghost text-sm"
-                title="Reorder sections (super admin only)"
-              >
-                <Settings size={14} /> Customize layout
-              </button>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setReferenceOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs text-label hover:text-ink px-2.5 py-1.5 rounded-md hover:bg-bg"
+            title="Quick reference: how the engine works"
+          >
+            <HelpCircle size={14} /> Reference
+          </button>
+          {canEditLayout && view === 'campaign' && (
+            <>
+              {layoutError && <span className="text-xs text-red-600">{layoutError}</span>}
+              {layoutBusy && <span className="text-xs text-label">Saving layout…</span>}
+              {editingLayout ? (
+                <button onClick={() => setEditingLayout(false)} className="btn btn-primary text-xs">
+                  <Check size={12} /> Done editing
+                </button>
+              ) : (
+                <button onClick={() => setEditingLayout(true)} className="btn btn-ghost text-xs"
+                  title="Reorder Campaign sections (super admin only)">
+                  <Settings size={12} /> Customize layout
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {editingLayout && (
-        <div className="rounded-lg border border-green/40 bg-greenSoft px-4 py-3 text-sm text-greenDark">
-          <strong>Layout edit mode.</strong> Use the ▲ ▼ buttons on each section to reorder.
-          Changes save automatically and are logged to the audit trail.
+      {/* Restored-draft banner */}
+      {draftFound && computed.rows.length > 0 && (
+        <div className="rounded-lg border border-amber/40 bg-amber/5 px-4 py-3 text-sm text-amber flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <strong>Draft restored.</strong> {computed.rows.length} line{computed.rows.length === 1 ? '' : 's'} from your last session.
+          </div>
+          <button
+            onClick={() => {
+              if (!confirm('Discard the saved draft and start fresh?')) return;
+              try { window.localStorage.removeItem(LS_KEY); } catch {}
+              setLines([]); setClientName(''); setClientEmail(''); setCampaign(''); setNotes('');
+              setAddonIds(new Set()); setDraftFound(false);
+            }}
+            className="text-xs underline hover:text-ink">Discard draft</button>
         </div>
       )}
 
-      {/* Build / Preview tab strip */}
+      {editingLayout && view === 'campaign' && (
+        <div className="rounded-lg border border-green/40 bg-greenSoft px-4 py-3 text-xs text-greenDark">
+          Use the ▲ ▼ buttons on each Campaign section to reorder. Saves automatically and is audit-logged.
+        </div>
+      )}
+
+      {/* 3-tab strip */}
       <div className="flex items-center gap-1 border-b border-line overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        <TabButton active={view === 'build'} onClick={() => setView('build')}>Build</TabButton>
-        <TabButton active={view === 'preview'} onClick={() => setView('preview')}>Preview</TabButton>
-        <TabButton active={view === 'reference'} onClick={() => setView('reference')}>Reference</TabButton>
-        <div className="ml-auto text-xs text-label pb-2 hidden sm:block whitespace-nowrap">
-          {view === 'preview'
-            ? 'Read-only preview of the saved quote'
-            : view === 'reference'
-              ? 'How the 9-axis pricing matrix actually works'
-              : `${computed.rows.length} line${computed.rows.length === 1 ? '' : 's'} · ${fmtMoney(computed.totals.total, currency)}`}
+        <TabButton active={view === 'campaign'} onClick={() => setView('campaign')}>① Campaign</TabButton>
+        <TabButton active={view === 'build'} onClick={() => setView('build')}>② Build</TabButton>
+        <TabButton active={view === 'summary'} onClick={() => setView('summary')}>③ Summary</TabButton>
+        <div className="ml-auto pb-2 hidden sm:flex items-center gap-3 text-xs text-label whitespace-nowrap">
+          <span>{computed.rows.length} line{computed.rows.length === 1 ? '' : 's'}</span>
+          <span className="text-ink font-semibold">{fmtMoney(computed.totals.total, currency)}</span>
         </div>
       </div>
 
-      {view === 'reference' ? (
-        <div className="max-w-5xl">
-          <PricingReference />
-        </div>
-      ) : view === 'preview' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-6 items-start">
-          <QuotePreview
-            clientName={clientName}
-            clientEmail={clientEmail}
-            campaign={campaign}
-            ownerEmail={ownerEmail}
-            currency={currency}
-            vatRate={vatRate}
-            notes={notes}
-            rows={computed.rows}
-            totals={computed.totals}
-            addonsUpliftPct={addonsUpliftPct}
-          />
-          {/* Sticky rail repeats here so save buttons stay reachable from preview */}
-          <aside className="lg:sticky lg:top-6">
-            <div className="card p-4 space-y-3">
-              <div className="kpi-label">Live total</div>
-              <div>
-                <div className="kpi-value">{fmtMoney(computed.totals.total, currency)}</div>
-                <div className="kpi-sub mt-1">
-                  {computed.rows.length} line{computed.rows.length === 1 ? '' : 's'} · VAT {fmtPct(vatRate, 0)}
+      {/* Tab content + desktop sticky rail */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6 items-start">
+        <div className="space-y-6 min-w-0">
+          {/* ① CAMPAIGN — header / globals / addons */}
+          {view === 'campaign' && (() => {
+            const ids = sectionOrder.filter(id => ['header','globals','addons'].includes(id));
+            return (
+              <div className="space-y-6">
+                {ids.map((id, idx) => (
+                  <Section
+                    key={id}
+                    id={id}
+                    title={SECTION_TITLES[id] ?? id}
+                    editable={editingLayout}
+                    isFirst={idx === 0}
+                    isLast={idx === ids.length - 1}
+                    onMoveUp={() => moveSection(id, -1)}
+                    onMoveDown={() => moveSection(id, 1)}
+                  >
+                    {sectionNodes[id]}
+                  </Section>
+                ))}
+                <div className="text-xs text-mute text-center pt-2">
+                  Done with campaign settings? Switch to <button onClick={() => setView('build')} className="text-greenDark hover:underline font-medium">② Build →</button>
                 </div>
               </div>
-              <div className="border-t border-line pt-3 space-y-1.5 text-xs">
-                <Row label="Subtotal" value={fmtMoney(computed.totals.subtotal, currency)} muted />
-                {addonsUpliftPct > 0 && (
-                  <Row label={`Add-on uplift +${fmtPct(addonsUpliftPct, 0)}`} value="in lines" muted />
-                )}
-                <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtMoney(computed.totals.vatAmount, currency)} muted />
+            );
+          })()}
+
+          {/* ② BUILD — configurator hero + compact lines list */}
+          {view === 'build' && (
+            <div className="space-y-6">
+              {sectionNodes.configurator}
+              {sectionNodes.lines}
+              <div className="text-xs text-mute text-center pt-2">
+                Done adding? Switch to <button onClick={() => setView('summary')} className="text-greenDark hover:underline font-medium">③ Summary →</button> to review and submit.
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => save('draft')} disabled={saving}
-                  className="btn btn-ghost text-xs justify-center disabled:opacity-50">
-                  <Save size={12} /> Draft
-                </button>
-                <button onClick={() => save('pending_approval')} disabled={saving}
-                  className="btn btn-navy text-xs justify-center disabled:opacity-50">
-                  {saving ? 'Saving…' : 'Submit'}
-                </button>
-              </div>
-              {error && <div className="text-xs text-red-600">{error}</div>}
-              <button onClick={() => setView('build')}
-                className="btn btn-ghost w-full text-xs justify-center">
-                ← Back to build
-              </button>
             </div>
-          </aside>
-        </div>
-      ) : (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-6 items-start">
-        <div className="space-y-6 min-w-0">
-          {renderableOrder.map((id, idx) => (
-            <Section
-              key={id}
-              id={id}
-              title={SECTION_TITLES[id] ?? id}
-              editable={editingLayout}
-              isFirst={idx === 0}
-              isLast={idx === renderableOrder.length - 1}
-              onMoveUp={() => moveSection(id, -1)}
-              onMoveDown={() => moveSection(id, 1)}
-            >
-              {sectionNodes[id]}
-            </Section>
-          ))}
+          )}
+
+          {/* ③ SUMMARY — preview + notes + lines (editable) */}
+          {view === 'summary' && (
+            <div className="space-y-6">
+              <QuotePreview
+                clientName={clientName}
+                clientEmail={clientEmail}
+                campaign={campaign}
+                ownerEmail={ownerEmail}
+                currency={currency}
+                vatRate={vatRate}
+                notes={notes}
+                rows={computed.rows}
+                totals={computed.totals}
+                addonsUpliftPct={addonsUpliftPct}
+              />
+              {sectionNodes.notes_totals}
+              {/* Editable lines below the preview for last-mile tweaks */}
+              <details className="card overflow-hidden group">
+                <summary className="px-5 py-3 text-sm font-medium cursor-pointer flex items-center justify-between hover:bg-bg">
+                  <span>Edit lines ({computed.rows.length})</span>
+                  <span className="text-xs text-mute group-open:hidden">click to expand</span>
+                </summary>
+                <div className="border-t border-line">{sectionNodes.lines}</div>
+              </details>
+            </div>
+          )}
         </div>
 
-        {/* Sticky live total rail */}
-        <aside className="lg:sticky lg:top-6">
-          <div className="card p-4 space-y-3">
-            <div className="kpi-label">Live total</div>
-            <div>
-              <div className="kpi-value">{fmtMoney(computed.totals.total, currency)}</div>
-              <div className="kpi-sub mt-1">
-                {computed.rows.length} line{computed.rows.length === 1 ? '' : 's'} · VAT {fmtPct(vatRate, 0)}
-              </div>
-            </div>
-            <div className="border-t border-line pt-3 space-y-1.5 text-xs">
-              <Row label="Subtotal" value={fmtMoney(computed.totals.subtotal, currency)} muted />
-              {addonsUpliftPct > 0 && (
-                <Row label={`Add-on uplift +${fmtPct(addonsUpliftPct, 0)}`} value="in lines" muted />
-              )}
-              <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtMoney(computed.totals.vatAmount, currency)} muted />
-            </div>
-            <button
-              onClick={openAddWizard}
-              className="btn btn-primary w-full justify-center text-sm"
-            >
-              <Plus size={14} /> Add deliverable
-            </button>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => save('draft')} disabled={saving}
-                className="btn btn-ghost text-xs justify-center disabled:opacity-50">
-                <Save size={12} /> Draft
-              </button>
-              <button onClick={() => save('pending_approval')} disabled={saving}
-                className="btn btn-navy text-xs justify-center disabled:opacity-50">
-                {saving ? 'Saving…' : 'Submit'}
-              </button>
-            </div>
-            {error && <div className="text-xs text-red-600">{error}</div>}
-            {clientName.trim() === '' && (
-              <div className="text-[11px] text-amber">Client name required to save.</div>
-            )}
-          </div>
+        {/* Desktop sticky save rail */}
+        <aside className="hidden lg:block lg:sticky lg:top-6 self-start">
+          <SaveRail
+            totals={computed.totals}
+            rowCount={computed.rows.length}
+            currency={currency}
+            vatRate={vatRate}
+            addonsUpliftPct={addonsUpliftPct}
+            saving={saving}
+            error={error}
+            clientName={clientName}
+            onDraft={() => save('draft')}
+            onSubmit={() => save('pending_approval')}
+          />
         </aside>
       </div>
+
+      {/* Mobile fixed bottom action bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-line shadow-lift">
+        <SaveBarMobile
+          totals={computed.totals}
+          rowCount={computed.rows.length}
+          currency={currency}
+          saving={saving}
+          clientName={clientName}
+          onDraft={() => save('draft')}
+          onSubmit={() => save('pending_approval')}
+        />
+      </div>
+
+      {/* Reference modal */}
+      {referenceOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-navy/50 backdrop-blur-sm flex items-start md:items-center justify-center p-4 overflow-y-auto"
+          onClick={() => setReferenceOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-lift w-full max-w-3xl my-8 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line bg-bg">
+              <div>
+                <h2 className="text-base font-semibold">Reference — quick guide</h2>
+                <p className="text-xs text-mute">Phase status, platform anchor, and the 5-step builder workflow.</p>
+              </div>
+              <button onClick={() => setReferenceOpen(false)} className="p-2 -mr-2 hover:bg-line rounded-md">
+                <XIcon size={18} />
+              </button>
+            </div>
+            <div className="p-5 max-h-[75vh] overflow-y-auto">
+              <PricingReference />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -862,6 +890,90 @@ function QuotePreview({
       <div className="px-6 py-3 border-t border-line bg-bg text-xs text-mute text-center">
         This is a preview. Click <strong>Submit</strong> in the rail to send the quote for approval, or <strong>Draft</strong> to save without submitting.
       </div>
+    </div>
+  );
+}
+// ─── Save rail (desktop sticky) ─────────────────────────────────────────────
+function SaveRail({
+  totals, rowCount, currency, vatRate, addonsUpliftPct, saving, error, clientName,
+  onDraft, onSubmit,
+}: {
+  totals: { subtotal: number; preVat: number; vatAmount: number; total: number };
+  rowCount: number; currency: string; vatRate: number; addonsUpliftPct: number;
+  saving: boolean; error: string | null; clientName: string;
+  onDraft: () => void; onSubmit: () => void;
+}) {
+  const blocked = clientName.trim() === '' || rowCount === 0;
+  return (
+    <div className="card p-4 space-y-3">
+      <div className="kpi-label">Live total</div>
+      <div>
+        <div className="kpi-value">{fmtMoney(totals.total, currency)}</div>
+        <div className="kpi-sub mt-1">
+          {rowCount} line{rowCount === 1 ? '' : 's'} · VAT {fmtPct(vatRate, 0)}
+        </div>
+      </div>
+      <div className="border-t border-line pt-3 space-y-1.5 text-xs">
+        <Row label="Subtotal" value={fmtMoney(totals.subtotal, currency)} muted />
+        {addonsUpliftPct > 0 && (
+          <Row label={`Add-on uplift +${fmtPct(addonsUpliftPct, 0)}`} value="in lines" muted />
+        )}
+        <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtMoney(totals.vatAmount, currency)} muted />
+      </div>
+      <button
+        onClick={onSubmit}
+        disabled={saving || blocked}
+        className="btn btn-primary w-full justify-center disabled:opacity-50"
+      >
+        <Send size={14} /> {saving ? 'Saving…' : 'Submit for approval'}
+      </button>
+      <button
+        onClick={onDraft}
+        disabled={saving || blocked}
+        className="btn btn-ghost w-full justify-center text-sm disabled:opacity-50"
+      >
+        <Save size={14} /> Save as draft
+      </button>
+      {error && <div className="text-xs text-red-600">{error}</div>}
+      {clientName.trim() === '' && rowCount > 0 && (
+        <div className="text-[11px] text-amber">Client name required to save.</div>
+      )}
+      {rowCount === 0 && (
+        <div className="text-[11px] text-mute">Add at least one deliverable to enable save.</div>
+      )}
+    </div>
+  );
+}
+
+// ─── Save bar (mobile fixed bottom) ────────────────────────────────────────
+function SaveBarMobile({
+  totals, rowCount, currency, saving, clientName, onDraft, onSubmit,
+}: {
+  totals: { total: number };
+  rowCount: number; currency: string; saving: boolean; clientName: string;
+  onDraft: () => void; onSubmit: () => void;
+}) {
+  const blocked = clientName.trim() === '' || rowCount === 0;
+  return (
+    <div className="px-4 py-3 flex items-center gap-3 max-w-screen-md mx-auto">
+      <div className="flex-1 min-w-0">
+        <div className="text-[10px] uppercase tracking-wider text-mute">Total · {rowCount} line{rowCount === 1 ? '' : 's'}</div>
+        <div className="text-base font-bold text-ink truncate">{fmtMoney(totals.total, currency)}</div>
+      </div>
+      <button
+        onClick={onDraft}
+        disabled={saving || blocked}
+        className="btn btn-ghost text-xs px-3 disabled:opacity-50"
+      >
+        <Save size={12} /> Draft
+      </button>
+      <button
+        onClick={onSubmit}
+        disabled={saving || blocked}
+        className="btn btn-primary text-xs px-3 disabled:opacity-50"
+      >
+        {saving ? '…' : <><Send size={12} /> Submit</>}
+      </button>
     </div>
   );
 }
