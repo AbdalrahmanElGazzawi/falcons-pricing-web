@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import type { UserRole } from '@/lib/types';
 import { isSuperAdminEmail } from '@/lib/super-admin';
-import { LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog, Sparkles, BookOpen, KeyRound, ScrollText } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog, Sparkles, BookOpen, KeyRound, ScrollText, Calculator } from 'lucide-react';
 
 const NAV = (role: UserRole, email: string) => [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -19,6 +19,7 @@ const NAV = (role: UserRole, email: string) => [
     { href: '/admin/assumptions', label: 'Assumptions', icon: BookOpen },
   ] : []),
   ...(isSuperAdminEmail(email) ? [
+    { href: '/admin/pricing', label: 'Pricing OS', icon: Calculator },
     { href: '/admin/audit-log', label: 'Audit Log', icon: ScrollText },
   ] : []),
 ];

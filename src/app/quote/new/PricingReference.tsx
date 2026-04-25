@@ -15,6 +15,7 @@ import {
 export function PricingReference() {
   return (
     <div className="space-y-6">
+      <ConsolePointerBanner />
       <FormulaCard />
       <ModelComparisonCard />
       <CreatorRightsCard />
@@ -149,6 +150,19 @@ export function PricingReference() {
       <AddonsCard />
       <TierLadderCard />
       <NegotiationGuardrails />
+    </div>
+  );
+}
+
+
+function ConsolePointerBanner() {
+  return (
+    <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 flex items-start gap-3">
+      <Lightbulb size={16} className="shrink-0 mt-0.5" />
+      <div className="min-w-0">
+        <strong className="font-semibold">Reference — read-only.</strong>{' '}
+        The canonical source for these multipliers, best practices, and roadmap entries is the <a href="/admin/pricing" className="underline hover:text-blue-900">Pricing OS console</a>. Super admin edits there. Live sync into this tab is on the roadmap.
+      </div>
     </div>
   );
 }
