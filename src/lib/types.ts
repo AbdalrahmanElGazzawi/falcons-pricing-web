@@ -27,6 +27,9 @@ export interface Player {
   team?: string;
   nationality?: string;
   tier_code?: string;
+  avatar_url?: string;
+  date_of_birth?: string;  // ISO yyyy-mm-dd
+  ingame_role?: string;    // SMG, Flex, Tank, etc.
   rate_ig_reel: number;
   rate_ig_static: number;
   rate_ig_story: number;

@@ -9,6 +9,7 @@ const CONFIDENCES = ['pending', 'estimated', 'rounded', 'exact'] as const;
 
 const blank: Partial<Player> = {
   nickname: '', full_name: '', role: '', game: '', team: '', nationality: '', tier_code: 'Tier 3',
+  avatar_url: '', date_of_birth: '', ingame_role: '',
   rate_ig_reel: 0, rate_ig_static: 0, rate_ig_story: 0, rate_tiktok_video: 0,
   rate_yt_short: 0, rate_x_post: 0, rate_fb_post: 0, rate_twitch_stream: 0,
   rate_twitch_integ: 0, rate_irl: 0,
@@ -78,9 +79,16 @@ export function PlayerForm({
           <Field label="Nickname *" v={v.nickname} on={x => set('nickname', x)} />
           <Field label="Full name" v={v.full_name} on={x => set('full_name', x)} />
           <Field label="Role" v={v.role} on={x => set('role', x)} />
+          <Field label="In-game role" v={v.ingame_role} on={x => set('ingame_role' as any, x)} />
           <Field label="Game" v={v.game} on={x => set('game', x)} />
           <Field label="Team" v={v.team} on={x => set('team', x)} />
           <Field label="Nationality" v={v.nationality} on={x => set('nationality', x)} />
+          <div>
+            <label className="label">Date of birth</label>
+            <input type="date" value={v.date_of_birth || ''}
+              onChange={e => set('date_of_birth' as any, e.target.value)} className="input" />
+          </div>
+          <Field label="Avatar URL or filename" v={v.avatar_url} on={x => set('avatar_url' as any, x)} />
           <div>
             <label className="label">Tier</label>
             <select value={v.tier_code} onChange={e => set('tier_code', e.target.value)} className="input">
