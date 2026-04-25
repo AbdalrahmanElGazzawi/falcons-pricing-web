@@ -1,4 +1,5 @@
 'use client';
+import { useLocale } from '@/lib/i18n/Locale';
 import { Eye, EyeOff, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 function timeAgo(iso: string | null | undefined): string {
@@ -31,9 +32,10 @@ export function EngagementCard({
   declineReason: string | null;
   status: string;
 }) {
+  const { t } = useLocale();
   return (
     <div className="card card-p">
-      <div className="text-xs text-label uppercase tracking-wide mb-3">Client engagement</div>
+      <div className="text-xs text-label uppercase tracking-wide mb-3">{t('ec.title')}</div>
 
       {/* View state */}
       <div className="flex items-start gap-3 mb-3">
@@ -47,7 +49,7 @@ export function EngagementCard({
           {viewedAt ? (
             <>
               <div className="text-sm font-medium text-ink">
-                Viewed {viewedCount > 1 ? `${viewedCount} times` : 'once'}
+                {viewedCount > 1 ? t('ec.viewed_n_times').replace('{{n}}', String(viewedCount)) : t('ec.viewed_once')}
               </div>
               <div className="text-xs text-mute">
                 First {timeAgo(viewedAt)}
@@ -56,7 +58,7 @@ export function EngagementCard({
             </>
           ) : (
             <>
-              <div className="text-sm font-medium text-ink">Not yet opened</div>
+              <div className="text-sm font-medium text-ink">{t('ec.not_opened')}</div>
               <div className="text-xs text-mute">
                 {status === 'sent_to_client'
                   ? 'Share the client link below.'
@@ -92,8 +94,8 @@ export function EngagementCard({
         <div className="flex items-start gap-3 p-3 rounded-lg bg-bg border border-line">
           <Clock size={18} className="text-label flex-shrink-0 mt-0.5" />
           <div className="text-xs">
-            <div className="font-semibold text-ink">Awaiting decision</div>
-            <div className="text-mute mt-0.5">Client has opened — consider a nudge after 48h.</div>
+            <div className="font-semibold text-ink">{t('ec.awaiting_decision')}</div>
+            <div className="text-mute mt-0.5">{t('ec.consider_nudge')}</div>
           </div>
         </div>
       ) : null}

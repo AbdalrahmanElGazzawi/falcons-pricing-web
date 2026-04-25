@@ -1,4 +1,5 @@
 'use client';
+import { useLocale } from '@/lib/i18n/Locale';
 import { useEffect, useState } from 'react';
 import {
   X, Trophy, Briefcase, Instagram, Twitter, Twitch, Youtube,
@@ -60,6 +61,7 @@ export function PlayerProfileModal({
   playerId: number | null;
   onClose: () => void;
 }) {
+  const { t } = useLocale();
   const [player, setPlayer] = useState<PlayerDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -177,18 +179,18 @@ export function PlayerProfileModal({
                 <div className="flex flex-wrap gap-2 mt-3">
                   {totalReach > 0 && (
                     <span className="px-2 py-1 rounded-md bg-green/20 text-green text-xs font-semibold flex items-center gap-1">
-                      <Users size={11} /> {fmtFollow(totalReach)} total reach
+                      <Users size={11} /> {fmtFollow(totalReach)} {t('pm.total_reach')}
                     </span>
                   )}
                   {player.agency_status === 'agency' ? (
                     <span className="px-2 py-1 rounded-md bg-blue-500/20 text-blue-200 text-xs font-medium flex items-center gap-1"
                       title={`${player.agency_name ?? ''}${player.agency_contact ? ' · ' + player.agency_contact : ''}`}>
-                      <Briefcase size={11} /> {player.agency_name || player.agency_contact || 'Agency-managed'}
+                      <Briefcase size={11} /> {player.agency_name || player.agency_contact || t('pm.agency_managed')}
                     </span>
                   ) : player.agency_status === 'direct' ? (
-                    <span className="px-2 py-1 rounded-md bg-green/20 text-green text-xs font-medium">Direct</span>
+                    <span className="px-2 py-1 rounded-md bg-green/20 text-green text-xs font-medium">{t('pm.direct')}</span>
                   ) : (
-                    <span className="px-2 py-1 rounded-md bg-white/10 text-white/60 text-xs font-medium">Agency: unknown</span>
+                    <span className="px-2 py-1 rounded-md bg-white/10 text-white/60 text-xs font-medium">{t('pm.agency_unknown')}</span>
                   )}
                 </div>
               </div>
@@ -207,7 +209,7 @@ export function PlayerProfileModal({
             {player.achievements && player.achievements.length > 0 && (
               <div>
                 <div className="text-xs uppercase tracking-wider text-label font-semibold mb-2 flex items-center gap-1.5">
-                  <Trophy size={12} className="text-amber-500" /> Achievements
+                  <Trophy size={12} className="text-amber-500" /> {t('pm.achievements')}
                 </div>
                 <ul className="space-y-1.5">
                   {player.achievements.map((a, i) => (
@@ -223,7 +225,7 @@ export function PlayerProfileModal({
             {/* Socials */}
             {socialDefs.length > 0 && (
               <div>
-                <div className="text-xs uppercase tracking-wider text-label font-semibold mb-2">Socials</div>
+                <div className="text-xs uppercase tracking-wider text-label font-semibold mb-2">{t('pm.socials')}</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {socialDefs.map((s) => {
                     const Icon = s.icon as any;
@@ -255,10 +257,10 @@ export function PlayerProfileModal({
             {/* Empty state if nothing populated */}
             {!player.bio && (!player.achievements || player.achievements.length === 0) && socialDefs.length === 0 && (
               <div className="text-center py-6 text-mute text-sm">
-                No bio, achievements, or socials captured yet for this player.
+                {t('pm.empty')}
                 <br />
                 <a href={`/admin/users`} className="text-greenDark hover:underline text-xs">
-                  Add via admin →
+                  {t('pm.add_via')}
                 </a>
               </div>
             )}

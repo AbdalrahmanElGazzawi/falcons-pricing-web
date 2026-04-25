@@ -1,4 +1,5 @@
 'use client';
+import { useLocale } from '@/lib/i18n/Locale';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { computeLine, computeQuoteTotals, AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
@@ -39,6 +40,7 @@ export function QuoteBuilder({
   initialSectionOrder: string[];
   canEditLayout: boolean;
 }) {
+  const { t } = useLocale();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -525,12 +527,12 @@ export function QuoteBuilder({
     ),
     brand_brief: (
       <div className="card card-p">
-        <h2 className="font-semibold mb-1">Brand brief</h2>
-        <p className="text-xs text-mute mb-4">Captures the discovery basics every brand asks. Doesn&apos;t change pricing math — appears on the PDF and informs axis suggestions.</p>
+        <h2 className="font-semibold mb-1">{t('qb.brief.title')}</h2>
+        <p className="text-xs text-mute mb-4">{t('qb.brief.subtitle')}</p>
 
         {/* Demographic target */}
         <div className="mb-4">
-          <label className="label">Target demographic</label>
+          <label className="label">{t('qb.brief.demographic')}</label>
           <div className="flex flex-wrap gap-2">
             {['13-17','18-24','25-34','35-44','45+'].map(b => {
               const checked = demoTarget.includes(b);
@@ -552,7 +554,7 @@ export function QuoteBuilder({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           {/* Gender skew */}
           <div>
-            <label className="label">Gender skew</label>
+            <label className="label">{t('qb.brief.gender')}</label>
             <div className="grid grid-cols-3 gap-2">
               {([['male','Male'],['mixed','Mixed'],['female','Female']] as const).map(([v, lbl]) => (
                 <button key={v} type="button" onClick={() => setGenderSkew(v)}
@@ -566,7 +568,7 @@ export function QuoteBuilder({
 
           {/* Region */}
           <div>
-            <label className="label">Region / market</label>
+            <label className="label">{t('qb.brief.region')}</label>
             <select value={region} onChange={e => setRegion(e.target.value)} className="input">
               <option value="KSA">KSA only</option>
               <option value="GCC">GCC</option>
@@ -580,31 +582,31 @@ export function QuoteBuilder({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           {/* KPI focus */}
           <div>
-            <label className="label">Primary KPI</label>
+            <label className="label">{t('qb.brief.kpi')}</label>
             <select value={kpiFocus} onChange={e => setKpiFocus(e.target.value)} className="input">
-              <option value="">— Select objective —</option>
-              <option value="awareness">Awareness — reach + impressions</option>
-              <option value="consideration">Consideration — search lift + saves</option>
-              <option value="conversion">Conversion — clicks + sales</option>
-              <option value="authority">Authority — credibility + association</option>
+              <option value="">{t('qb.brief.kpi.placeholder')}</option>
+              <option value="awareness">{t('qb.brief.kpi.awareness')}</option>
+              <option value="consideration">{t('qb.brief.kpi.consideration')}</option>
+              <option value="conversion">{t('qb.brief.kpi.conversion')}</option>
+              <option value="authority">{t('qb.brief.kpi.authority')}</option>
             </select>
             <p className="text-[10px] text-mute mt-1">Brands rarely tell you this directly. Ask: &ldquo;what does success look like?&rdquo;</p>
           </div>
 
           {/* Exclusivity */}
           <div>
-            <label className="label">Category exclusivity</label>
+            <label className="label">{t('qb.brief.exclusivity')}</label>
             <div className="flex items-center gap-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={exclusivity} onChange={e => setExclusivity(e.target.checked)} />
-                <span className="text-sm">Required</span>
+                <span className="text-sm">{t('qb.brief.exclusivity.req')}</span>
               </label>
               {exclusivity && (
                 <div className="flex items-center gap-1 ml-3">
                   <input type="number" min={1} max={24} value={exclusivityMonths || 1}
                     onChange={e => setExclusivityMonths(Math.max(1, Math.min(24, parseInt(e.target.value, 10) || 1)))}
                     className="input !py-1 !px-2 w-16 text-sm" />
-                  <span className="text-xs text-label">months</span>
+                  <span className="text-xs text-label">{t('qb.brief.months')}</span>
                 </div>
               )}
             </div>

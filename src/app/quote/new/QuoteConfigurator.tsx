@@ -1,4 +1,5 @@
 'use client';
+import { useLocale } from '@/lib/i18n/Locale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus, X as XIcon, ChevronDown, ChevronUp, Check,
@@ -44,6 +45,7 @@ export function QuoteConfigurator({
   onCommit: (drafts: LineDraft[]) => void;
   onCancelEdit?: () => void;
 }) {
+  const { t } = useLocale();
   const isEditing = !!initialEdit;
 
   // ── Picker state
@@ -265,14 +267,14 @@ export function QuoteConfigurator({
     <div ref={rootRef} className="card overflow-hidden">
       <div className="px-5 py-4 border-b border-line flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="font-semibold">{isEditing ? 'Edit deliverable' : 'Add deliverables'}</h2>
+          <h2 className="font-semibold">{isEditing ? t('cfg.edit_deliverable') : t('cfg.add_deliverables')}</h2>
           <p className="text-xs text-mute mt-0.5">
-            {isEditing ? 'Update this line, then click Save.' : 'Pick a talent, tick the deliverables, set quantities, hit Add. Repeat for the next.'}
+            {isEditing ? t('cfg.update_save') : t('cfg.flow_hint')}
           </p>
         </div>
         {isEditing && onCancelEdit && (
           <button onClick={onCancelEdit} className="btn btn-ghost text-xs">
-            <XIcon size={12} /> Cancel edit
+            <XIcon size={12} /> {t('cfg.cancel_edit')}
           </button>
         )}
       </div>
@@ -478,7 +480,7 @@ export function QuoteConfigurator({
                 <div className="rounded-lg border border-line bg-bg/40 p-3 mb-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-[11px] uppercase tracking-wider text-label font-semibold">
-                      Rights &amp; add-ons for this talent <span className="text-mute font-normal normal-case ml-1.5">— per-month rate × duration</span>
+                      {t('cfg.rights_for_talent')} <span className="text-mute font-normal normal-case ml-1.5">— {t('cfg.per_month_rate')}</span>
                     </div>
                     {lineAddonsUpliftPct > 0 && (
                       <div className="text-xs text-greenDark font-semibold">+{Math.round(lineAddonsUpliftPct * 100)}% total</div>
@@ -525,11 +527,11 @@ export function QuoteConfigurator({
 
               <details className="rounded-lg border border-line bg-bg/40 group">
                 <summary className="cursor-pointer px-4 py-2.5 flex items-center justify-between text-sm font-medium text-ink select-none">
-                  <span>Axis overrides for this player <span className="text-mute font-normal">(optional)</span></span>
+                  <span>{t('cfg.axis_overrides')} <span className="text-mute font-normal">{t('cfg.optional')}</span></span>
                   <ChevronDown size={14} className="group-open:rotate-180 transition-transform text-mute" />
                 </summary>
                 <div className="p-4 space-y-3 border-t border-line bg-white">
-                  <p className="text-xs text-label">Override the campaign defaults for these specific deliverables. Leave on Campaign default to inherit.</p>
+                  <p className="text-xs text-label">{t('cfg.axis_overrides_hint')}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Talent-aware axis options. Creators get sector-based audience, conversion-driven authority,
                          and a Production axis (vs Seasonality on players). */}
