@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { requireStaff } from '@/lib/auth';
+import { requireStaff, isSuperAdminEmail } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { QuotesTable } from './QuotesTable';
@@ -28,7 +28,7 @@ export default async function QuotesPage() {
           </Link>
         }
       />
-      <QuotesTable quotes={quotes ?? []} />
+      <QuotesTable quotes={quotes ?? []} canDelete={isSuperAdminEmail(profile.email)} />
     </Shell>
   );
 }

@@ -1,10 +1,12 @@
 'use client';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/Toast';
 import { fmtMoney, statusLabel } from '@/lib/utils';
 import { StatusPill } from '@/components/Status';
 import { EmptyState } from '@/components/EmptyState';
-import { Search, FileX, Rows3, Rows2, Rows4 } from 'lucide-react';
+import { Search, FileX, Rows3, Rows2, Rows4, Trash2 } from 'lucide-react';
 import type { QuoteStatus } from '@/lib/types';
 
 type Row = {
@@ -21,7 +23,29 @@ type Row = {
 
 type Density = 'compact' | 'comfortable' | 'spacious';
 
-export function QuotesTable({ quotes }: { quotes: Row[] }) {
+export function QuotesTable({ quotes, canDelete }: { quotes: Row[]; canDelete?: boolean }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  async function deleteQuote(id: string, qNumber: string) {
+    if (!confirm(`Delete ${qNumber}? This cannot be undone (audit log keeps a record).`)) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/quote/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || 'Delete failed');
+      }
+      toast.success('Deleted', qNumber);
+      router.refresh();
+    } catch (e: any) {
+      toast.error('Delete failed', e.message);
+    } finally {
+      setDeleting(null);
+    }
+  }
+
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [density, setDensity] = useState<Density>('comfortable');
@@ -77,6 +101,7 @@ export function QuotesTable({ quotes }: { quotes: Row[] }) {
                   <th>Status</th>
                   <th>Created</th>
                   <th className="text-right">Total</th>
+                  {canDelete && <th></th>}
                 </tr>
               </thead>
               <tbody>
@@ -95,6 +120,18 @@ export function QuotesTable({ quotes }: { quotes: Row[] }) {
                       {new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="text-right font-medium">{fmtMoney(r.total, r.currency)}</td>
+                    {canDelete && (
+                      <td className="text-right">
+                        <button
+                          disabled={deleting === r.id}
+                          onClick={() => deleteQuote(r.id, r.quote_number)}
+                          className="row-actions p-1.5 text-mute hover:text-red-600 disabled:opacity-50"
+                          title="Delete (super admin only)"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
