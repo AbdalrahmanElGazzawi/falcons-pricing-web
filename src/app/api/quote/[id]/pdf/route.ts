@@ -102,6 +102,110 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const H = doc.page.height;
   const MARGIN = 40;
 
+  // ═══ COVER PAGE ═══════════════════════════════════════════════════════════
+  // Full-bleed navy backdrop with brand-side accents and the headline figures.
+  doc.rect(0, 0, W, H).fill(NAVY);
+  // top accent strip
+  doc.rect(0, 0, W, 6).fill(GREEN);
+  // bottom accent strip
+  doc.rect(0, H - 6, W, 6).fill(GREEN);
+  // soft decorative circles (top-right, bottom-left) for depth
+  doc.circle(W - 80, 90, 130).fillOpacity(0.06).fill('#FFFFFF').fillOpacity(1);
+  doc.circle(60, H - 100, 100).fillOpacity(0.04).fill('#FFFFFF').fillOpacity(1);
+
+  // Logo (big, centered horizontally)
+  try {
+    const logoPath = path.join(process.cwd(), 'public', 'falcon-mark.png');
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, W / 2 - 50, 80, { width: 100, height: 100 });
+    }
+  } catch {}
+
+  // Brand wordmark
+  doc.fillColor('white').font('Helvetica-Bold').fontSize(28)
+    .text('TEAM FALCONS', 0, 200, { width: W, align: 'center', characterSpacing: 1 });
+  doc.fillColor('#94A3B8').font('Helvetica').fontSize(10)
+    .text('PRICING OS  ·  ESPORTS TALENT QUOTATION', 0, 234, { width: W, align: 'center', characterSpacing: 2 });
+
+  // Divider
+  doc.rect(W / 2 - 30, 268, 60, 2).fill(GREEN);
+
+  // QUOTATION — massive
+  doc.fillColor('white').font('Helvetica-Bold').fontSize(56)
+    .text('QUOTATION', 0, 290, { width: W, align: 'center', characterSpacing: 4 });
+
+  // Client name
+  doc.fillColor('#cbd5e1').font('Helvetica').fontSize(11)
+    .text('PREPARED FOR', 0, 380, { width: W, align: 'center', characterSpacing: 2 });
+  doc.fillColor('white').font('Helvetica-Bold').fontSize(24)
+    .text(quote.client_name || '—', 0, 400, { width: W, align: 'center' });
+  if (quote.campaign) {
+    doc.fillColor('#94A3B8').font('Helvetica').fontSize(11)
+      .text('CAMPAIGN', 0, 444, { width: W, align: 'center', characterSpacing: 2 });
+    doc.fillColor('white').font('Helvetica').fontSize(14)
+      .text(quote.campaign, 0, 460, { width: W, align: 'center' });
+  }
+
+  // Headline TOTAL block — green gradient simulated with stacked rects
+  const totalBoxW = 360;
+  const totalBoxX = W / 2 - totalBoxW / 2;
+  const totalBoxY = 504;
+  doc.roundedRect(totalBoxX, totalBoxY, totalBoxW, 90, 10).fill(GREEN_DARK);
+  doc.roundedRect(totalBoxX, totalBoxY, totalBoxW, 24, 10).fill(GREEN);
+  doc.fillColor('#0B2340').font('Helvetica-Bold').fontSize(8)
+    .text('TOTAL  (VAT INCLUSIVE)', totalBoxX, totalBoxY + 8, { width: totalBoxW, align: 'center', characterSpacing: 1.5 });
+  doc.fillColor('white').font('Helvetica-Bold').fontSize(28)
+    .text(fmtFX(total, currency, usdRate), totalBoxX, totalBoxY + 38, { width: totalBoxW, align: 'center' });
+
+  // Talent mix preview — distinct names as small pills (max 8 visible)
+  const distinctNames: string[] = Array.from(new Set((lines || []).map((l: any) => l.talent_name)));
+  if (distinctNames.length > 0) {
+    doc.fillColor('#94A3B8').font('Helvetica').fontSize(9)
+      .text('TALENT MIX', 0, totalBoxY + 110, { width: W, align: 'center', characterSpacing: 1.5 });
+    let chipsY = totalBoxY + 128;
+    let chipsX = MARGIN;
+    const visible = distinctNames.slice(0, 8);
+    const widths: number[] = [];
+    visible.forEach(n => {
+      const w = doc.font('Helvetica').fontSize(10).widthOfString(n) + 18;
+      widths.push(w);
+    });
+    if (distinctNames.length > 8) {
+      const more = `+ ${distinctNames.length - 8} more`;
+      const w = doc.font('Helvetica').fontSize(10).widthOfString(more) + 18;
+      widths.push(w);
+      visible.push(more);
+    }
+    const totalW = widths.reduce((a, b) => a + b + 6, -6);
+    chipsX = (W - totalW) / 2;
+    visible.forEach((n, i) => {
+      doc.roundedRect(chipsX, chipsY, widths[i], 22, 11).fillOpacity(0.12).fill('#FFFFFF').fillOpacity(1);
+      doc.fillColor('white').font('Helvetica').fontSize(10)
+        .text(n, chipsX, chipsY + 6, { width: widths[i], align: 'center' });
+      chipsX += widths[i] + 6;
+    });
+  }
+
+  // Footer block — quote number, date, prepared by
+  const footY = H - 100;
+  doc.fillColor('#94A3B8').font('Helvetica').fontSize(8)
+    .text('QUOTE #',          MARGIN,           footY,     { characterSpacing: 1.5 });
+  doc.fillColor('white').font('Helvetica-Bold').fontSize(12)
+    .text(quote.quote_number || '—', MARGIN, footY + 12);
+
+  doc.fillColor('#94A3B8').font('Helvetica').fontSize(8)
+    .text('DATE',             W / 2 - 30,       footY,     { characterSpacing: 1.5 });
+  doc.fillColor('white').font('Helvetica').fontSize(11)
+    .text(dateStr(quote.sent_at || quote.created_at), W / 2 - 30, footY + 13);
+
+  doc.fillColor('#94A3B8').font('Helvetica').fontSize(8)
+    .text('PREPARED BY',      W - MARGIN - 140, footY,     { characterSpacing: 1.5, width: 140, align: 'right' });
+  doc.fillColor('white').font('Helvetica').fontSize(11)
+    .text(preparedName || '—', W - MARGIN - 140, footY + 13, { width: 140, align: 'right' });
+
+  // Start new page for the body
+  doc.addPage({ size: 'A4', margin: 0 });
+
   // ═══ HEADER (gradient navy → green) ═══
   // PDFKit doesn't do real gradients, simulate with stacked rectangles
   doc.rect(0, 0, W, 110).fill(NAVY);
