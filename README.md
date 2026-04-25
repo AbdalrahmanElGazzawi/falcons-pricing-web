@@ -225,3 +225,5 @@ pg_dump <connection_string> > backup-$(date +%F).sql
 ---
 
 Built for Team Falcons — Koge. Iterate fast.
+
+<!-- sync-test from Cowork: if you see this line after running pull on your laptop, the round-trip works -->
