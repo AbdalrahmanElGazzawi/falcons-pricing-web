@@ -29,7 +29,7 @@ function monthLabel(m: string) {
   return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
 }
 
-export function DashboardCharts({
+export function RevenueCharts({
   monthly, creators, brands, platforms, funnel, aging, statusMix,
 }: {
   monthly: Array<{ month: string; collected: number; pipeline: number; quotes: number }>;

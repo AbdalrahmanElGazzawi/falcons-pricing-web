@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { requireStaff } from '@/lib/auth';
+import { requireSuperAdmin } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { ArrowLeft, AlertCircle, Clock, FileText, Inbox } from 'lucide-react';
@@ -12,7 +12,7 @@ function daysBetween(d: string) {
 }
 
 export default async function OpsDashboard() {
-  const { denied, profile, supabase } = await requireStaff();
+  const { denied, profile, supabase } = await requireSuperAdmin();
   if (denied) return <AccessDenied />;
 
   const [{ data: sales }, { data: openQuotes }, { data: openInquiries }] = await Promise.all([
@@ -45,7 +45,7 @@ export default async function OpsDashboard() {
 
   return (
     <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
-      <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-label hover:text-ink mb-3">
+      <Link href="/admin/revenue" className="inline-flex items-center gap-1 text-sm text-label hover:text-ink mb-3">
         <ArrowLeft size={14} /> Executive view
       </Link>
 
