@@ -261,9 +261,9 @@ export function QuoteConfigurator({
           {/* Kind toggle */}
           <div className="inline-flex rounded-lg border border-line bg-white overflow-hidden text-xs w-full">
             {([
-              ['player', 'Players', () => { setTalentKind('player'); setRoleFilter(''); }],
-              ['influencer', 'Influencer', () => { setTalentKind('player'); setRoleFilter('influencer'); }],
-              ['creator', 'Creators', () => { setTalentKind('creator'); setRoleFilter(''); }],
+              ['player',     'Players',    () => { setTalentKind('player');  setRoleFilter('');           setSearch(''); setTierFilter(''); setGameFilter(''); }],
+              ['influencer', 'Influencer', () => { setTalentKind('player');  setRoleFilter('influencer'); setSearch(''); setTierFilter(''); setGameFilter(''); }],
+              ['creator',    'Creators',   () => { setTalentKind('creator'); setRoleFilter('');           setSearch(''); setTierFilter(''); setGameFilter(''); }],
             ] as const).map(([k, lbl, fn]) => {
               const active =
                 k === 'creator' ? talentKind === 'creator' :

@@ -16,6 +16,7 @@ const WELCOME_KEY = 'falcons_welcome_seen_v1';
 const NAV = (role: UserRole, email: string) => [
   { href: '/dashboard',         label: 'Dashboard',  icon: LayoutDashboard },
   { href: '/quote/new',         label: 'New Quote',  icon: PlusCircle, highlight: true },
+  { href: '/calculator',        label: 'Calculator', icon: Calculator },
   { href: '/quotes',            label: 'Quote Log',  icon: FileText },
   { href: '/inquiries',         label: 'Inquiries',  icon: Inbox },
   { href: '/roster/players',    label: 'Roster',     icon: Users },
