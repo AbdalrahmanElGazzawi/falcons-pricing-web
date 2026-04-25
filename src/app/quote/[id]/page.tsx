@@ -5,9 +5,10 @@ import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { fmtMoney, fmtPct, statusColor, statusLabel } from '@/lib/utils';
 import { QuoteActions } from './QuoteActions';
-import { ArrowLeft, Download, ExternalLink, Copy } from 'lucide-react';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { ShareLinkBox } from './ShareLinkBox';
 import { EngagementCard } from './EngagementCard';
+import { PdfDownload } from './PdfDownload';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,9 +50,7 @@ export default async function QuoteDetail({ params }: { params: { id: string } }
             <a href={`/client/${quote.client_token}`} className="btn btn-ghost" target="_blank" rel="noreferrer" title="View as client">
               <ExternalLink size={14} /> Preview quotation
             </a>
-            <a href={`/api/quote/${quote.id}/pdf`} className="btn btn-primary" target="_blank" rel="noreferrer">
-              <Download size={14} /> Download PDF
-            </a>
+            <PdfDownload quoteId={quote.id} storedCurrency={quote.currency} />
           </div>
         }
       />

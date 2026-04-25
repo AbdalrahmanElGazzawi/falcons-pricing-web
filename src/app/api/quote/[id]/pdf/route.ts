@@ -73,7 +73,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
   const { data: lines } = await sb.from('quote_lines').select('*').eq('quote_id', quote.id).order('sort_order');
 
-  const currency = quote.currency || 'SAR';
+  // Allow ?ccy=USD|SAR to override the stored currency at render time. Internal use only —
+  // the public client portal still uses the saved currency to avoid rep-side ambiguity.
+  const ccyOverride = (url.searchParams.get('ccy') || '').toUpperCase();
+  const currency = (token ? null : (ccyOverride === 'USD' || ccyOverride === 'SAR' ? ccyOverride : null))
+    || quote.currency
+    || 'SAR';
   const usdRate  = Number(quote.usd_rate || 3.75);
   const vatRate = Number(quote.vat_rate || 0.15);
   const subtotal = Number(quote.pre_vat || quote.subtotal || 0);
