@@ -3,7 +3,7 @@ import { requireStaff } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { isSuperAdminEmail } from '@/lib/super-admin';
-import { Users, Sparkles, Trophy, Gamepad2, Layers, PlusCircle, ArrowUpRight, BarChart3, Megaphone } from 'lucide-react';
+import { Users, Sparkles, Trophy, Gamepad2, Layers, PlusCircle, ArrowUpRight, BarChart3, Megaphone, GraduationCap } from 'lucide-react';
 import { AssetCharts } from './AssetCharts';
 
 export const dynamic = 'force-dynamic';
@@ -30,10 +30,16 @@ export default async function DashboardPage() {
     supabase.from('esports_teams').select('*').eq('is_active', true).order('sort_order').order('game'),
   ]);
 
-  const allPlayers = players ?? [];
+  const allRows = players ?? [];
   const allCreators = creators ?? [];
   const allTiers = tiers ?? [];
   const allTeams = (teams ?? []) as any[];
+
+  // Roster categorisation — the players table mixes athletes with staff.
+  const STAFF_ROLES = new Set(['Coach','Head Coach','Assistant Coach','Manager','Analyst']);
+  const playersOnly  = allRows.filter(p => p.role === 'Player');
+  const staffOnly    = allRows.filter(p => STAFF_ROLES.has(p.role || ''));
+  const influencers  = allRows.filter(p => p.role === 'Influencer');
 
   const totalReach = allTeams.reduce((s, t) =>
     s + Number(t.followers_ig||0) + Number(t.followers_x||0) + Number(t.followers_tiktok||0) +
@@ -41,32 +47,39 @@ export default async function DashboardPage() {
   const teamsWithChannels = allTeams.filter(t => t.handle_ig || t.handle_x || t.handle_tiktok || t.handle_yt || t.handle_twitch);
 
   // ── Hero counts ───────────────────────────────────────────────────────────
-  const totalPlayers = allPlayers.length;
+  const totalPlayers = playersOnly.length;
+  const totalStaff   = staffOnly.length;
+  const totalInfluencers = influencers.length;
   const totalCreators = allCreators.length;
-  const totalRoster = totalPlayers + totalCreators;
-  const tierSPlayers = allPlayers.filter(p => p.tier_code === 'S');
-  const games = new Set(allPlayers.map(p => p.game).filter(Boolean));
+  const totalRoster = totalPlayers + totalCreators + totalInfluencers;
+  // tier codes are stored as 'Tier S' / 'Tier 1' / 'Tier 2' — not single letters
+  const tierSPlayers = playersOnly.filter(p => p.tier_code === 'Tier S');
+  const games = new Set(playersOnly.map(p => p.game).filter(Boolean));
 
-  // ── Roster by tier ────────────────────────────────────────────────────────
+  // ── Roster by tier (players + creators only; staff are tracked separately) ─
   const tierBuckets = new Map<string, { players: number; creators: number }>();
-  for (const t of allTiers) tierBuckets.set(t.code, { players: 0, creators: 0 });
-  for (const p of allPlayers) {
-    const k = p.tier_code || '—';
+  for (const p of playersOnly) {
+    const k = (p.tier_code || '—').replace(/^Tier\s+/, '');
     if (!tierBuckets.has(k)) tierBuckets.set(k, { players: 0, creators: 0 });
     tierBuckets.get(k)!.players += 1;
   }
   for (const c of allCreators) {
-    const k = c.tier_code || '—';
+    const k = (c.tier_code || '—').replace(/^Tier\s+/, '');
     if (!tierBuckets.has(k)) tierBuckets.set(k, { players: 0, creators: 0 });
     tierBuckets.get(k)!.creators += 1;
   }
-  const byTier = [...tierBuckets.entries()].map(([code, v]) => ({
-    tier: code, players: v.players, creators: v.creators, total: v.players + v.creators,
-  }));
+  // Sort: S first, then numeric ascending
+  const tierSortKey = (k: string) => k === 'S' ? -1 : Number(k) || 99;
+  const byTier = [...tierBuckets.entries()]
+    .sort((a, b) => tierSortKey(a[0]) - tierSortKey(b[0]))
+    .map(([code, v]) => ({
+      tier: code === '—' ? 'Untiered' : code,
+      players: v.players, creators: v.creators, total: v.players + v.creators,
+    }));
 
   // ── Roster by game ────────────────────────────────────────────────────────
   const gameMap = new Map<string, number>();
-  for (const p of allPlayers) {
+  for (const p of playersOnly) {
     const g = p.game || 'Other';
     gameMap.set(g, (gameMap.get(g) ?? 0) + 1);
   }
@@ -107,9 +120,9 @@ export default async function DashboardPage() {
       {/* Hero strip — asset inventory */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <HeroCard icon={Megaphone} tint="green" label="Owned channel reach" value={fmtFollow(totalReach)} sub={`${teamsWithChannels.length}/${allTeams.length} teams populated`} />
-        <HeroCard icon={Users}     tint="navy"  label="Talent represented"  value={totalRoster.toString()} sub={`${totalPlayers} players · ${totalCreators} creators`} />
-        <HeroCard icon={Trophy}    tint="amber" label="Tier S talent"       value={tierSPlayers.length.toString()} sub="elite anchors" />
-        <HeroCard icon={Gamepad2}  tint="green" label="Games covered"       value={games.size.toString()} sub="active esports titles" />
+        <HeroCard icon={Users}     tint="navy"  label="Pro players"         value={totalPlayers.toString()} sub={`+ ${totalCreators} creators · ${totalInfluencers} influencers`} />
+        <HeroCard icon={Trophy}    tint="amber" label="Tier S anchors"      value={tierSPlayers.length.toString()} sub={tierSPlayers.length > 0 ? tierSPlayers.slice(0, 2).map(p => p.nickname).join(' · ') : 'promote stars in /admin/tiers'} />
+        <HeroCard icon={Gamepad2}  tint="green" label="Games covered"       value={games.size.toString()} sub={`${totalStaff} staff across teams`} />
       </div>
 
       {/* OWNED MEDIA — what we sell directly */}
@@ -161,7 +174,7 @@ export default async function DashboardPage() {
             <h2 className="font-semibold flex items-center gap-2"><Trophy size={14} className="text-amber-500" /> Talent We Represent — Tier S anchors</h2>
             <p className="text-xs text-mute mt-0.5">Players we represent. Brand pays us, content lives on the player's personal channels — we take a fee/markup.</p>
           </div>
-          <Link href="/roster/players?tier=S" className="text-xs text-greenDark hover:underline">View all →</Link>
+          <Link href="/roster/players?tier=Tier+S" className="text-xs text-greenDark hover:underline">View all →</Link>
         </div>
         {tierSPlayers.length === 0 ? (
           <div className="p-8 text-center text-mute text-sm">No Tier S talent yet — promote your top performers in /admin/tiers.</div>
@@ -189,6 +202,39 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
+
+
+
+      {/* Coaching staff & analysts — under-leveraged commercial asset */}
+      {staffOnly.length > 0 && (
+        <div className="card overflow-hidden mb-6">
+          <div className="px-5 py-3 border-b border-line flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold flex items-center gap-2"><GraduationCap size={14} className="text-blue-700" /> Brain Trust — Coaching Staff & Analysts</h2>
+              <p className="text-xs text-mute mt-0.5">{staffOnly.length} coaches, analysts, managers across {games.size} games. Often underutilised in brand deals — perfect for expert interviews, technical content, behind-the-scenes.</p>
+            </div>
+            <Link href="/roster/players?role=staff" className="text-xs text-greenDark hover:underline">View all →</Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
+            {staffOnly.slice(0, 8).map(p => (
+              <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg border border-line bg-bg/40">
+                <div className="w-10 h-10 rounded-full bg-navy text-white grid place-items-center font-bold text-xs flex-shrink-0">
+                  {p.nickname.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-ink truncate">{p.nickname}</div>
+                  <div className="text-[10px] text-mute uppercase tracking-wide truncate">{p.role} · {p.game}</div>
+                </div>
+              </div>
+            ))}
+            {staffOnly.length > 8 && (
+              <Link href="/roster/players?role=staff" className="flex items-center justify-center p-2 rounded-lg border border-dashed border-line text-xs text-greenDark hover:bg-greenSoft">
+                + {staffOnly.length - 8} more →
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Charts — roster shape */}
       <AssetCharts
