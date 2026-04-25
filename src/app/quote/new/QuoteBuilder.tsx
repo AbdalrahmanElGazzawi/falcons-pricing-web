@@ -48,7 +48,7 @@ export function QuoteBuilder({
 
   // ── Layout edit mode (super-admin only)
   const [sectionOrder, setSectionOrder] = useState<string[]>(
-    initialSectionOrder.includes('configurator') ? initialSectionOrder : ['header','globals','addons','configurator','lines','notes_totals']
+    initialSectionOrder.includes('configurator') ? initialSectionOrder : ['header','globals','configurator','lines','notes_totals']
   );
   const [editingLayout, setEditingLayout] = useState(false);
   const [layoutBusy, setLayoutBusy] = useState(false);
@@ -683,10 +683,10 @@ export function QuoteBuilder({
       {/* Tab content + desktop sticky rail */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6 items-start">
         <div className="space-y-6 min-w-0">
-          {/* ① CAMPAIGN — header / globals / addons */}
+          {/* ① CAMPAIGN — header / globals (addons live in Build) */}
           <div className={view === 'campaign' ? '' : 'hidden'}>
           {(() => {
-            const ids = sectionOrder.filter(id => ['header','globals','addons'].includes(id));
+            const ids = sectionOrder.filter(id => ['header','globals'].includes(id));
             return (
               <div className="space-y-6">
                 {ids.map((id, idx) => (
