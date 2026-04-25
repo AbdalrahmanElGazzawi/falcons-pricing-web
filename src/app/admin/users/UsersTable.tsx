@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserPlus, Trash2, KeyRound, Copy, Check as CheckIcon } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
@@ -197,7 +197,17 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
                   <td className="px-4 py-3 font-medium text-ink">
                     {u.email} {isSelf && <span className="text-xs text-mute">(you)</span>}
                   </td>
-                  <td className="px-4 py-3 text-label">{u.full_name || '—'}</td>
+                  <td className="px-4 py-3 text-label">
+                    <NameCell
+                      key={u.id + ':' + (u.full_name ?? '')}
+                      userId={u.id}
+                      initial={u.full_name ?? ''}
+                      busy={busy === u.id}
+                      onSave={async (val) => {
+                        await patch(u.id, { full_name: val.trim() || null });
+                      }}
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col gap-1">
                       <select
@@ -305,3 +315,56 @@ function TempPasswordCard({
     </div>
   );
 }
+
+// ─── Inline editable name cell ─────────────────────────────────────────────
+function NameCell({
+  userId, initial, busy, onSave,
+}: {
+  userId: string;
+  initial: string;
+  busy: boolean;
+  onSave: (val: string) => Promise<void>;
+}) {
+  const [val, setVal] = useState(initial);
+  const [showCheck, setShowCheck] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!showCheck) return;
+    const t = setTimeout(() => setShowCheck(false), 1500);
+    return () => clearTimeout(t);
+  }, [showCheck]);
+
+  async function commit() {
+    if (val === initial) return;        // nothing changed
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onSave(val);
+      setShowCheck(true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => {
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          if (e.key === 'Escape') { setVal(initial); (e.target as HTMLInputElement).blur(); }
+        }}
+        placeholder="—"
+        disabled={busy || saving}
+        className="input py-1 px-2 text-sm w-44"
+        title={`User ${userId}`}
+      />
+      {saving && <span className="text-[10px] text-mute">saving…</span>}
+      {showCheck && <CheckIcon size={14} className="text-green" />}
+    </div>
+  );
+}
+

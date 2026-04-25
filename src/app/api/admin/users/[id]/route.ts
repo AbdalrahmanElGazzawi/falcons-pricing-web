@@ -11,13 +11,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   let body: any;
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  if (params.id === profile.id) {
-    return NextResponse.json({ error: 'You cannot edit your own role/status' }, { status: 400 });
-  }
-
   const allowed: Record<string, true> = { role: true, is_active: true, full_name: true };
   const patch: any = {};
   for (const k of Object.keys(body)) if (allowed[k]) patch[k] = body[k];
+
+  // Self-edit: full_name is OK, but never let someone toggle their own role
+  // or is_active (would let an admin lock themselves out / self-promote).
+  if (params.id === profile.id) {
+    if ('role' in patch || 'is_active' in patch) {
+      return NextResponse.json({ error: 'You cannot edit your own role/status' }, { status: 400 });
+    }
+  }
 
   if (patch.role && !['admin', 'sales', 'finance', 'viewer'].includes(patch.role)) {
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
