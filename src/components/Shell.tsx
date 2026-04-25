@@ -8,8 +8,9 @@ import { isSuperAdminEmail } from '@/lib/super-admin';
 import {
   LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog,
   Sparkles, BookOpen, KeyRound, ScrollText, Calculator, Map, Menu, X,
-  Inbox, HelpCircle,
+  Inbox, HelpCircle, Search,
 } from 'lucide-react';
+import { CommandPalette } from './CommandPalette';
 
 const WELCOME_KEY = 'falcons_welcome_seen_v1';
 
@@ -143,6 +144,23 @@ export function Shell({
           </button>
         </div>
 
+        {/* Search affordance — clicking opens the palette. The palette also responds to ⌘K. */}
+        <div className="px-3 pt-3">
+          <button
+            type="button"
+            onClick={() => {
+              const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+              const evt = new KeyboardEvent('keydown', { key: 'k', metaKey: isMac, ctrlKey: !isMac, bubbles: true });
+              window.dispatchEvent(evt);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs transition"
+          >
+            <Search size={14} />
+            <span className="flex-1 text-left">Search…</span>
+            <kbd className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded">⌘K</kbd>
+          </button>
+        </div>
+
         <nav className="p-3 flex-1 space-y-0.5 overflow-y-auto">
           {nav.map(item => {
             const active = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -193,6 +211,8 @@ export function Shell({
       <main className="flex-1 min-w-0">
         <div className="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
+
+      <CommandPalette />
     </div>
   );
 }
