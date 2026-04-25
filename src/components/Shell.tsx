@@ -136,14 +136,44 @@ export function PageHeader({
   title,
   subtitle,
   action,
-}: { title: string; subtitle?: string; action?: React.ReactNode }) {
+  crumbs,
+  meta,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+  /** Breadcrumb trail. Last item is treated as the current page. */
+  crumbs?: Array<{ label: string; href?: string }>;
+  /** Optional inline meta (chips, status, timestamps) shown under the title. */
+  meta?: React.ReactNode;
+}) {
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-ink">{title}</h1>
-        {subtitle && <p className="text-sm text-label mt-1">{subtitle}</p>}
+    <div className="mb-6">
+      {crumbs && crumbs.length > 0 && (
+        <div className="crumbs mb-3">
+          {crumbs.map((c, i) => {
+            const isLast = i === crumbs.length - 1;
+            return (
+              <span key={i} className="flex items-center gap-1.5">
+                {i > 0 && <span className="sep">/</span>}
+                {c.href && !isLast ? (
+                  <Link href={c.href}>{c.label}</Link>
+                ) : (
+                  <span className={isLast ? 'text-ink font-medium' : ''}>{c.label}</span>
+                )}
+              </span>
+            );
+          })}
+        </div>
+      )}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold text-ink tracking-tight">{title}</h1>
+          {subtitle && <p className="text-sm text-label mt-1">{subtitle}</p>}
+          {meta && <div className="mt-3 flex items-center gap-3 flex-wrap">{meta}</div>}
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
       </div>
-      {action}
     </div>
   );
 }

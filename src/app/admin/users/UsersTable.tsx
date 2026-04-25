@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { UserPlus, Trash2, KeyRound, Copy, Check as CheckIcon } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
 import { isSuperAdminEmail } from '@/lib/super-admin';
+import { useToast } from '@/components/Toast';
 
 type Row = {
   id: string;
@@ -18,6 +19,7 @@ const ROLES: UserRole[] = ['admin', 'sales', 'finance', 'viewer'];
 
 export function UsersTable({ users, currentUserId }: { users: Row[]; currentUserId: string }) {
   const router = useRouter();
+  const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -38,7 +40,7 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        alert(j.error || 'Update failed');
+        toast.error('Update failed', j.error || 'Please try again.');
       }
       router.refresh();
     } finally {
@@ -55,7 +57,7 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
     try {
       const res = await fetch(`/api/admin/users/${id}/reset-password`, { method: 'POST' });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) { alert(j.error || 'Reset failed'); return; }
+      if (!res.ok) { toast.error('Reset failed', j.error || 'Please try again.'); return; }
       setResetResult({ email: j.email, password: j.temp_password });
     } finally {
       setBusy(null);
@@ -68,7 +70,7 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      alert('Copy failed — please select and copy manually.');
+      toast.error('Copy failed', 'Please select and copy the password manually.');
     }
   }
 
@@ -82,7 +84,7 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
       const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        alert(j.error || 'Remove failed');
+        toast.error('Remove failed', j.error || 'Please try again.');
       }
       router.refresh();
     } finally {

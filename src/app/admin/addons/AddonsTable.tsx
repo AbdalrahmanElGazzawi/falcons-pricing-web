@@ -4,9 +4,11 @@ import { useRouter } from 'next/navigation';
 import type { Addon } from '@/lib/types';
 import { fmtPct } from '@/lib/utils';
 import { Save, Plus } from 'lucide-react';
+import { useToast } from '@/components/Toast';
 
 export function AddonsTable({ addons }: { addons: Addon[] }) {
   const router = useRouter();
+  const toast = useToast();
   const [edits, setEdits] = useState<Record<number, Partial<Addon>>>({});
   const [saving, setSaving] = useState<number | string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
@@ -25,7 +27,7 @@ export function AddonsTable({ addons }: { addons: Addon[] }) {
         body: JSON.stringify(edits[id]),
       });
       if (!res.ok) {
-        const j = await res.json().catch(() => ({})); alert(j.error || 'Save failed');
+        const j = await res.json().catch(() => ({})); toast.error('Save failed', j.error);
       } else {
         setEdits(e => { const n = { ...e }; delete n[id]; return n; });
         router.refresh();
@@ -34,7 +36,7 @@ export function AddonsTable({ addons }: { addons: Addon[] }) {
   }
 
   async function create() {
-    if (!newRow.label) { alert('Label required'); return; }
+    if (!newRow.label) { toast.error('Label required'); return; }
     setSaving('new');
     try {
       const res = await fetch(`/api/admin/addons`, {
@@ -42,7 +44,7 @@ export function AddonsTable({ addons }: { addons: Addon[] }) {
         body: JSON.stringify(newRow),
       });
       if (!res.ok) {
-        const j = await res.json().catch(() => ({})); alert(j.error || 'Create failed');
+        const j = await res.json().catch(() => ({})); toast.error('Create failed', j.error);
       } else {
         setNewRow({ label: '', uplift_pct: 0.05, description: '', is_active: true });
         setNewOpen(false);

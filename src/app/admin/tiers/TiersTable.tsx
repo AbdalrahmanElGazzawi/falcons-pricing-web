@@ -4,9 +4,11 @@ import { useRouter } from 'next/navigation';
 import type { Tier } from '@/lib/types';
 import { fmtMoney, fmtPct, tierClass } from '@/lib/utils';
 import { Save } from 'lucide-react';
+import { useToast } from '@/components/Toast';
 
 export function TiersTable({ tiers }: { tiers: Tier[] }) {
   const router = useRouter();
+  const toast = useToast();
   const [edits, setEdits] = useState<Record<number, Partial<Tier>>>({});
   const [saving, setSaving] = useState<number | null>(null);
 
@@ -25,7 +27,7 @@ export function TiersTable({ tiers }: { tiers: Tier[] }) {
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        alert(j.error || 'Save failed');
+        toast.error('Save failed', j.error);
       } else {
         setEdits(e => { const n = { ...e }; delete n[id]; return n; });
         router.refresh();

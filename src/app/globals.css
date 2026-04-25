@@ -15,28 +15,99 @@ html, body {
 
 button { cursor: pointer; }
 
-/* card utility */
-.card { @apply bg-white rounded-xl border border-line shadow-card; }
-.card-p { @apply p-5; }
+/* ─── card utility ─────────────────────────────────────────────────────── */
+.card    { @apply bg-white rounded-xl border border-line shadow-card; }
+.card-p  { @apply p-5; }
 
-.btn { @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition; }
+/* ─── buttons ──────────────────────────────────────────────────────────── */
+.btn         { @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition; }
 .btn-primary { @apply bg-green text-white hover:bg-greenDark; }
-.btn-ghost { @apply bg-transparent border border-line text-ink hover:bg-bg; }
-.btn-navy  { @apply bg-navy text-white hover:bg-navyDark; }
-.btn-danger { @apply bg-danger text-white hover:opacity-90; }
+.btn-ghost   { @apply bg-transparent border border-line text-ink hover:bg-bg; }
+.btn-navy    { @apply bg-navy text-white hover:bg-navyDark; }
+.btn-danger  { @apply bg-danger text-white hover:opacity-90; }
 
+/* ─── form atoms ───────────────────────────────────────────────────────── */
 .input { @apply w-full px-3 py-2 rounded-lg border border-line bg-white text-sm text-ink placeholder:text-mute focus:outline-none focus:ring-2 focus:ring-green/40 focus:border-green; }
 .label { @apply text-xs font-medium uppercase tracking-wide text-label mb-1 block; }
 
-.chip { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium; }
-.chip-gold { @apply bg-gold/15 text-gold; }
-.chip-mint { @apply bg-green/15 text-greenDark; }
+/* ─── chips (status, badges) ───────────────────────────────────────────── */
+.chip       { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium; }
+.chip-gold  { @apply bg-gold/15 text-gold; }
+.chip-mint  { @apply bg-green/15 text-greenDark; }
 .chip-peach { @apply bg-amber/20 text-amber; }
-.chip-sky { @apply bg-blue-100 text-blue-700; }
-.chip-grey { @apply bg-slate-100 text-slate-600; }
+.chip-sky   { @apply bg-blue-100 text-blue-700; }
+.chip-grey  { @apply bg-slate-100 text-slate-600; }
 
+/* Status hierarchy: pending/rejected demand attention; closed states recede. */
+.status            { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide; }
+.status-strong     { @apply ring-1 ring-amber/40; }
+.status-loud       { @apply ring-1 ring-red-300; animation: pulse-soft 2.4s ease-in-out infinite; }
+.status-mute       { @apply opacity-70; }
+
+.status-draft            { @apply bg-slate-100 text-slate-600; }
+.status-pending_approval { @apply bg-amber/20 text-amber status-strong; }
+.status-approved         { @apply bg-green/15 text-greenDark; }
+.status-sent_to_client   { @apply bg-blue-100 text-blue-700; }
+.status-client_approved  { @apply bg-green/20 text-greenDark; }
+.status-client_rejected  { @apply bg-red-100 text-red-700 status-loud; }
+.status-closed_won       { @apply bg-green/15 text-greenDark status-mute; }
+.status-closed_lost      { @apply bg-slate-100 text-slate-500 status-mute; }
+
+@keyframes pulse-soft {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.45); }
+  50%      { box-shadow: 0 0 0 5px rgba(229, 57, 53, 0); }
+}
+
+/* ─── tier chips ───────────────────────────────────────────────────────── */
 .tier-S { @apply bg-gold/15 text-gold border-gold/40; }
 .tier-1 { @apply bg-green/15 text-greenDark border-green/40; }
 .tier-2 { @apply bg-amber/15 text-amber border-amber/40; }
 .tier-3 { @apply bg-blue-100 text-blue-700 border-blue-200; }
 .tier-4 { @apply bg-slate-100 text-slate-600 border-slate-200; }
+
+/* ─── data tables (zebra + sticky header + density) ────────────────────── */
+.data-table              { @apply w-full text-sm; }
+.data-table thead th     { @apply text-left text-[11px] text-label uppercase tracking-wider bg-bg sticky top-0 z-10 px-4 py-2.5 font-semibold border-b border-line; }
+.data-table tbody tr     { @apply border-b border-line transition-colors; }
+.data-table tbody tr:hover { @apply bg-bg; }
+.data-table tbody tr:nth-child(even) { background: rgba(247, 249, 251, 0.6); }
+.data-table tbody tr:nth-child(even):hover { background: #F7F9FB; }
+.data-table tbody td     { @apply px-4 py-2.5 align-middle; }
+
+.data-table.density-compact tbody td,
+.data-table.density-compact thead th { @apply py-1.5; }
+.data-table.density-comfortable tbody td,
+.data-table.density-comfortable thead th { @apply py-3; }
+.data-table.density-spacious tbody td,
+.data-table.density-spacious thead th { @apply py-4; }
+
+.row-actions { @apply opacity-0 transition-opacity; }
+.data-table tbody tr:hover .row-actions,
+.data-table tbody tr:focus-within .row-actions { @apply opacity-100; }
+
+/* ─── KPI / stat cards ─────────────────────────────────────────────────── */
+.kpi          { @apply card p-5 flex flex-col gap-1 relative overflow-hidden; }
+.kpi-label    { @apply text-[11px] uppercase tracking-wider text-label font-medium; }
+.kpi-value    { @apply text-3xl md:text-4xl font-extrabold text-ink leading-none tracking-tight; }
+.kpi-sub      { @apply text-xs text-mute; }
+.kpi-accent   { @apply absolute right-4 top-4 w-9 h-9 rounded-lg bg-green/10 text-greenDark grid place-items-center; }
+
+/* ─── breadcrumbs ──────────────────────────────────────────────────────── */
+.crumbs       { @apply flex items-center gap-1.5 text-xs text-label flex-wrap; }
+.crumbs a     { @apply hover:text-ink transition-colors; }
+.crumbs .sep  { @apply text-mute/60; }
+
+/* ─── animations ───────────────────────────────────────────────────────── */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.fade-in { animation: fade-in 160ms ease-out; }
+
+/* ─── modal overlay scaffolding ────────────────────────────────────────── */
+.modal-backdrop { @apply fixed inset-0 z-50 bg-navy/40 backdrop-blur-[2px] flex items-start md:items-center justify-center p-4 overflow-y-auto fade-in; }
+.modal-panel    { @apply w-full max-w-5xl my-8; }

@@ -446,42 +446,14 @@ export function QuoteBuilder({
       </div>
     ),
     notes_totals: (
-      <div className="grid grid-cols-3 gap-6">
-        <div className="card card-p col-span-2">
-          <label className="label">Internal notes</label>
-          <textarea
-            value={notes} onChange={e => setNotes(e.target.value)}
-            rows={4} className="input resize-none"
-            placeholder="Context, deal nuances, special terms…"
-          />
-        </div>
-
-        <div className="card card-p">
-          <div className="text-xs text-label uppercase tracking-wide mb-3">Quote totals</div>
-          <div className="space-y-2 text-sm">
-            <Row label="Subtotal" value={fmtMoney(computed.totals.subtotal, currency)} />
-            {addonsUpliftPct > 0 && (
-              <Row label={`Add-on uplift (+${fmtPct(addonsUpliftPct, 0)})`} value="baked into lines" muted />
-            )}
-            <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtMoney(computed.totals.vatAmount, currency)} />
-            <div className="border-t border-line pt-2 mt-2">
-              <Row label="TOTAL" value={fmtMoney(computed.totals.total, currency)} bold />
-            </div>
-          </div>
-
-          {error && <div className="text-xs text-red-600 mt-3">{error}</div>}
-
-          <div className="flex flex-col gap-2 mt-5">
-            <button onClick={() => save('draft')} disabled={saving}
-              className="btn btn-ghost w-full justify-center">
-              <Save size={14} /> {saving ? 'Saving…' : 'Save as draft'}
-            </button>
-            <button onClick={() => save('pending_approval')} disabled={saving}
-              className="btn btn-primary w-full justify-center">
-              {saving ? 'Saving…' : 'Submit for approval'}
-            </button>
-          </div>
-        </div>
+      <div className="card card-p">
+        <label className="label">Internal notes</label>
+        <textarea
+          value={notes} onChange={e => setNotes(e.target.value)}
+          rows={4} className="input resize-none"
+          placeholder="Context, deal nuances, special terms…"
+        />
+        <p className="text-xs text-mute mt-2">Save buttons + live total are in the rail on the right.</p>
       </div>
     ),
   };
@@ -526,37 +498,89 @@ export function QuoteBuilder({
         </div>
       )}
 
-      {/* Pricing wizard (always at top — not part of the reorder flow) */}
+      {/* Pricing wizard — fixed full-screen modal so the page below
+          doesn't shift when it opens. */}
       {wizard && (
-        <PricingWizard
-          mode={wizard.mode}
-          initial={wizard.mode === 'edit' ? wizard.initial : undefined}
-          players={players}
-          creators={creators}
-          tiers={tiers}
-          globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
-          currency={currency}
-          addonsUpliftPct={addonsUpliftPct}
-          onCancel={closeWizard}
-          onCommit={commitWizard}
-          onCommitAndAnother={wizard.mode === 'add' ? commitAndAnother : undefined}
-        />
+        <div
+          className="modal-backdrop"
+          onClick={(e) => { if (e.target === e.currentTarget) closeWizard(); }}
+        >
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-label="Pricing wizard">
+            <PricingWizard
+              mode={wizard.mode}
+              initial={wizard.mode === 'edit' ? wizard.initial : undefined}
+              players={players}
+              creators={creators}
+              tiers={tiers}
+              globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
+              currency={currency}
+              addonsUpliftPct={addonsUpliftPct}
+              onCancel={closeWizard}
+              onCommit={commitWizard}
+              onCommitAndAnother={wizard.mode === 'add' ? commitAndAnother : undefined}
+            />
+          </div>
+        </div>
       )}
 
-      {renderableOrder.map((id, idx) => (
-        <Section
-          key={id}
-          id={id}
-          title={SECTION_TITLES[id] ?? id}
-          editable={editingLayout}
-          isFirst={idx === 0}
-          isLast={idx === renderableOrder.length - 1}
-          onMoveUp={() => moveSection(id, -1)}
-          onMoveDown={() => moveSection(id, 1)}
-        >
-          {sectionNodes[id]}
-        </Section>
-      ))}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-6 items-start">
+        <div className="space-y-6 min-w-0">
+          {renderableOrder.map((id, idx) => (
+            <Section
+              key={id}
+              id={id}
+              title={SECTION_TITLES[id] ?? id}
+              editable={editingLayout}
+              isFirst={idx === 0}
+              isLast={idx === renderableOrder.length - 1}
+              onMoveUp={() => moveSection(id, -1)}
+              onMoveDown={() => moveSection(id, 1)}
+            >
+              {sectionNodes[id]}
+            </Section>
+          ))}
+        </div>
+
+        {/* Sticky live total rail */}
+        <aside className="lg:sticky lg:top-6">
+          <div className="card p-4 space-y-3">
+            <div className="kpi-label">Live total</div>
+            <div>
+              <div className="kpi-value">{fmtMoney(computed.totals.total, currency)}</div>
+              <div className="kpi-sub mt-1">
+                {computed.rows.length} line{computed.rows.length === 1 ? '' : 's'} · VAT {fmtPct(vatRate, 0)}
+              </div>
+            </div>
+            <div className="border-t border-line pt-3 space-y-1.5 text-xs">
+              <Row label="Subtotal" value={fmtMoney(computed.totals.subtotal, currency)} muted />
+              {addonsUpliftPct > 0 && (
+                <Row label={`Add-on uplift +${fmtPct(addonsUpliftPct, 0)}`} value="in lines" muted />
+              )}
+              <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtMoney(computed.totals.vatAmount, currency)} muted />
+            </div>
+            <button
+              onClick={openAddWizard}
+              className="btn btn-primary w-full justify-center text-sm"
+            >
+              <Plus size={14} /> Add deliverable
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => save('draft')} disabled={saving}
+                className="btn btn-ghost text-xs justify-center disabled:opacity-50">
+                <Save size={12} /> Draft
+              </button>
+              <button onClick={() => save('pending_approval')} disabled={saving}
+                className="btn btn-navy text-xs justify-center disabled:opacity-50">
+                {saving ? 'Saving…' : 'Submit'}
+              </button>
+            </div>
+            {error && <div className="text-xs text-red-600">{error}</div>}
+            {clientName.trim() === '' && (
+              <div className="text-[11px] text-amber">Client name required to save.</div>
+            )}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
