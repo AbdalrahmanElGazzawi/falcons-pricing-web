@@ -19,7 +19,7 @@ export default async function PlayersPage() {
     .order('nickname', { ascending: true });
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title="Player Rate Card"
         subtitle={`${players?.length ?? 0} active players — read-only for sales, admins can edit`}

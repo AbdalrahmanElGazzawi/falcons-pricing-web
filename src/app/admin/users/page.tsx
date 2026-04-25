@@ -18,7 +18,7 @@ export default async function UsersAdminPage() {
     .order('created_at', { ascending: true });
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title="Users & Access"
         subtitle="Invite team members and assign roles. Only admins can manage users."

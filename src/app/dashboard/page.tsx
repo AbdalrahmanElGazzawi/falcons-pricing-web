@@ -35,7 +35,7 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title={`Welcome, ${profile.full_name || profile.email.split('@')[0]}`}
         subtitle="Team Falcons · Pricing OS"

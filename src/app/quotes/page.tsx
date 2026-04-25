@@ -18,7 +18,7 @@ export default async function QuotesPage() {
     .limit(200);
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title="Quote Log"
         subtitle={`${quotes?.length ?? 0} quotes — most recent first`}

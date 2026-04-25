@@ -34,7 +34,7 @@ export default async function QuoteDetail({ params }: { params: { id: string } }
     .eq('quote_id', quote.id);
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <Link href="/quotes" className="inline-flex items-center gap-1 text-sm text-label hover:text-ink mb-3">
         <ArrowLeft size={14} /> Quote Log
       </Link>

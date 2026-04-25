@@ -12,7 +12,7 @@ export default async function TiersAdmin() {
   const { data: tiers } = await supabase.from('tiers').select('*').order('sort_order');
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title="Tier Progression"
         subtitle="Floor share, fee bands, and promotion / demotion triggers per tier."

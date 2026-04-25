@@ -14,7 +14,7 @@ export default async function NewPlayer() {
   const { data: tiers } = await supabase.from('tiers').select('code, label').order('sort_order');
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <Link href="/roster/players" className="inline-flex items-center gap-1 text-sm text-label hover:text-ink mb-3">
         <ArrowLeft size={14} /> Players
       </Link>

@@ -12,7 +12,7 @@ export default async function AddonsAdmin() {
   const { data: addons } = await supabase.from('addons').select('*').order('sort_order');
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title="Add-on Rights Packages"
         subtitle="Configure rights uplifts that get applied per-quote line."

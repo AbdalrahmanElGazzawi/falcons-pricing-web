@@ -14,7 +14,7 @@ export default async function AssumptionsAdmin() {
     .order('area', { ascending: true });
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title="Assumptions Log"
         subtitle="Industry-reasonable defaults baked into the engine. Re-evaluate on the listed triggers."

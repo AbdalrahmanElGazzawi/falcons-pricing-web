@@ -43,7 +43,7 @@ export default async function AuditLogPage({
   );
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title="Audit Log"
         subtitle="Every admin action and AI-initiated change. Most recent first."

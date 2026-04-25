@@ -19,7 +19,7 @@ export default async function CreatorsPage() {
     .order('nickname', { ascending: true });
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title="Creator Rate Card"
         subtitle={`${creators?.length ?? 0} active creators — read-only for sales, admins can edit`}

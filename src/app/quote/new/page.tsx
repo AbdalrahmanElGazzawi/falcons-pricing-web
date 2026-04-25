@@ -27,7 +27,7 @@ export default async function NewQuotePage() {
   ]);
 
   return (
-    <Shell role={profile.role} email={profile.email}>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title="New Quote"
         subtitle="Build a campaign quote with the live 9-axis pricing engine"

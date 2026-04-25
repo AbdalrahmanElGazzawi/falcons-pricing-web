@@ -23,13 +23,30 @@ const NAV = (role: UserRole, email: string) => [
   ] : []),
 ];
 
+/**
+ * Pick a display username with graceful fallback:
+ *   1. full_name from profile if present
+ *   2. otherwise the email prefix (before the @), tidied up
+ *   3. otherwise the literal 'User'
+ * The email itself is intentionally NOT shown anywhere in the sidebar.
+ */
+function displayName(fullName: string | null | undefined, email: string): string {
+  const trimmed = (fullName ?? '').trim();
+  if (trimmed) return trimmed;
+  const prefix = (email.split('@')[0] ?? '').replace(/[._-]+/g, ' ').trim();
+  if (prefix) return prefix;
+  return 'User';
+}
+
 export function Shell({
   role,
   email,
+  fullName,
   children,
 }: {
   role: UserRole;
   email: string;
+  fullName?: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -42,6 +59,8 @@ export function Shell({
   }
 
   const nav = NAV(role, email);
+  const username = displayName(fullName, email);
+  const superAdmin = isSuperAdminEmail(email);
 
   return (
     <div className="min-h-screen flex">
@@ -77,8 +96,20 @@ export function Shell({
 
         <div className="p-3 border-t border-white/10">
           <div className="px-3 py-2 text-xs">
-            <div className="text-white/90 font-medium truncate">{email}</div>
-            <div className="text-white/50 capitalize">{role}</div>
+            <div
+              className="text-white/90 font-medium truncate capitalize"
+              title={username}
+            >
+              {username}
+            </div>
+            <div className="text-white/50 capitalize flex items-center gap-1.5">
+              <span>{role}</span>
+              {superAdmin && (
+                <span className="px-1.5 py-0.5 rounded-full bg-green/20 text-green text-[9px] font-semibold uppercase tracking-wider">
+                  Super
+                </span>
+              )}
+            </div>
           </div>
           <Link href="/account/password"
             className="mt-2 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white">

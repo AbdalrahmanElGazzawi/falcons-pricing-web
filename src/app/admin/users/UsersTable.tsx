@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserPlus, Trash2, KeyRound, Copy, Check as CheckIcon } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
+import { isSuperAdminEmail } from '@/lib/super-admin';
 
 type Row = {
   id: string;
@@ -190,6 +191,7 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
           <tbody>
             {users.map(u => {
               const isSelf = u.id === currentUserId;
+              const superAdmin = isSuperAdminEmail(u.email);
               return (
                 <tr key={u.id} className="border-t border-line">
                   <td className="px-4 py-3 font-medium text-ink">
@@ -197,14 +199,24 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
                   </td>
                   <td className="px-4 py-3 text-label">{u.full_name || '—'}</td>
                   <td className="px-4 py-3">
-                    <select
-                      value={u.role}
-                      disabled={isSelf || busy === u.id}
-                      onChange={e => patch(u.id, { role: e.target.value })}
-                      className="input py-1 px-2 text-sm w-32"
-                    >
-                      {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                    <div className="flex flex-col gap-1">
+                      <select
+                        value={u.role}
+                        disabled={isSelf || busy === u.id}
+                        onChange={e => patch(u.id, { role: e.target.value })}
+                        className="input py-1 px-2 text-sm w-32"
+                      >
+                        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      {superAdmin && (
+                        <span
+                          className="chip chip-mint text-[10px] uppercase tracking-wider w-fit"
+                          title="Super admin — hardcoded by email. Only this user can edit page layouts."
+                        >
+                          Super admin
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <button
