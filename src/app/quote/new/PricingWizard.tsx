@@ -373,7 +373,7 @@ export function PricingWizard({
       </div>
 
       {/* Step body */}
-      <div className="p-5 md:p-6">
+      <div className="p-4 sm:p-5 md:p-6">
         {state.step === 1 && (
           <StepType
             onPick={(kind) => patch({ talent_type: kind, step: 2 })}

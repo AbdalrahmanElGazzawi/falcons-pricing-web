@@ -7,6 +7,12 @@ export const metadata: Metadata = {
   description: 'Internal talent pricing engine',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#0B2340',
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">

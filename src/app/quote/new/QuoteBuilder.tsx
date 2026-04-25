@@ -259,7 +259,7 @@ export function QuoteBuilder({
     header: (
       <div className="card card-p">
         <h2 className="font-semibold mb-4">Quote header</h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="label">Client name *</label>
             <input value={clientName} onChange={e => setClientName(e.target.value)} className="input" placeholder="e.g. STC Play" />
@@ -295,7 +295,7 @@ export function QuoteBuilder({
       <div className="card card-p">
         <h2 className="font-semibold mb-1">Campaign-level pricing axes</h2>
         <p className="text-xs text-label mb-4">These apply to every line by default. Override any axis on a per-line basis from the wizard.</p>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <AxisSelect label="Content type" value={ctype} setValue={setCtype}
             options={AXIS_OPTIONS.contentType.map(o => ({ label: o.label, val: o.factor }))} />
           <AxisSelect label="Engagement" value={eng} setValue={setEng}
@@ -324,7 +324,7 @@ export function QuoteBuilder({
     addons: (
       <div className="card card-p">
         <h2 className="font-semibold mb-4">Add-on rights packages</h2>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {addons.map(a => {
             const checked = addonIds.has(a.id);
             return (
@@ -517,11 +517,11 @@ export function QuoteBuilder({
       )}
 
       {/* Build / Preview tab strip */}
-      <div className="flex items-center gap-1 border-b border-line">
+      <div className="flex items-center gap-1 border-b border-line overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
         <TabButton active={view === 'build'} onClick={() => setView('build')}>Build</TabButton>
         <TabButton active={view === 'preview'} onClick={() => setView('preview')}>Preview</TabButton>
         <TabButton active={view === 'reference'} onClick={() => setView('reference')}>Reference</TabButton>
-        <div className="ml-auto text-xs text-label pb-2">
+        <div className="ml-auto text-xs text-label pb-2 hidden sm:block whitespace-nowrap">
           {view === 'preview'
             ? 'Read-only preview of the saved quote'
             : view === 'reference'

@@ -111,3 +111,19 @@ button { cursor: pointer; }
 /* ─── modal overlay scaffolding ────────────────────────────────────────── */
 .modal-backdrop { @apply fixed inset-0 z-50 bg-navy/40 backdrop-blur-[2px] flex items-start md:items-center justify-center p-4 overflow-y-auto fade-in; }
 .modal-panel    { @apply w-full max-w-5xl my-8; }
+
+/* ─── mobile polish ────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* slightly larger tap targets */
+  .btn { @apply py-2.5; min-height: 40px; }
+  .input { min-height: 40px; }
+  /* tighten card padding on phones so more content fits */
+  .card-p { @apply p-4; }
+}
+
+/* sticky modal backdrop must work on iOS Safari */
+.modal-backdrop { -webkit-overflow-scrolling: touch; }
+
+/* horizontal scroll hint for tables on narrow screens */
+.data-table { min-width: 540px; }
+
