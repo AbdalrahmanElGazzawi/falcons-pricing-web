@@ -33,9 +33,15 @@ export interface Player {
   rate_ig_reel: number;
   rate_ig_static: number;
   rate_ig_story: number;
+  rate_ig_repost: number;
+  rate_ig_share: number;
   rate_tiktok_video: number;
+  rate_tiktok_repost: number;
+  rate_tiktok_share: number;
   rate_yt_short: number;
   rate_x_post: number;
+  rate_x_repost: number;
+  rate_x_share: number;
   rate_fb_post: number;
   rate_twitch_stream: number;
   rate_twitch_integ: number;
@@ -180,9 +186,15 @@ export const PLAYER_PLATFORMS = [
   { key: 'rate_ig_reel',       label: 'IG Reel',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_ig_static',     label: 'IG Static',          group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_ig_story',      label: 'IG Story',           group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_ig_repost',     label: 'IG Repost',          group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_ig_share',      label: 'IG Share to Story',  group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_tiktok_video',  label: 'TikTok Video',       group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_tiktok_repost', label: 'TikTok Repost',      group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_tiktok_share',  label: 'TikTok Stitch/Duet', group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_yt_short',      label: 'YT Short',           group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_x_post',        label: 'X Post',             group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_x_repost',      label: 'X Retweet',          group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_x_share',       label: 'X Quote Tweet',      group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_fb_post',       label: 'FB Post / Video',    group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   // Live & Stream
   { key: 'rate_twitch_stream', label: 'Twitch Stream 2h',   group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
