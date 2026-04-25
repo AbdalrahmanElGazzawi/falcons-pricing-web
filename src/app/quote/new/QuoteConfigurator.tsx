@@ -9,8 +9,7 @@ import { computeLine, type MeasurementConfidence } from '@/lib/pricing';
 import { fmtMoney, fmtPct, tierClass, fmtCurrency } from '@/lib/utils';
 import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
-  type Player, type Creator, type Tier,
-} from '@/lib/types';
+  type Player, type Creator, type Tier, type Addon} from '@/lib/types';
 import { newUid, type LineDraft } from './line-draft';
 import { Avatar } from '@/components/Avatar';
 
@@ -29,12 +28,13 @@ type Globals = {
 type RowSel = { qty: number; manualRate?: number };
 
 export function QuoteConfigurator({
-  players, creators, tiers, globals, currency, usdRate, addonsUpliftPct, scrollHook,
+  players, creators, tiers, addons, globals, currency, usdRate, addonsUpliftPct, scrollHook,
   initialEdit, onCommit, onCancelEdit,
 }: {
   players: Player[];
   creators: Creator[];
   tiers: Tier[];
+  addons: Addon[];
   globals: Globals;
   currency: string;
   usdRate?: number;
@@ -75,6 +75,26 @@ export function QuoteConfigurator({
     o_lang:  initialEdit?.o_lang  ?? null,
     o_auth:  initialEdit?.o_auth  ?? null,
   });
+
+  // Per-line addon snapshot — each line carries its own rights package.
+  const [lineAddonMonths, setLineAddonMonths] = useState<Record<number, number>>(
+    initialEdit?.addon_months ?? {}
+  );
+  const lineAddonsUpliftPct = useMemo(() => {
+    return Object.entries(lineAddonMonths).reduce((s, [idStr, months]) => {
+      const a = addons.find(x => x.id === Number(idStr));
+      return s + (a?.uplift_pct ?? 0) * (months || 1);
+    }, 0);
+  }, [lineAddonMonths, addons]);
+  const toggleLineAddon = (id: number) => setLineAddonMonths(s => {
+    const n = { ...s };
+    if (id in n) delete n[id]; else n[id] = 1;
+    return n;
+  });
+  const setLineAddonMonth = (id: number, months: number) => {
+    const m = Math.max(1, Math.min(60, Math.round(months || 1)));
+    setLineAddonMonths(s => ({ ...s, [id]: m }));
+  };
 
   // ── Reset picks when changing talent (unless we're editing)
   useEffect(() => {
@@ -230,6 +250,7 @@ export function QuoteConfigurator({
         floorShare,
         o_ctype: overrides.o_ctype, o_eng: overrides.o_eng, o_aud: overrides.o_aud,
         o_seas: overrides.o_seas, o_lang: overrides.o_lang, o_auth: overrides.o_auth,
+        addon_months: { ...lineAddonMonths },
       };
     });
     onCommit(drafts);
@@ -452,6 +473,56 @@ export function QuoteConfigurator({
               </div>
 
               {/* Quick axis tweaks */}
+              {/* Per-line rights & add-ons — applies to THIS talent's deliverables only */}
+              {addons.length > 0 && (
+                <div className="rounded-lg border border-line bg-bg/40 p-3 mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[11px] uppercase tracking-wider text-label font-semibold">
+                      Rights &amp; add-ons for this talent <span className="text-mute font-normal normal-case ml-1.5">— per-month rate × duration</span>
+                    </div>
+                    {lineAddonsUpliftPct > 0 && (
+                      <div className="text-xs text-greenDark font-semibold">+{Math.round(lineAddonsUpliftPct * 100)}% total</div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {addons.map(a => {
+                      const checked = a.id in lineAddonMonths;
+                      const months = lineAddonMonths[a.id] ?? 1;
+                      const totalUplift = (a.uplift_pct ?? 0) * months;
+                      return (
+                        <div key={a.id} className={[
+                          'p-2 rounded-lg border transition',
+                          checked ? 'border-green bg-green/5' : 'border-line hover:border-mute',
+                        ].join(' ')}>
+                          <button type="button" onClick={() => toggleLineAddon(a.id)} className="w-full text-left">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={['text-sm font-medium', checked ? 'text-greenDark' : 'text-ink'].join(' ')}>{a.label}</span>
+                              <span className="text-[11px] text-green font-semibold">+{Math.round((a.uplift_pct ?? 0) * 100)}%/mo</span>
+                            </div>
+                            {a.description && <div className="text-[11px] text-mute mt-0.5 leading-snug">{a.description}</div>}
+                          </button>
+                          {checked && (
+                            <div className="mt-2 pt-2 border-t border-green/20 flex items-center justify-between gap-2">
+                              <span className="text-[10px] uppercase tracking-wider text-label font-semibold">Months</span>
+                              <div className="flex items-center gap-1">
+                                <button type="button" onClick={() => setLineAddonMonth(a.id, months - 1)} disabled={months <= 1}
+                                  className="w-6 h-6 rounded border border-line text-label hover:bg-bg disabled:opacity-40 text-sm leading-none">−</button>
+                                <input type="number" min={1} max={60} value={months}
+                                  onChange={e => setLineAddonMonth(a.id, parseInt(e.target.value, 10) || 1)}
+                                  className="w-10 text-center text-xs input !py-0.5 !px-1" />
+                                <button type="button" onClick={() => setLineAddonMonth(a.id, months + 1)} disabled={months >= 60}
+                                  className="w-6 h-6 rounded border border-line text-label hover:bg-bg disabled:opacity-40 text-sm leading-none">+</button>
+                              </div>
+                              <span className="text-[11px] text-greenDark font-semibold tabular-nums">+{Math.round(totalUplift * 100)}%</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <details className="rounded-lg border border-line bg-bg/40 group">
                 <summary className="cursor-pointer px-4 py-2.5 flex items-center justify-between text-sm font-medium text-ink select-none">
                   <span>Axis overrides for this player <span className="text-mute font-normal">(optional)</span></span>
@@ -463,7 +534,6 @@ export function QuoteConfigurator({
                     <AxisRow label="Engagement" hint="Talent's last-90-day engagement rate. Best predictor of campaign ROI." value={overrides.o_eng} globalVal={globals.eng} onChange={v => setOverrides(o => ({ ...o, o_eng: v }))} options={[0.70,0.90,1.00,1.20,1.40,1.60]} labels={['<2%','2–4%','4–6%','6–8%','8–10%','>10%']} />
                     <AxisRow label="Audience"   hint="How well the audience matches the brand. MENA/Saudi unlocks +30% premium." value={overrides.o_aud} globalVal={globals.aud} onChange={v => setOverrides(o => ({ ...o, o_aud: v }))} options={[0.85,1.00,1.20,1.30,1.40,1.50]} labels={['Generic','Gaming-adj.','Core','MENA','Esports','Elite']} />
                     <AxisRow label="Seasonality" hint="Campaign window. Ramadan + Worlds = peak demand." value={overrides.o_seas} globalVal={globals.seas} onChange={v => setOverrides(o => ({ ...o, o_seas: v }))} options={[0.80,1.00,1.20,1.25,1.30,1.35,1.40,1.50]} labels={['Off','Reg','Q4','Major','Launch','Ramadan','Worlds','Mega']} />
-                    <AxisRow label="Content type" hint="Already set by the toggle above. Override here if you need an unusual mix." value={overrides.o_ctype} globalVal={globals.ctype} onChange={v => setOverrides(o => ({ ...o, o_ctype: v }))} options={[0.85,1.00,1.15]} labels={['Organic','Integrated','Sponsored']} />
                     <AxisRow label="Language"   hint="Bilingual reaches both audiences in one activation — highest leverage." value={overrides.o_lang} globalVal={globals.lang} onChange={v => setOverrides(o => ({ ...o, o_lang: v }))} options={[1.00,1.05,1.15]} labels={['EN','AR','EN+AR']} />
                     <AxisRow label="Authority"  hint="Championship credentials. Pro status = price floor protection." value={overrides.o_auth} globalVal={globals.auth} onChange={v => setOverrides(o => ({ ...o, o_auth: v }))} options={[1.00,1.15,1.30,1.50]} labels={['Normal','Proven','Elite','Star']} />
                   </div>

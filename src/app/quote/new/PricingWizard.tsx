@@ -187,6 +187,7 @@ export function PricingWizard({
         floorShare: tier?.floor_share ?? selectedPlayer.floor_share ?? 0.5,
         o_ctype: state.o_ctype, o_eng: state.o_eng, o_aud: state.o_aud,
         o_seas: state.o_seas, o_lang: state.o_lang, o_auth: state.o_auth,
+        addon_months: initial?.addon_months ?? {},
       };
     }
     if (state.talent_type === 'creator' && selectedCreator) {
@@ -206,6 +207,7 @@ export function PricingWizard({
         floorShare: tier?.floor_share ?? 0.5,
         o_ctype: state.o_ctype, o_eng: state.o_eng, o_aud: state.o_aud,
         o_seas: state.o_seas, o_lang: state.o_lang, o_auth: state.o_auth,
+        addon_months: initial?.addon_months ?? {},
       };
     }
     return null;

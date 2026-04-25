@@ -144,6 +144,7 @@ export function Calculator({
           players={players}
           creators={creators}
           tiers={tiers}
+          addons={addons}
           globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
           currency={currency}
           usdRate={usdRate}

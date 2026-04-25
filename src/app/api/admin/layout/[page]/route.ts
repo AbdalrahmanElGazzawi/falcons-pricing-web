@@ -12,7 +12,7 @@ const ALLOWED_PAGES = new Set([
 // Whitelist of legal section ids per page so a malicious payload can't inject
 // arbitrary strings into our render switch.
 const ALLOWED_SECTIONS: Record<string, Set<string>> = {
-  'quote/new': new Set(['header', 'globals', 'addons', 'lines', 'notes_totals']),
+  'quote/new': new Set(['header', 'brand_brief', 'globals', 'addons', 'lines', 'notes_totals']),
   'dashboard': new Set(['hero', 'owned_media', 'a_team', 'brain_trust', 'charts', 'inventory']),
 };
 

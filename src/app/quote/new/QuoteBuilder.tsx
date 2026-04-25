@@ -15,6 +15,7 @@ import { Section } from '@/components/Section';
 import { PricingReference } from './PricingReference';
 
 const SECTION_TITLES: Record<string, string> = {
+  brand_brief: 'Brand brief',
   header: 'Quote header',
   globals: 'Campaign axes',
   addons: 'Add-ons',
@@ -48,7 +49,7 @@ export function QuoteBuilder({
 
   // ── Layout edit mode (super-admin only)
   const [sectionOrder, setSectionOrder] = useState<string[]>(
-    initialSectionOrder.includes('configurator') ? initialSectionOrder : ['header','globals','configurator','lines','notes_totals']
+    initialSectionOrder.includes('configurator') ? initialSectionOrder : ['header','brand_brief','globals','configurator','lines','notes_totals']
   );
   const [editingLayout, setEditingLayout] = useState(false);
   const [layoutBusy, setLayoutBusy] = useState(false);
@@ -90,6 +91,14 @@ export function QuoteBuilder({
 
   // ── Quote header
   const [preparedByName, setPreparedByName] = useState(ownerName ?? '');
+
+  // Brand brief — descriptive context, not pricing-influencing
+  const [demoTarget, setDemoTarget] = useState<string[]>([]);
+  const [genderSkew, setGenderSkew] = useState<'male' | 'female' | 'mixed'>('mixed');
+  const [region, setRegion] = useState<string>('KSA');
+  const [exclusivity, setExclusivity] = useState(false);
+  const [exclusivityMonths, setExclusivityMonths] = useState(0);
+  const [kpiFocus, setKpiFocus] = useState<string>('');
   const [preparedByEmail, setPreparedByEmail] = useState(ownerEmail ?? '');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -160,6 +169,12 @@ export function QuoteBuilder({
         if (typeof d.usdRate === 'number') setUsdRate(d.usdRate);
         if (d.notes) setNotes(d.notes);
         if (d.preparedByName) setPreparedByName(d.preparedByName);
+        if (Array.isArray(d.demoTarget)) setDemoTarget(d.demoTarget);
+        if (d.genderSkew) setGenderSkew(d.genderSkew);
+        if (d.region) setRegion(d.region);
+        if (typeof d.exclusivity === 'boolean') setExclusivity(d.exclusivity);
+        if (typeof d.exclusivityMonths === 'number') setExclusivityMonths(d.exclusivityMonths);
+        if (d.kpiFocus) setKpiFocus(d.kpiFocus);
         if (d.preparedByEmail) setPreparedByEmail(d.preparedByEmail);
         if (typeof d.eng === 'number') setEng(d.eng);
         if (typeof d.aud === 'number') setAud(d.aud);
@@ -190,13 +205,14 @@ export function QuoteBuilder({
       const draft = {
         clientName, clientEmail, campaign, currency, vatRate, usdRate, notes,
         preparedByName, preparedByEmail,
+        demoTarget, genderSkew, region, exclusivity, exclusivityMonths, kpiFocus,
         eng, aud, seas, ctype, lang, auth, obj, conf,
         addonMonths,
         lines,
       };
       window.localStorage.setItem(LS_KEY, JSON.stringify(draft));
     } catch {}
-  }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, usdRate, notes, preparedByName, preparedByEmail,
+  }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, usdRate, notes, preparedByName, preparedByEmail, demoTarget, genderSkew, region, exclusivity, exclusivityMonths, kpiFocus,
       eng, aud, seas, ctype, lang, auth, obj, conf, addonMonths, lines]);
 
   function openAddWizard() { setWizard({ mode: 'add' }); }
@@ -256,7 +272,13 @@ export function QuoteBuilder({
         auth: l.o_auth ?? auth,
         obj, conf,
         floorShare: l.floorShare,
-        rightsPct: addonsUpliftPct,
+        rightsPct: (() => {
+          const am = (l as any).addon_months || {};
+          return Object.entries(am).reduce((s, [idStr, mo]) => {
+            const a = addons.find(x => x.id === Number(idStr));
+            return s + (a?.uplift_pct ?? 0) * (Number(mo) || 1);
+          }, 0);
+        })(),
         qty: l.qty,
       });
       return { ...l, ...r };
@@ -285,6 +307,12 @@ export function QuoteBuilder({
             campaign: campaign.trim() || null,
             owner_email: ownerEmail,
             prepared_by_name: preparedByName.trim() || null,
+            demo_target: demoTarget,
+            gender_skew: genderSkew,
+            region: region,
+            exclusivity: exclusivity,
+            exclusivity_months: exclusivityMonths,
+            kpi_focus: kpiFocus || null,
             prepared_by_email: preparedByEmail.trim() || null,
             currency,
             vat_rate: vatRate,
@@ -315,6 +343,14 @@ export function QuoteBuilder({
             line_seasonality: r.o_seas,
             line_language: r.o_lang,
             line_authority: r.o_auth,
+            addon_months: (r as any).addon_months || {},
+            rights_pct: (() => {
+              const am = (r as any).addon_months || {};
+              return Object.entries(am).reduce((s: number, [idStr, mo]) => {
+                const a = addons.find(x => x.id === Number(idStr));
+                return s + (a?.uplift_pct ?? 0) * (Number(mo) || 1);
+              }, 0);
+            })(),
             social_price: r.socialPrice,
             floor_price: r.floorPrice,
             final_unit: r.finalUnit,
@@ -487,13 +523,105 @@ export function QuoteBuilder({
         )}
       </div>
     ),
+    brand_brief: (
+      <div className="card card-p">
+        <h2 className="font-semibold mb-1">Brand brief</h2>
+        <p className="text-xs text-mute mb-4">Captures the discovery basics every brand asks. Doesn&apos;t change pricing math — appears on the PDF and informs axis suggestions.</p>
+
+        {/* Demographic target */}
+        <div className="mb-4">
+          <label className="label">Target demographic</label>
+          <div className="flex flex-wrap gap-2">
+            {['13-17','18-24','25-34','35-44','45+'].map(b => {
+              const checked = demoTarget.includes(b);
+              return (
+                <button key={b} type="button"
+                  onClick={() => setDemoTarget(s => checked ? s.filter(x => x !== b) : [...s, b])}
+                  className={[
+                    'px-3 py-1.5 rounded-full text-xs font-medium border transition',
+                    checked ? 'bg-green text-white border-green' : 'bg-white text-label border-line hover:border-green',
+                  ].join(' ')}>
+                  {b}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-mute mt-1">Pick all that apply. Brands always ask &ldquo;who&apos;s the audience?&rdquo;</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          {/* Gender skew */}
+          <div>
+            <label className="label">Gender skew</label>
+            <div className="grid grid-cols-3 gap-2">
+              {([['male','Male'],['mixed','Mixed'],['female','Female']] as const).map(([v, lbl]) => (
+                <button key={v} type="button" onClick={() => setGenderSkew(v)}
+                  className={[
+                    'px-2 py-1.5 rounded text-xs font-medium border transition',
+                    genderSkew === v ? 'bg-navy text-white border-navy' : 'bg-white text-label border-line hover:border-mute',
+                  ].join(' ')}>{lbl}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Region */}
+          <div>
+            <label className="label">Region / market</label>
+            <select value={region} onChange={e => setRegion(e.target.value)} className="input">
+              <option value="KSA">KSA only</option>
+              <option value="GCC">GCC</option>
+              <option value="MENA">MENA</option>
+              <option value="MENA+SEA">MENA + SEA</option>
+              <option value="Global">Global</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          {/* KPI focus */}
+          <div>
+            <label className="label">Primary KPI</label>
+            <select value={kpiFocus} onChange={e => setKpiFocus(e.target.value)} className="input">
+              <option value="">— Select objective —</option>
+              <option value="awareness">Awareness — reach + impressions</option>
+              <option value="consideration">Consideration — search lift + saves</option>
+              <option value="conversion">Conversion — clicks + sales</option>
+              <option value="authority">Authority — credibility + association</option>
+            </select>
+            <p className="text-[10px] text-mute mt-1">Brands rarely tell you this directly. Ask: &ldquo;what does success look like?&rdquo;</p>
+          </div>
+
+          {/* Exclusivity */}
+          <div>
+            <label className="label">Category exclusivity</label>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={exclusivity} onChange={e => setExclusivity(e.target.checked)} />
+                <span className="text-sm">Required</span>
+              </label>
+              {exclusivity && (
+                <div className="flex items-center gap-1 ml-3">
+                  <input type="number" min={1} max={24} value={exclusivityMonths || 1}
+                    onChange={e => setExclusivityMonths(Math.max(1, Math.min(24, parseInt(e.target.value, 10) || 1)))}
+                    className="input !py-1 !px-2 w-16 text-sm" />
+                  <span className="text-xs text-label">months</span>
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] text-mute mt-1">No competing brand campaigns during exclusivity window. Drives premium.</p>
+          </div>
+        </div>
+      </div>
+    ),
     configurator: (
       <QuoteConfigurator
         players={players}
         creators={creators}
         tiers={tiers}
+        addons={addons}
         globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
         currency={currency}
+        usdRate={usdRate}
         addonsUpliftPct={addonsUpliftPct}
         initialEdit={wizard?.mode === 'edit' ? wizard.initial : null}
         onCommit={(drafts) => {
@@ -657,6 +785,7 @@ export function QuoteBuilder({
               if (!confirm('Discard the saved draft and start fresh?')) return;
               try { window.localStorage.removeItem(LS_KEY); } catch {}
               setLines([]); setClientName(''); setClientEmail(''); setCampaign(''); setNotes('');
+              setDemoTarget([]); setGenderSkew('mixed'); setRegion('KSA'); setExclusivity(false); setExclusivityMonths(0); setKpiFocus('');
               setAddonMonths({}); setDraftFound(false);
             }}
             className="text-xs underline hover:text-ink">Discard draft</button>
@@ -686,7 +815,7 @@ export function QuoteBuilder({
           {/* ① CAMPAIGN — header / globals (addons live in Build) */}
           <div className={view === 'campaign' ? '' : 'hidden'}>
           {(() => {
-            const ids = sectionOrder.filter(id => ['header','globals'].includes(id));
+            const ids = sectionOrder.filter(id => ['header','brand_brief','globals'].includes(id));
             return (
               <div className="space-y-6">
                 {ids.map((id, idx) => (
@@ -713,60 +842,6 @@ export function QuoteBuilder({
 
           {/* ② BUILD — configurator hero + compact lines list */}
           <div className={view === 'build' ? 'space-y-6' : 'hidden'}>
-              {/* Compact add-on pill row — adjust rights while building */}
-              <div className="card card-p">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-[11px] uppercase tracking-wider text-label font-semibold">
-                    Rights & add-ons <span className="text-mute font-normal normal-case ml-1.5">— per-month rate, multiplied by your duration</span>
-                  </div>
-                  {addonsUpliftPct > 0 && (
-                    <div className="text-xs text-greenDark font-semibold">+{fmtPct(addonsUpliftPct, 0)} total</div>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {addons.map(a => {
-                    const checked = addonIds.has(a.id);
-                    const months = addonMonths[a.id] ?? 1;
-                    const totalUplift = (a.uplift_pct ?? 0) * months;
-                    return (
-                      <div
-                        key={a.id}
-                        className={[
-                          'p-2.5 rounded-lg border transition',
-                          checked ? 'border-green bg-green/5' : 'border-line hover:border-mute',
-                        ].join(' ')}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => toggleAddon(a.id)}
-                          className="w-full text-left"
-                        >
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={['text-sm font-medium', checked ? 'text-greenDark' : 'text-ink'].join(' ')}>{a.label}</span>
-                            <span className="text-[11px] text-green font-semibold">+{fmtPct(a.uplift_pct, 0)}/mo</span>
-                          </div>
-                          {a.description && <div className="text-[11px] text-mute mt-0.5 leading-snug">{a.description}</div>}
-                        </button>
-                        {checked && (
-                          <div className="mt-2 pt-2 border-t border-green/20 flex items-center justify-between gap-2">
-                            <span className="text-[10px] uppercase tracking-wider text-label font-semibold">Months</span>
-                            <div className="flex items-center gap-1">
-                              <button type="button" onClick={() => setAddonMonth(a.id, months - 1)} disabled={months <= 1}
-                                className="w-6 h-6 rounded border border-line text-label hover:bg-bg disabled:opacity-40 text-sm leading-none">−</button>
-                              <input type="number" min={1} max={60} value={months}
-                                onChange={e => setAddonMonth(a.id, parseInt(e.target.value, 10) || 1)}
-                                className="w-10 text-center text-xs input !py-0.5 !px-1" />
-                              <button type="button" onClick={() => setAddonMonth(a.id, months + 1)} disabled={months >= 60}
-                                className="w-6 h-6 rounded border border-line text-label hover:bg-bg disabled:opacity-40 text-sm leading-none">+</button>
-                            </div>
-                            <span className="text-[11px] text-greenDark font-semibold tabular-nums">+{fmtPct(totalUplift, 0)}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
               {sectionNodes.configurator}
               {sectionNodes.lines}
               <div className="text-xs text-mute text-center pt-2">
