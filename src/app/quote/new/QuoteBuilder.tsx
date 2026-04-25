@@ -101,6 +101,10 @@ export function QuoteBuilder({
   const [exclusivity, setExclusivity] = useState(false);
   const [exclusivityMonths, setExclusivityMonths] = useState(0);
   const [kpiFocus, setKpiFocus] = useState<string>('');
+
+  // Track which axes have been auto-suggested by the Brand Brief — so we can show
+  // the small 'auto' badge and let the rep override at any time.
+  const [autoAxes, setAutoAxes] = useState<Set<'lang'|'obj'>>(new Set());
   const [preparedByEmail, setPreparedByEmail] = useState(ownerEmail ?? '');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -199,6 +203,39 @@ export function QuoteBuilder({
     setHydrated(true);
   }, []);
 
+
+
+
+  // ── Brief → axis auto-fill. The brand brief is the discovery layer the
+  // rep fills naturally; we derive sensible defaults for the multipliers,
+  // marked with an 'auto' badge so reps can override.
+  useEffect(() => {
+    if (!kpiFocus) return;
+    const map: Record<string, number> = {
+      awareness:     0.20,
+      consideration: 0.50,
+      engagement:    0.55,
+      conversion:    0.70,
+      authority:     1.00,
+    };
+    const w = map[kpiFocus];
+    if (typeof w === 'number') {
+      setObj(w);
+      setAutoAxes(prev => new Set(prev).add('obj'));
+    }
+  }, [kpiFocus]);
+
+  useEffect(() => {
+    // Region → language axis suggestion. KSA = Arabic; GCC/MENA = Bilingual;
+    // EU/Global = English.
+    let f = 1.00;
+    if (region === 'KSA') f = 1.10;
+    else if (region === 'GCC' || region === 'MENA') f = 1.20;
+    else if (region === 'EU' || region === 'Global') f = 1.00;
+    else if (region === 'MENA+SEA') f = 1.20;
+    setLang(f);
+    setAutoAxes(prev => new Set(prev).add('lang'));
+  }, [region]);
 
   // Persist draft on every meaningful change (after initial hydration)
   useEffect(() => {
@@ -441,7 +478,7 @@ export function QuoteBuilder({
     globals: (
       <div className="card card-p">
         <h2 className="font-semibold mb-1">Campaign-level pricing axes</h2>
-        <p className="text-xs text-label mb-4">These apply to every line by default. Override any axis on a per-line basis from the wizard.</p>
+        <p className="text-xs text-label mb-4">These multipliers apply to every line by default. Some are auto-suggested from your Brand Brief above (look for the green <span className="px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold bg-green/15 text-greenDark">auto</span> badge) — change them anytime. Override per-line in the Build tab.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <AxisSelect label="Content type" hint="Who directs the creative — Organic 0.85× / Integrated 1.00× / Sponsored 1.15×." value={ctype} setValue={setCtype}
             options={AXIS_OPTIONS.contentType.map(o => ({ label: o.label, val: o.factor }))} />
@@ -451,11 +488,11 @@ export function QuoteBuilder({
             options={AXIS_OPTIONS.audience.map(o => ({ label: o.label, val: o.factor }))} />
           <AxisSelect label="Seasonality" hint="Campaign window. Ramadan + Worlds = peak demand." value={seas} setValue={setSeas}
             options={AXIS_OPTIONS.seasonality.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Language" hint="Bilingual reaches both audiences in one activation." value={lang} setValue={setLang}
+          <AxisSelect label="Language" hint="Bilingual reaches both audiences in one activation." value={lang} setValue={setLang} auto={autoAxes.has('lang')} onClearAuto={() => setAutoAxes(s => { const n = new Set(s); n.delete('lang'); return n; })}
             options={AXIS_OPTIONS.language.map(o => ({ label: o.label, val: o.factor }))} />
           <AxisSelect label="Authority" hint="Championship credentials. Pro status sets a price floor." value={auth} setValue={setAuth}
             options={AXIS_OPTIONS.authority.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Objective weight" hint="How much Authority counts. Conversion → 0.7. Awareness → 0.2." value={obj} setValue={setObj}
+          <AxisSelect label="Objective weight" hint="How much Authority counts. Conversion → 0.7. Awareness → 0.2." value={obj} setValue={setObj} auto={autoAxes.has('obj')} onClearAuto={() => setAutoAxes(s => { const n = new Set(s); n.delete('obj'); return n; })}
             options={AXIS_OPTIONS.objective.map(o => ({ label: o.label, val: o.weight }))} />
           <div>
             <label className="label">Measurement confidence</label>
@@ -574,6 +611,7 @@ export function QuoteBuilder({
               <option value="GCC">GCC</option>
               <option value="MENA">MENA</option>
               <option value="MENA+SEA">MENA + SEA</option>
+              <option value="EU">EU</option>
               <option value="Global">Global</option>
             </select>
           </div>
@@ -587,6 +625,7 @@ export function QuoteBuilder({
               <option value="">{t('qb.brief.kpi.placeholder')}</option>
               <option value="awareness">{t('qb.brief.kpi.awareness')}</option>
               <option value="consideration">{t('qb.brief.kpi.consideration')}</option>
+              <option value="engagement">{t('qb.brief.kpi.engagement')}</option>
               <option value="conversion">{t('qb.brief.kpi.conversion')}</option>
               <option value="authority">{t('qb.brief.kpi.authority')}</option>
             </select>
@@ -940,15 +979,27 @@ export function QuoteBuilder({
 }
 
 // ─── helpers ───────────────────────────────────────────────────────────────
-function AxisSelect({ label, hint, value, setValue, options }: {
+function AxisSelect({ label, hint, value, setValue, options, auto, onClearAuto }: {
   label: string; hint?: string;
   value: number; setValue: (v: number) => void;
   options: { label: string; val: number }[];
+  auto?: boolean;
+  onClearAuto?: () => void;
 }) {
   return (
     <div>
-      <label className="label">{label}</label>
-      <select value={value} onChange={e => setValue(parseFloat(e.target.value))} className="input">
+      <div className="flex items-center gap-1.5 mb-1">
+        <label className="label !mb-0">{label}</label>
+        {auto && (
+          <span title="Suggested from your Brand Brief. Click to override."
+                className="px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold bg-green/15 text-greenDark">
+            auto
+          </span>
+        )}
+      </div>
+      <select value={value}
+        onChange={e => { setValue(parseFloat(e.target.value)); if (auto && onClearAuto) onClearAuto(); }}
+        className={['input', auto ? 'border-green/40' : ''].join(' ')}>
         {options.map(o => (
           <option key={o.label} value={o.val}>{o.label}</option>
         ))}
