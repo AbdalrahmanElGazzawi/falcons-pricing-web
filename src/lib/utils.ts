@@ -44,3 +44,24 @@ export function statusColor(s: string) {
     default: return 'chip-grey';
   }
 }
+
+/**
+ * Format a SAR-canonical amount in the chosen presentation currency.
+ * SAR stays as-is. USD divides by the rate (default 3.75 — Saudi peg).
+ * AED is approximately 1:1 with SAR; we treat as no-op for now.
+ *
+ * Use this everywhere we display money on a quote / line / total — the
+ * engine computes in SAR; only the presentation layer converts.
+ */
+export function fmtCurrency(sar: number, ccy: string = 'SAR', rate: number = 3.75): string {
+  const n = Number(sar) || 0;
+  if (ccy === 'USD') {
+    const usd = rate > 0 ? n / rate : n;
+    return `$ ${Math.round(usd).toLocaleString('en-US')}`;
+  }
+  if (ccy === 'AED') {
+    return `AED ${Math.round(n).toLocaleString('en-US')}`;
+  }
+  return `SAR ${Math.round(n).toLocaleString('en-US')}`;
+}
+

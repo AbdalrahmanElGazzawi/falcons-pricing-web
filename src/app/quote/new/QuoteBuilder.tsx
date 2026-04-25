@@ -2,7 +2,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { computeLine, computeQuoteTotals, AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
-import { fmtMoney, fmtPct } from '@/lib/utils';
+import { fmtMoney, fmtPct, fmtCurrency } from '@/lib/utils';
 import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
   type Player, type Creator, type Tier, type Addon,
@@ -96,6 +96,7 @@ export function QuoteBuilder({
   const [campaign, setCampaign] = useState('');
   const [currency, setCurrency] = useState('SAR');
   const [vatRate, setVatRate] = useState(0.15);
+  const [usdRate, setUsdRate] = useState(3.75);
   const [notes, setNotes] = useState('');
 
   // ── Global axes (apply to every line unless overridden per line)
@@ -141,6 +142,7 @@ export function QuoteBuilder({
         if (d.campaign) setCampaign(d.campaign);
         if (d.currency) setCurrency(d.currency);
         if (typeof d.vatRate === 'number') setVatRate(d.vatRate);
+        if (typeof d.usdRate === 'number') setUsdRate(d.usdRate);
         if (d.notes) setNotes(d.notes);
         if (d.preparedByName) setPreparedByName(d.preparedByName);
         if (d.preparedByEmail) setPreparedByEmail(d.preparedByEmail);
@@ -166,7 +168,7 @@ export function QuoteBuilder({
     if (!hydrated) return;
     try {
       const draft = {
-        clientName, clientEmail, campaign, currency, vatRate, notes,
+        clientName, clientEmail, campaign, currency, vatRate, usdRate, notes,
         preparedByName, preparedByEmail,
         eng, aud, seas, ctype, lang, auth, obj, conf,
         addonIds: Array.from(addonIds),
@@ -174,7 +176,7 @@ export function QuoteBuilder({
       };
       window.localStorage.setItem(LS_KEY, JSON.stringify(draft));
     } catch {}
-  }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, notes, preparedByName, preparedByEmail,
+  }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, usdRate, notes, preparedByName, preparedByEmail,
       eng, aud, seas, ctype, lang, auth, obj, conf, addonIds, lines]);
 
   function openAddWizard() { setWizard({ mode: 'add' }); }
@@ -266,6 +268,7 @@ export function QuoteBuilder({
             prepared_by_email: preparedByEmail.trim() || null,
             currency,
             vat_rate: vatRate,
+            usd_rate: usdRate,
             eng_factor: eng, audience_factor: aud, seasonality_factor: seas,
             content_type_factor: ctype, language_factor: lang, authority_factor: auth,
             objective_weight: obj, measurement_confidence: conf,
@@ -360,6 +363,18 @@ export function QuoteBuilder({
               <option value="0">0% (Export)</option>
             </select>
           </div>
+          {currency === 'USD' && (
+            <div>
+              <label className="label">USD rate (SAR per 1 USD)</label>
+              <input
+                type="number" step="0.01" min={1}
+                value={usdRate}
+                onChange={e => setUsdRate(Math.max(0.01, parseFloat(e.target.value) || 3.75))}
+                className="input"
+              />
+              <p className="text-[10px] text-mute mt-1">Default 3.75 (Saudi peg). All SAR values divide by this.</p>
+            </div>
+          )}
         </div>
       </div>
     ),
@@ -368,19 +383,19 @@ export function QuoteBuilder({
         <h2 className="font-semibold mb-1">Campaign-level pricing axes</h2>
         <p className="text-xs text-label mb-4">These apply to every line by default. Override any axis on a per-line basis from the wizard.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <AxisSelect label="Content type" value={ctype} setValue={setCtype}
+          <AxisSelect label="Content type" hint="Who directs the creative — Organic 0.85× / Integrated 1.00× / Sponsored 1.15×." value={ctype} setValue={setCtype}
             options={AXIS_OPTIONS.contentType.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Engagement" value={eng} setValue={setEng}
+          <AxisSelect label="Engagement" hint="Talent's last-90-day ER. 4–6% is baseline; >10% is elite." value={eng} setValue={setEng}
             options={AXIS_OPTIONS.engagement.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Audience" value={aud} setValue={setAud}
+          <AxisSelect label="Audience" hint="Audience match. MENA / Saudi unlocks +30% premium." value={aud} setValue={setAud}
             options={AXIS_OPTIONS.audience.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Seasonality" value={seas} setValue={setSeas}
+          <AxisSelect label="Seasonality" hint="Campaign window. Ramadan + Worlds = peak demand." value={seas} setValue={setSeas}
             options={AXIS_OPTIONS.seasonality.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Language" value={lang} setValue={setLang}
+          <AxisSelect label="Language" hint="Bilingual reaches both audiences in one activation." value={lang} setValue={setLang}
             options={AXIS_OPTIONS.language.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Authority" value={auth} setValue={setAuth}
+          <AxisSelect label="Authority" hint="Championship credentials. Pro status sets a price floor." value={auth} setValue={setAuth}
             options={AXIS_OPTIONS.authority.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Objective weight" value={obj} setValue={setObj}
+          <AxisSelect label="Objective weight" hint="How much Authority counts. Conversion → 0.7. Awareness → 0.2." value={obj} setValue={setObj}
             options={AXIS_OPTIONS.objective.map(o => ({ label: o.label, val: o.weight }))} />
           <div>
             <label className="label">Measurement confidence</label>
@@ -618,7 +633,7 @@ export function QuoteBuilder({
         <TabButton active={view === 'summary'} onClick={() => setView('summary')}>③ Summary</TabButton>
         <div className="ml-auto pb-2 hidden sm:flex items-center gap-3 text-xs text-label whitespace-nowrap">
           <span>{computed.rows.length} line{computed.rows.length === 1 ? '' : 's'}</span>
-          <span className="text-ink font-semibold">{fmtMoney(computed.totals.total, currency)}</span>
+          <span className="text-ink font-semibold">{fmtCurrency(computed.totals.total, currency, usdRate)}</span>
         </div>
       </div>
 
@@ -671,6 +686,7 @@ export function QuoteBuilder({
                 campaign={campaign}
                 ownerEmail={ownerEmail}
                 currency={currency}
+                usdRate={usdRate}
                 vatRate={vatRate}
                 notes={notes}
                 rows={computed.rows}
@@ -697,6 +713,7 @@ export function QuoteBuilder({
             rowCount={computed.rows.length}
             currency={currency}
             vatRate={vatRate}
+            usdRate={usdRate}
             addonsUpliftPct={addonsUpliftPct}
             saving={saving}
             error={error}
@@ -713,6 +730,7 @@ export function QuoteBuilder({
           totals={computed.totals}
           rowCount={computed.rows.length}
           currency={currency}
+          usdRate={usdRate}
           saving={saving}
           clientName={clientName}
           onDraft={() => save('draft')}
@@ -750,8 +768,9 @@ export function QuoteBuilder({
 }
 
 // ─── helpers ───────────────────────────────────────────────────────────────
-function AxisSelect({ label, value, setValue, options }: {
-  label: string; value: number; setValue: (v: number) => void;
+function AxisSelect({ label, hint, value, setValue, options }: {
+  label: string; hint?: string;
+  value: number; setValue: (v: number) => void;
   options: { label: string; val: number }[];
 }) {
   return (
@@ -762,6 +781,7 @@ function AxisSelect({ label, value, setValue, options }: {
           <option key={o.label} value={o.val}>{o.label}</option>
         ))}
       </select>
+      {hint && <p className="text-[10px] text-mute mt-1 leading-snug">{hint}</p>}
     </div>
   );
 }
@@ -798,7 +818,7 @@ function TabButton({ active, onClick, children }: {
 
 // ─── Quote preview (read-only formatted view) ───────────────────────────────
 function QuotePreview({
-  clientName, clientEmail, campaign, ownerEmail, currency, vatRate, notes,
+  clientName, clientEmail, campaign, ownerEmail, currency, usdRate, vatRate, notes,
   rows, totals, addonsUpliftPct,
 }: {
   clientName: string;
@@ -806,6 +826,7 @@ function QuotePreview({
   campaign: string;
   ownerEmail: string;
   currency: string;
+  usdRate: number;
   vatRate: number;
   notes: string;
   rows: any[];
@@ -825,7 +846,7 @@ function QuotePreview({
           </div>
           <div className="text-right">
             <div className="text-[10px] tracking-widest opacity-80">TOTAL ({currency})</div>
-            <div className="text-3xl font-extrabold mt-1">{fmtMoney(totals.total, currency)}</div>
+            <div className="text-3xl font-extrabold mt-1">{fmtCurrency(totals.total, currency, usdRate)}</div>
             <div className="text-xs opacity-90 mt-0.5">VAT inclusive</div>
           </div>
         </div>
@@ -874,8 +895,8 @@ function QuotePreview({
                   </td>
                   <td className="px-4 py-3 text-label">{r.platform_label}</td>
                   <td className="px-4 py-3 text-right">{r.qty}</td>
-                  <td className="px-4 py-3 text-right">{fmtMoney(r.finalUnit, currency)}</td>
-                  <td className="px-6 py-3 text-right font-semibold text-ink">{fmtMoney(r.finalAmount, currency)}</td>
+                  <td className="px-4 py-3 text-right">{fmtCurrency(r.finalUnit, currency, usdRate)}</td>
+                  <td className="px-6 py-3 text-right font-semibold text-ink">{fmtCurrency(r.finalAmount, currency, usdRate)}</td>
                 </tr>
               ))}
             </tbody>
@@ -886,13 +907,13 @@ function QuotePreview({
       {/* Totals */}
       <div className="px-6 py-5 border-t border-line">
         <div className="ml-auto max-w-xs space-y-1.5 text-sm">
-          <Row label="Subtotal" value={fmtMoney(totals.subtotal, currency)} muted />
+          <Row label="Subtotal" value={fmtCurrency(totals.subtotal, currency, usdRate)} muted />
           {addonsUpliftPct > 0 && (
             <Row label={`Add-on uplift +${fmtPct(addonsUpliftPct, 0)}`} value="in lines" muted />
           )}
-          <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtMoney(totals.vatAmount, currency)} muted />
+          <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtCurrency(totals.vatAmount, currency, usdRate)} muted />
           <div className="border-t border-line pt-2">
-            <Row label="TOTAL" value={fmtMoney(totals.total, currency)} bold />
+            <Row label="TOTAL" value={fmtCurrency(totals.total, currency, usdRate)} bold />
           </div>
         </div>
       </div>
@@ -913,11 +934,11 @@ function QuotePreview({
 }
 // ─── Save rail (desktop sticky) ─────────────────────────────────────────────
 function SaveRail({
-  totals, rowCount, currency, vatRate, addonsUpliftPct, saving, error, clientName,
+  totals, rowCount, currency, vatRate, usdRate, addonsUpliftPct, saving, error, clientName,
   onDraft, onSubmit,
 }: {
   totals: { subtotal: number; preVat: number; vatAmount: number; total: number };
-  rowCount: number; currency: string; vatRate: number; addonsUpliftPct: number;
+  rowCount: number; currency: string; vatRate: number; usdRate: number; addonsUpliftPct: number;
   saving: boolean; error: string | null; clientName: string;
   onDraft: () => void; onSubmit: () => void;
 }) {
@@ -926,17 +947,17 @@ function SaveRail({
     <div className="card p-4 space-y-3">
       <div className="kpi-label">Live total</div>
       <div>
-        <div className="kpi-value">{fmtMoney(totals.total, currency)}</div>
+        <div className="kpi-value">{fmtCurrency(totals.total, currency, usdRate)}</div>
         <div className="kpi-sub mt-1">
-          {rowCount} line{rowCount === 1 ? '' : 's'} · VAT {fmtPct(vatRate, 0)}
+          {rowCount} line{rowCount === 1 ? '' : 's'} · VAT {fmtPct(vatRate, 0)}{currency === 'USD' && ` · @ ${usdRate} SAR/USD`}
         </div>
       </div>
       <div className="border-t border-line pt-3 space-y-1.5 text-xs">
-        <Row label="Subtotal" value={fmtMoney(totals.subtotal, currency)} muted />
+        <Row label="Subtotal" value={fmtCurrency(totals.subtotal, currency, usdRate)} muted />
         {addonsUpliftPct > 0 && (
           <Row label={`Add-on uplift +${fmtPct(addonsUpliftPct, 0)}`} value="in lines" muted />
         )}
-        <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtMoney(totals.vatAmount, currency)} muted />
+        <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtCurrency(totals.vatAmount, currency, usdRate)} muted />
       </div>
       <button
         onClick={onSubmit}
@@ -965,10 +986,10 @@ function SaveRail({
 
 // ─── Save bar (mobile fixed bottom) ────────────────────────────────────────
 function SaveBarMobile({
-  totals, rowCount, currency, saving, clientName, onDraft, onSubmit,
+  totals, rowCount, currency, usdRate, saving, clientName, onDraft, onSubmit,
 }: {
   totals: { total: number };
-  rowCount: number; currency: string; saving: boolean; clientName: string;
+  rowCount: number; currency: string; usdRate: number; saving: boolean; clientName: string;
   onDraft: () => void; onSubmit: () => void;
 }) {
   const blocked = clientName.trim() === '' || rowCount === 0;
@@ -976,7 +997,7 @@ function SaveBarMobile({
     <div className="px-4 py-3 flex items-center gap-3 max-w-screen-md mx-auto">
       <div className="flex-1 min-w-0">
         <div className="text-[10px] uppercase tracking-wider text-mute">Total · {rowCount} line{rowCount === 1 ? '' : 's'}</div>
-        <div className="text-base font-bold text-ink truncate">{fmtMoney(totals.total, currency)}</div>
+        <div className="text-base font-bold text-ink truncate">{fmtCurrency(totals.total, currency, usdRate)}</div>
       </div>
       <button
         onClick={onDraft}

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
 import { computeLine, type MeasurementConfidence } from '@/lib/pricing';
-import { fmtMoney, fmtPct, tierClass } from '@/lib/utils';
+import { fmtMoney, fmtPct, tierClass, fmtCurrency } from '@/lib/utils';
 import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
   type Player, type Creator, type Tier,
@@ -29,7 +29,7 @@ type Globals = {
 type RowSel = { qty: number; manualRate?: number };
 
 export function QuoteConfigurator({
-  players, creators, tiers, globals, currency, addonsUpliftPct, scrollHook,
+  players, creators, tiers, globals, currency, usdRate, addonsUpliftPct, scrollHook,
   initialEdit, onCommit, onCancelEdit,
 }: {
   players: Player[];
@@ -37,6 +37,7 @@ export function QuoteConfigurator({
   tiers: Tier[];
   globals: Globals;
   currency: string;
+  usdRate?: number;
   addonsUpliftPct: number;
   scrollHook?: React.MutableRefObject<HTMLDivElement | null>;
   initialEdit?: LineDraft | null;
@@ -383,6 +384,48 @@ export function QuoteConfigurator({
                 </div>
               </div>
 
+              {/* Content Type toggle — quick decision before picking deliverables */}
+              <div className="rounded-lg border border-line bg-bg/40 p-3">
+                <div className="text-[11px] uppercase tracking-wider text-label font-semibold mb-2">
+                  Content type
+                  <span className="text-mute font-normal normal-case ml-1.5">— who's directing the creative?</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setOverrides(o => ({ ...o, o_ctype: 1.00 }))}
+                    className={[
+                      'rounded-lg border-2 p-3 text-left transition',
+                      (overrides.o_ctype === null || overrides.o_ctype === 1.00)
+                        ? 'border-green bg-greenSoft'
+                        : 'border-line bg-white hover:border-green/60',
+                    ].join(' ')}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-semibold text-ink">Integrated</div>
+                      <div className="text-xs font-mono text-greenDark">1.00×</div>
+                    </div>
+                    <div className="text-[11px] text-mute mt-0.5">Player-led — talent narrates organically. Best engagement.</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOverrides(o => ({ ...o, o_ctype: 1.15 }))}
+                    className={[
+                      'rounded-lg border-2 p-3 text-left transition',
+                      overrides.o_ctype === 1.15
+                        ? 'border-green bg-greenSoft'
+                        : 'border-line bg-white hover:border-green/60',
+                    ].join(' ')}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-semibold text-ink">Dedicated</div>
+                      <div className="text-xs font-mono text-greenDark">1.15×</div>
+                    </div>
+                    <div className="text-[11px] text-mute mt-0.5">Brand-led — client script + approved talking points. Premium.</div>
+                  </button>
+                </div>
+              </div>
+
               {/* Multi-select deliverables */}
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-label font-semibold mb-2 flex items-center justify-between">
@@ -417,12 +460,12 @@ export function QuoteConfigurator({
                 <div className="p-4 space-y-3 border-t border-line bg-white">
                   <p className="text-xs text-label">Override the campaign defaults for these specific deliverables. Leave on Campaign default to inherit.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <AxisRow label="Engagement" value={overrides.o_eng} globalVal={globals.eng} onChange={v => setOverrides(o => ({ ...o, o_eng: v }))} options={[0.70,0.90,1.00,1.20,1.40,1.60]} labels={['<2%','2–4%','4–6%','6–8%','8–10%','>10%']} />
-                    <AxisRow label="Audience"   value={overrides.o_aud} globalVal={globals.aud} onChange={v => setOverrides(o => ({ ...o, o_aud: v }))} options={[0.85,1.00,1.20,1.30,1.40,1.50]} labels={['Generic','Gaming-adj.','Core','MENA','Esports','Elite']} />
-                    <AxisRow label="Seasonality" value={overrides.o_seas} globalVal={globals.seas} onChange={v => setOverrides(o => ({ ...o, o_seas: v }))} options={[0.80,1.00,1.20,1.25,1.30,1.35,1.40,1.50]} labels={['Off','Reg','Q4','Major','Launch','Ramadan','Worlds','Mega']} />
-                    <AxisRow label="Content"    value={overrides.o_ctype} globalVal={globals.ctype} onChange={v => setOverrides(o => ({ ...o, o_ctype: v }))} options={[0.85,1.00,1.15]} labels={['Organic','Integrated','Sponsored']} />
-                    <AxisRow label="Language"   value={overrides.o_lang} globalVal={globals.lang} onChange={v => setOverrides(o => ({ ...o, o_lang: v }))} options={[1.00,1.05,1.15]} labels={['EN','AR','EN+AR']} />
-                    <AxisRow label="Authority"  value={overrides.o_auth} globalVal={globals.auth} onChange={v => setOverrides(o => ({ ...o, o_auth: v }))} options={[1.00,1.15,1.30,1.50]} labels={['Normal','Proven','Elite','Star']} />
+                    <AxisRow label="Engagement" hint="Talent's last-90-day engagement rate. Best predictor of campaign ROI." value={overrides.o_eng} globalVal={globals.eng} onChange={v => setOverrides(o => ({ ...o, o_eng: v }))} options={[0.70,0.90,1.00,1.20,1.40,1.60]} labels={['<2%','2–4%','4–6%','6–8%','8–10%','>10%']} />
+                    <AxisRow label="Audience"   hint="How well the audience matches the brand. MENA/Saudi unlocks +30% premium." value={overrides.o_aud} globalVal={globals.aud} onChange={v => setOverrides(o => ({ ...o, o_aud: v }))} options={[0.85,1.00,1.20,1.30,1.40,1.50]} labels={['Generic','Gaming-adj.','Core','MENA','Esports','Elite']} />
+                    <AxisRow label="Seasonality" hint="Campaign window. Ramadan + Worlds = peak demand." value={overrides.o_seas} globalVal={globals.seas} onChange={v => setOverrides(o => ({ ...o, o_seas: v }))} options={[0.80,1.00,1.20,1.25,1.30,1.35,1.40,1.50]} labels={['Off','Reg','Q4','Major','Launch','Ramadan','Worlds','Mega']} />
+                    <AxisRow label="Content type" hint="Already set by the toggle above. Override here if you need an unusual mix." value={overrides.o_ctype} globalVal={globals.ctype} onChange={v => setOverrides(o => ({ ...o, o_ctype: v }))} options={[0.85,1.00,1.15]} labels={['Organic','Integrated','Sponsored']} />
+                    <AxisRow label="Language"   hint="Bilingual reaches both audiences in one activation — highest leverage." value={overrides.o_lang} globalVal={globals.lang} onChange={v => setOverrides(o => ({ ...o, o_lang: v }))} options={[1.00,1.05,1.15]} labels={['EN','AR','EN+AR']} />
+                    <AxisRow label="Authority"  hint="Championship credentials. Pro status = price floor protection." value={overrides.o_auth} globalVal={globals.auth} onChange={v => setOverrides(o => ({ ...o, o_auth: v }))} options={[1.00,1.15,1.30,1.50]} labels={['Normal','Proven','Elite','Star']} />
                   </div>
                 </div>
               </details>
@@ -431,7 +474,7 @@ export function QuoteConfigurator({
               <div className="rounded-lg bg-greenSoft/40 border border-green/30 p-4 flex items-center justify-between gap-3 flex-wrap">
                 <div>
                   <div className="text-[10px] uppercase tracking-wider text-label">Selection total</div>
-                  <div className="text-2xl font-bold text-ink">{fmtMoney(previewTotal, currency)}</div>
+                  <div className="text-2xl font-bold text-ink">{fmtCurrency(previewTotal, currency, usdRate ?? 3.75)}</div>
                   <div className="text-xs text-label mt-0.5">{selectedCount === 0 ? 'No deliverables ticked yet' : `${selectedCount} line${selectedCount === 1 ? '' : 's'} ready`}</div>
                 </div>
                 <button
@@ -491,7 +534,7 @@ function DeliverableGroups({
                           ? (d.suggestedRange
                               ? <span>Approx. <strong className="text-label">SAR {d.suggestedRange[0].toLocaleString()}–{d.suggestedRange[1].toLocaleString()}</strong></span>
                               : <span className="italic">Manual rate</span>)
-                          : `Base ${fmtMoney(d.rate, currency)}`}
+                          : `Base ${fmtCurrency(d.rate, currency, 3.75)}`}
                       </div>
                     </div>
                     {checked && (
@@ -528,8 +571,9 @@ function DeliverableGroups({
 }
 
 // ── Per-axis quick-row override ────────────────────────────────────────────
-function AxisRow({ label, value, globalVal, onChange, options, labels }: {
-  label: string; value: number | null; globalVal: number;
+function AxisRow({ label, hint, value, globalVal, onChange, options, labels }: {
+  label: string; hint?: string;
+  value: number | null; globalVal: number;
   onChange: (v: number | null) => void;
   options: number[]; labels: string[];
 }) {
@@ -547,6 +591,7 @@ function AxisRow({ label, value, globalVal, onChange, options, labels }: {
           <option key={o} value={o}>{labels[i]} ({o.toFixed(2)}×)</option>
         ))}
       </select>
+      {hint && <p className="text-[10px] text-mute mt-1 leading-snug">{hint}</p>}
     </div>
   );
 }

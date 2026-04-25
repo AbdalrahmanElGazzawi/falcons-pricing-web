@@ -20,6 +20,16 @@ const LINE = '#E2E8F0';
 function fmtMoney(n: number, ccy = 'SAR') {
   return `${ccy} ${Math.round(n).toLocaleString('en-US')}`;
 }
+// FX-aware formatter — SAR canonical → presentation currency
+function fmtFX(sarAmount: number, ccy: string, rate: number): string {
+  const n = Number(sarAmount) || 0;
+  if (ccy === 'USD') {
+    const usd = rate > 0 ? n / rate : n;
+    return `$ ${Math.round(usd).toLocaleString('en-US')}`;
+  }
+  if (ccy === 'AED') return `AED ${Math.round(n).toLocaleString('en-US')}`;
+  return `SAR ${Math.round(n).toLocaleString('en-US')}`;
+}
 function fmtPct(n: number) { return `${(n * 100).toFixed(0)}%`; }
 function fmtMult(n: number) { return `${Number(n).toFixed(2)}×`; }
 function dateStr(iso?: string) { return iso ? new Date(iso).toLocaleDateString('en-GB') : '—'; }
@@ -64,6 +74,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const { data: lines } = await sb.from('quote_lines').select('*').eq('quote_id', quote.id).order('sort_order');
 
   const currency = quote.currency || 'SAR';
+  const usdRate  = Number(quote.usd_rate || 3.75);
   const vatRate = Number(quote.vat_rate || 0.15);
   const subtotal = Number(quote.pre_vat || quote.subtotal || 0);
   const vatAmount = Number(quote.vat_amount || subtotal * vatRate);
@@ -205,6 +216,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     doc.fillColor(INK).text(`+${fmtPct(Number(quote.addons_uplift_pct))}`, methX + 80, y);
     y += 11;
   }
+  if (currency === 'USD') {
+    doc.fillColor(LABEL).text('FX rate:', methX, y);
+    doc.fillColor(INK).text(`${usdRate.toFixed(2)} SAR per 1 USD`, methX + 80, y);
+    y += 11;
+  }
 
   // Notes block on right
   let notesY = methTop;
@@ -223,15 +239,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const tBoxX = MARGIN + tableW - tBoxW;
 
   doc.fillColor(LABEL).font('Helvetica').fontSize(10).text('SUBTOTAL', tBoxX, y);
-  doc.fillColor(INK).font('Helvetica-Bold').text(fmtMoney(subtotal, currency), tBoxX, y, { width: tBoxW, align: 'right' });
+  doc.fillColor(INK).font('Helvetica-Bold').text(fmtFX(subtotal, currency, usdRate), tBoxX, y, { width: tBoxW, align: 'right' });
   y += 18;
   doc.fillColor(LABEL).font('Helvetica').text(`VAT (${(vatRate*100).toFixed(0)}%)`, tBoxX, y);
-  doc.fillColor(INK).font('Helvetica').text(fmtMoney(vatAmount, currency), tBoxX, y, { width: tBoxW, align: 'right' });
+  doc.fillColor(INK).font('Helvetica').text(fmtFX(vatAmount, currency, usdRate), tBoxX, y, { width: tBoxW, align: 'right' });
   y += 22;
   doc.rect(tBoxX, y - 4, tBoxW, 28).fill(GREEN);
   doc.fillColor('white').font('Helvetica-Bold').fontSize(13);
   doc.text('TOTAL', tBoxX + 12, y + 2);
-  doc.text(fmtMoney(total, currency), tBoxX, y + 2, { width: tBoxW - 12, align: 'right' });
+  doc.text(fmtFX(total, currency, usdRate), tBoxX, y + 2, { width: tBoxW - 12, align: 'right' });
   y += 36;
 
   // ═══ SIGNATURE BLOCKS ═══

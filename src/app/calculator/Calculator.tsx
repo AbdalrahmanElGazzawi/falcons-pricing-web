@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { computeLine, computeQuoteTotals, AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
-import { fmtMoney, fmtPct } from '@/lib/utils';
+import { fmtMoney, fmtPct, fmtCurrency } from '@/lib/utils';
 import { type Player, type Creator, type Tier, type Addon } from '@/lib/types';
 import { QuoteConfigurator } from '@/app/quote/new/QuoteConfigurator';
 import { type LineDraft } from '@/app/quote/new/line-draft';
@@ -24,6 +24,10 @@ export function Calculator({
 
   // Campaign defaults — pre-populate with the most-common values so the
   // calculator answers a DM in seconds without configuring axes.
+  // Currency + FX
+  const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
+  const [usdRate, setUsdRate] = useState(3.75);
+
   const [eng, setEng]   = useState(AXIS_OPTIONS.engagement[1].factor);
   const [aud, setAud]   = useState(AXIS_OPTIONS.audience[0].factor);
   const [seas, setSeas] = useState(AXIS_OPTIONS.seasonality[0].factor);
@@ -88,9 +92,9 @@ export function Calculator({
   function copySummary() {
     if (lines.length === 0) return;
     const summary = computed.rows.map(r =>
-      `• ${r.talent_name} — ${r.platform_label} × ${r.qty} = ${fmtMoney(r.finalAmount, 'SAR')}`
+      `• ${r.talent_name} — ${r.platform_label} × ${r.qty} = ${fmtCurrency(r.finalAmount, currency, usdRate)}`
     ).join('\n');
-    const lines_total = `\nSubtotal: ${fmtMoney(computed.totals.subtotal, 'SAR')}\nVAT 15%: ${fmtMoney(computed.totals.vatAmount, 'SAR')}\nTotal: ${fmtMoney(computed.totals.total, 'SAR')}`;
+    const lines_total = `\nSubtotal: ${fmtCurrency(computed.totals.subtotal, currency, usdRate)}\nVAT 15%: ${fmtCurrency(computed.totals.vatAmount, currency, usdRate)}\nTotal: ${fmtCurrency(computed.totals.total, currency, usdRate)}`;
     navigator.clipboard.writeText(`Team Falcons quick estimate:\n\n${summary}${lines_total}`).then(() => {
       toast.success('Summary copied to clipboard');
     }).catch(() => toast.error('Copy failed'));
@@ -103,8 +107,9 @@ export function Calculator({
       clientName: '',
       clientEmail: '',
       campaign: '',
-      currency: 'SAR',
+      currency,
       vatRate: 0.15,
+      usdRate,
       notes: '',
       eng, aud, seas, ctype, lang, auth, obj, conf,
       addonIds: Array.from(addonIds),
@@ -130,7 +135,8 @@ export function Calculator({
           creators={creators}
           tiers={tiers}
           globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
-          currency="SAR"
+          currency={currency}
+          usdRate={usdRate}
           addonsUpliftPct={addonsUpliftPct}
           onCommit={addDrafts}
         />
@@ -171,8 +177,8 @@ export function Calculator({
                       </td>
                       <td className="text-label">{r.platform_label}</td>
                       <td className="text-right">{r.qty}</td>
-                      <td className="text-right">{fmtMoney(r.finalUnit, 'SAR')}</td>
-                      <td className="text-right font-medium text-ink">{fmtMoney(r.finalAmount, 'SAR')}</td>
+                      <td className="text-right">{fmtCurrency(r.finalUnit, currency, usdRate)}</td>
+                      <td className="text-right font-medium text-ink">{fmtCurrency(r.finalAmount, currency, usdRate)}</td>
                       <td className="text-right">
                         <button onClick={() => removeLine(r.uid)}
                           className="p-1 text-mute hover:text-red-600" title="Remove">
@@ -221,18 +227,49 @@ export function Calculator({
 
       {/* Sticky total + actions */}
       <aside className="lg:sticky lg:top-6 space-y-3">
+        {/* Currency toggle */}
+        <div className="card card-p">
+          <div className="text-[10px] uppercase tracking-wider text-label font-semibold mb-2">Display currency</div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setCurrency('SAR')}
+              className={[
+                'rounded-lg border-2 py-2 text-sm font-semibold transition',
+                currency === 'SAR' ? 'border-green bg-greenSoft text-greenDark' : 'border-line bg-white text-mute hover:border-mute',
+              ].join(' ')}
+            >🇸🇦 SAR</button>
+            <button
+              onClick={() => setCurrency('USD')}
+              className={[
+                'rounded-lg border-2 py-2 text-sm font-semibold transition',
+                currency === 'USD' ? 'border-green bg-greenSoft text-greenDark' : 'border-line bg-white text-mute hover:border-mute',
+              ].join(' ')}
+            >🇺🇸 USD</button>
+          </div>
+          {currency === 'USD' && (
+            <div className="mt-2">
+              <label className="text-[10px] uppercase tracking-wider text-label font-semibold">Rate (SAR per 1 USD)</label>
+              <input
+                type="number" step="0.01" min={1}
+                value={usdRate}
+                onChange={e => setUsdRate(Math.max(0.01, parseFloat(e.target.value) || 3.75))}
+                className="input text-sm mt-1"
+              />
+            </div>
+          )}
+        </div>
         <div className="card overflow-hidden">
           <div className="bg-gradient-to-br from-green to-greenDark text-white p-5">
             <div className="text-[10px] tracking-widest opacity-80">QUICK ESTIMATE</div>
-            <div className="text-3xl font-extrabold mt-1 leading-tight">{fmtMoney(computed.totals.total, 'SAR')}</div>
-            <div className="text-xs opacity-90 mt-1">VAT inclusive · {computed.rows.length} line{computed.rows.length === 1 ? '' : 's'}</div>
+            <div className="text-3xl font-extrabold mt-1 leading-tight">{fmtCurrency(computed.totals.total, currency, usdRate)}</div>
+            <div className="text-xs opacity-90 mt-1">VAT inclusive · {computed.rows.length} line{computed.rows.length === 1 ? '' : 's'}{currency === 'USD' && ` · @ ${usdRate} SAR/USD`}</div>
           </div>
           <div className="p-4 space-y-1.5 text-xs bg-white border-t border-line">
-            <Row label="Subtotal" value={fmtMoney(computed.totals.subtotal, 'SAR')} muted />
+            <Row label="Subtotal" value={fmtCurrency(computed.totals.subtotal, currency, usdRate)} muted />
             {addonsUpliftPct > 0 && (
               <Row label={`Add-on uplift +${fmtPct(addonsUpliftPct, 0)}`} value="in lines" muted />
             )}
-            <Row label="VAT (15%)" value={fmtMoney(computed.totals.vatAmount, 'SAR')} muted />
+            <Row label="VAT (15%)" value={fmtCurrency(computed.totals.vatAmount, currency, usdRate)} muted />
           </div>
         </div>
 
