@@ -6,7 +6,8 @@ import { useToast } from '@/components/Toast';
 import { fmtMoney, statusLabel } from '@/lib/utils';
 import { StatusPill } from '@/components/Status';
 import { EmptyState } from '@/components/EmptyState';
-import { Search, FileX, Rows3, Rows2, Rows4, Trash2 } from 'lucide-react';
+import { FileX, Rows3, Rows2, Rows4, Trash2 } from 'lucide-react';
+import { SearchInput } from '@/components/SearchInput';
 import type { QuoteStatus } from '@/lib/types';
 
 type Row = {
@@ -64,15 +65,12 @@ export function QuotesTable({ quotes, canDelete }: { quotes: Row[]; canDelete?: 
   return (
     <>
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mute" />
-          <input
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            placeholder="Search quote #, client, campaign…"
-            className="input pl-9"
-          />
-        </div>
+        <SearchInput
+          value={q}
+          onChange={setQ}
+          placeholder="Search quote #, client, campaign…"
+          className="flex-1 min-w-[220px] max-w-md"
+        />
         <select value={status} onChange={e => setStatus(e.target.value)} className="input max-w-[200px]">
           <option value="">All statuses</option>
           {statuses.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}

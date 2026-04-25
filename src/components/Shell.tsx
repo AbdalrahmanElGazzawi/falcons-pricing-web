@@ -8,8 +8,10 @@ import { isSuperAdminEmail } from '@/lib/super-admin';
 import {
   LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog,
   Sparkles, BookOpen, KeyRound, ScrollText, Calculator, Map, Menu, X,
-  Inbox,
+  Inbox, HelpCircle,
 } from 'lucide-react';
+
+const WELCOME_KEY = 'falcons_welcome_seen_v1';
 
 const NAV = (role: UserRole, email: string) => [
   { href: '/dashboard',         label: 'Dashboard',  icon: LayoutDashboard },
@@ -19,6 +21,7 @@ const NAV = (role: UserRole, email: string) => [
   { href: '/roster/players',    label: 'Roster',     icon: Users },
   { href: '/roster/creators',   label: 'Creators',   icon: Sparkles },
   { href: '/admin/roadmap',     label: 'Roadmap',    icon: Map },
+  { href: '/welcome',           label: 'About',      icon: HelpCircle },
   ...(role === 'admin' ? [
     { href: '/admin/users',       label: 'Users',       icon: UserCog },
     { href: '/admin/tiers',       label: 'Tiers',       icon: Settings },
@@ -63,6 +66,18 @@ export function Shell({
       return () => { document.body.style.overflow = prev; };
     }
   }, [drawerOpen]);
+
+  // First-visit auto-redirect to /welcome (only when landing on /dashboard)
+  useEffect(() => {
+    if (pathname !== '/dashboard') return;
+    try {
+      if (!localStorage.getItem(WELCOME_KEY)) {
+        router.replace('/welcome');
+      }
+    } catch {
+      // localStorage blocked — silently skip the redirect
+    }
+  }, [pathname, router]);
 
   async function signOut() {
     await supabase.auth.signOut();

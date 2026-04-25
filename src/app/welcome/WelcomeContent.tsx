@@ -1,0 +1,268 @@
+'use client';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import {
+  Sparkles, Users, FileText, Send, ShieldCheck, Calculator, Layers,
+  Inbox, Map, ArrowRight, BookOpen, Trophy,
+} from 'lucide-react';
+import type { UserRole } from '@/lib/types';
+
+const WELCOME_KEY = 'falcons_welcome_seen_v1';
+
+export function WelcomeContent({
+  role,
+  firstName,
+}: {
+  role: UserRole;
+  firstName: string;
+}) {
+  const router = useRouter();
+
+  const dismiss = (href: string) => {
+    try { localStorage.setItem(WELCOME_KEY, new Date().toISOString()); } catch {}
+    router.push(href);
+  };
+
+  const primaryCta =
+    role === 'admin'
+      ? { label: 'Review pending quotes', href: '/quotes?status=pending_approval' }
+      : role === 'sales'
+      ? { label: 'Build your first quote', href: '/quote/new' }
+      : { label: 'Open the dashboard', href: '/dashboard' };
+
+  return (
+    <div className="space-y-10 -mx-4 sm:-mx-6 lg:-mx-8 -mt-2 pb-8">
+      {/* ─── Hero ─── */}
+      <section className="relative overflow-hidden rounded-2xl bg-navy text-white px-6 sm:px-10 py-10 sm:py-14">
+        {/* decorative gradient blobs */}
+        <div
+          aria-hidden
+          className="absolute -top-24 -right-24 w-80 h-80 rounded-full opacity-30 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #2ED06E 0%, transparent 70%)' }}
+        />
+        <div
+          aria-hidden
+          className="absolute -bottom-24 -left-16 w-72 h-72 rounded-full opacity-20 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #D4A514 0%, transparent 70%)' }}
+        />
+        <div className="relative grid grid-cols-1 lg:grid-cols-[1.5fr,1fr] gap-8 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur text-xs uppercase tracking-wider font-medium">
+              <Sparkles size={14} /> Welcome to Pricing OS
+            </div>
+            <h1 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">
+              Hey {firstName}, this is how Team Falcons prices its activations now.
+            </h1>
+            <p className="mt-4 text-base sm:text-lg text-white/80 max-w-2xl">
+              No more spreadsheets passed around in DMs. Pricing OS is the single source of truth for
+              every quote that goes out the door — measured, audited, on-brand.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => dismiss(primaryCta.href)}
+                className="btn btn-primary !py-2.5 !px-5"
+              >
+                {primaryCta.label} <ArrowRight size={16} />
+              </button>
+              <button
+                onClick={() => dismiss('/dashboard')}
+                className="btn !py-2.5 !px-5 bg-white/10 hover:bg-white/15 text-white border border-white/20"
+              >
+                Skip to dashboard
+              </button>
+            </div>
+            <p className="mt-3 text-xs text-white/50">
+              We&rsquo;ll only show this once. You can revisit it anytime from <strong>About</strong> in the sidebar.
+            </p>
+          </div>
+          <div className="hidden lg:flex justify-center">
+            <Image
+              src="/team-falcons-logo.png"
+              alt="Team Falcons"
+              width={220}
+              height={220}
+              className="opacity-90 drop-shadow-2xl"
+              priority
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── What this is ─── */}
+      <section className="px-4 sm:px-6">
+        <h2 className="text-xs uppercase tracking-wider text-label font-semibold mb-3">What is Pricing OS?</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FeatureCard
+            icon={Calculator}
+            title="A real pricing engine"
+            body="Every quote runs through a 9-axis matrix — content type, engagement, audience, seasonality, language, authority, objective weight, confidence, and rights uplift. No more eyeballed numbers."
+          />
+          <FeatureCard
+            icon={Users}
+            title="Your roster, live"
+            body="189 players + 17 creators, with rates, tiers, and platform-specific pricing. Edit once, every quote updates. Tier floors stop teams from underpricing."
+          />
+          <FeatureCard
+            icon={ShieldCheck}
+            title="Audit-ready by default"
+            body="Approvals, send-to-client, brand decisions, and admin actions all log to an audit trail. Finance and legal stop chasing screenshots."
+          />
+        </div>
+      </section>
+
+      {/* ─── How it works (4-step flow) ─── */}
+      <section className="px-4 sm:px-6">
+        <h2 className="text-xs uppercase tracking-wider text-label font-semibold mb-4">How it works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StepCard
+            n={1}
+            icon={FileText}
+            title="Build the quote"
+            body="Open New Quote, add talent + deliverables, override per-line factors if needed. Live pricing as you tweak."
+          />
+          <StepCard
+            n={2}
+            icon={ShieldCheck}
+            title="Submit for approval"
+            body="Quotes go to the admin queue. Approver sees the full breakdown and can approve, request changes, or reject."
+          />
+          <StepCard
+            n={3}
+            icon={Send}
+            title="Send to client"
+            body="Approved quotes get a token-protected client URL. Brand reviews and clicks Approve/Reject — no login required."
+          />
+          <StepCard
+            n={4}
+            icon={Trophy}
+            title="Close the loop"
+            body="Won, lost, or rejected — every outcome is captured. The pipeline view tells you what's live and what's at risk."
+          />
+        </div>
+      </section>
+
+      {/* ─── Where to look in the sidebar ─── */}
+      <section className="px-4 sm:px-6">
+        <h2 className="text-xs uppercase tracking-wider text-label font-semibold mb-4">Where to find things</h2>
+        <div className="card card-p">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+            <SidebarHint icon={FileText} label="New Quote" body="Build a campaign quote from scratch." />
+            <SidebarHint icon={Layers} label="Quote Log" body="Every quote, every status, searchable." />
+            <SidebarHint icon={Inbox} label="Inquiries" body="Inbound brand DMs, agency emails, leads waiting to become deals." />
+            <SidebarHint icon={Users} label="Roster" body="Players — rate cards, tiers, platforms." />
+            <SidebarHint icon={Sparkles} label="Creators" body="External creator partners and their rates." />
+            <SidebarHint icon={Map} label="Roadmap" body="What's planned, what's shipping, what's live." />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Foundational concepts (collapsible-feel cards) ─── */}
+      <section className="px-4 sm:px-6">
+        <h2 className="text-xs uppercase tracking-wider text-label font-semibold mb-4">Concepts worth knowing</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ConceptCard
+            title="The 9-axis pricing engine"
+            body="Final = MAX(SocialPrice, AuthorityFloor) × ConfidenceCap × (1 + RightsUplift). The Authority Floor stops the engine from underpricing anchor talent. The Confidence Cap prevents overpricing on shaky measurement."
+          />
+          <ConceptCard
+            title="Tiers and floor share"
+            body="Players sit in tiers S/1/2/3/4. Each tier has a floor share that anchors the IRL fee against the social price. Admins can adjust tiers live without redeploying."
+          />
+          <ConceptCard
+            title="Add-on rights packages"
+            body="Usage rights (paid media, perpetual, exclusivity, etc.) stack as additive uplifts on top of the per-line price. Cap is enforced at the quote level."
+          />
+          <ConceptCard
+            title="Quote lifecycle"
+            body="draft → pending_approval → approved → sent_to_client → client_approved/rejected → closed_won/lost. Every transition is logged. Clients see only the public portal."
+          />
+        </div>
+      </section>
+
+      {/* ─── Footer CTA ─── */}
+      <section className="px-4 sm:px-6">
+        <div className="card card-p flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div className="font-semibold text-ink">Ready when you are.</div>
+            <div className="text-sm text-label mt-0.5">
+              Hit the button. We&rsquo;ll keep this guide one click away under <strong>About</strong>.
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard" className="btn btn-ghost">
+              <BookOpen size={14} /> Browse first
+            </Link>
+            <button onClick={() => dismiss(primaryCta.href)} className="btn btn-primary">
+              {primaryCta.label} <ArrowRight size={14} />
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-mute mt-4 text-center">
+          Built by Abdalrahman elGazzawi · Team Falcons Commercial
+        </p>
+      </section>
+    </div>
+  );
+}
+
+// ─── Sub-components ────────────────────────────────────────────────────────
+function FeatureCard({
+  icon: Icon, title, body,
+}: {
+  icon: typeof Sparkles; title: string; body: string;
+}) {
+  return (
+    <div className="card card-p hover:shadow-lift transition">
+      <div className="w-10 h-10 rounded-lg bg-greenSoft flex items-center justify-center mb-3">
+        <Icon size={20} className="text-greenDark" />
+      </div>
+      <div className="font-semibold text-ink mb-1">{title}</div>
+      <p className="text-sm text-label leading-relaxed">{body}</p>
+    </div>
+  );
+}
+
+function StepCard({
+  n, icon: Icon, title, body,
+}: {
+  n: number; icon: typeof Sparkles; title: string; body: string;
+}) {
+  return (
+    <div className="card card-p relative">
+      <div className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center text-sm font-bold shadow-card">
+        {n}
+      </div>
+      <Icon size={20} className="text-navy mb-3" />
+      <div className="font-semibold text-ink mb-1">{title}</div>
+      <p className="text-sm text-label leading-relaxed">{body}</p>
+    </div>
+  );
+}
+
+function SidebarHint({
+  icon: Icon, label, body,
+}: {
+  icon: typeof Sparkles; label: string; body: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="w-8 h-8 rounded-md bg-bg flex items-center justify-center flex-shrink-0">
+        <Icon size={16} className="text-label" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-sm font-semibold text-ink">{label}</div>
+        <div className="text-xs text-label leading-snug">{body}</div>
+      </div>
+    </div>
+  );
+}
+
+function ConceptCard({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="card card-p border-l-4 border-l-green">
+      <div className="font-semibold text-ink mb-1">{title}</div>
+      <p className="text-sm text-label leading-relaxed">{body}</p>
+    </div>
+  );
+}

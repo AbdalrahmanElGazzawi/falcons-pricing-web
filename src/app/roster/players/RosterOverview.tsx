@@ -8,9 +8,10 @@ import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import {
-  Search, Users, Rows2, Rows3, Rows4, Pencil, Check, X as XIcon,
+  Users, Rows2, Rows3, Rows4, Pencil, Check, X as XIcon,
   Trophy, Clipboard, Briefcase, ScanSearch, Megaphone, Layers,
 } from 'lucide-react';
+import { SearchInput } from '@/components/SearchInput';
 
 type Density = 'compact' | 'comfortable' | 'spacious';
 
@@ -142,15 +143,12 @@ export function RosterOverview({
 
       {/* Filter bar */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mute" />
-          <input
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            placeholder="Search nickname, name, team, in-game role…"
-            className="input pl-9"
-          />
-        </div>
+        <SearchInput
+          value={q}
+          onChange={setQ}
+          placeholder="Search nickname, name, team, in-game role…"
+          className="flex-1 min-w-[220px] max-w-md"
+        />
         <select value={game} onChange={e => { setGame(e.target.value); setTeam(''); }} className="input max-w-[200px]">
           <option value="">All games</option>
           {games.map(g => <option key={g} value={g}>{g}</option>)}

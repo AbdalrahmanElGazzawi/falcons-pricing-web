@@ -1,7 +1,8 @@
 'use client';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search, MessageSquare, Mail, Instagram, Twitter, Phone, Globe } from 'lucide-react';
+import { MessageSquare, Mail, Instagram, Twitter, Phone, Globe } from 'lucide-react';
+import { SearchInput } from '@/components/SearchInput';
 import { EmptyState } from '@/components/EmptyState';
 
 type Row = {
@@ -50,15 +51,12 @@ export function InquiriesList({ rows }: { rows: Row[] }) {
   return (
     <>
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mute" />
-          <input
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            placeholder="Search brand, agency, campaign, deliverable…"
-            className="input pl-9"
-          />
-        </div>
+        <SearchInput
+          value={q}
+          onChange={setQ}
+          placeholder="Search brand, agency, campaign, deliverable…"
+          className="flex-1 min-w-[220px] max-w-md"
+        />
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="input max-w-[140px]">
           <option value="">All types</option>
           <option value="brand">Brand campaign</option>

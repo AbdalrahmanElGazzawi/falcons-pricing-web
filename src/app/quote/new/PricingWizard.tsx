@@ -7,9 +7,10 @@ import {
   type Player, type Creator, type Tier, type PlatformGroup,
 } from '@/lib/types';
 import {
-  ArrowLeft, ArrowRight, Check, ChevronRight, Plus, Search, User, Users, X,
+  ArrowLeft, ArrowRight, Check, ChevronRight, Plus, User, Users, X,
   Megaphone, ExternalLink, Twitter, Instagram, Youtube, Twitch, Facebook,
 } from 'lucide-react';
+import { SearchInput } from '@/components/SearchInput';
 import { newUid, type LineDraft } from './line-draft';
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -629,16 +630,13 @@ function StepFilter({
 
       {/* Search + list */}
       <div>
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mute" />
-          <input
-            autoFocus
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={`Search ${filteredTalents.length} ${isPlayer ? 'player' : 'creator'}${filteredTalents.length === 1 ? '' : 's'}…`}
-            className="input pl-9"
-          />
-        </div>
+        <SearchInput
+          autoFocus
+          value={search}
+          onChange={setSearch}
+          placeholder={`Search ${filteredTalents.length} ${isPlayer ? 'player' : 'creator'}${filteredTalents.length === 1 ? '' : 's'}…`}
+          size="sm"
+        />
         <div className="mt-3 max-h-80 overflow-y-auto border border-line rounded-lg divide-y divide-line">
           {filteredTalents.length === 0 && (
             <div className="px-4 py-6 text-xs text-mute text-center">

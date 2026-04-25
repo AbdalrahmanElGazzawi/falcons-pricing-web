@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { Creator } from '@/lib/types';
 import { fmtMoney, tierClass } from '@/lib/utils';
-import { Search } from 'lucide-react';
+import { SearchInput } from '@/components/SearchInput';
 
 const KEY_PLATFORMS = [
   { key: 'rate_x_post_quote', label: 'X Post' },
@@ -32,15 +32,12 @@ export function CreatorsTable({ creators, isAdmin }: { creators: Creator[]; isAd
   return (
     <>
       <div className="flex items-center gap-3 mb-4">
-        <div className="relative flex-1 max-w-md">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mute" />
-          <input
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            placeholder="Search creator name…"
-            className="input pl-9"
-          />
-        </div>
+        <SearchInput
+          value={q}
+          onChange={setQ}
+          placeholder="Search creator name…"
+          className="flex-1 max-w-md"
+        />
         <select value={tier} onChange={e => setTier(e.target.value)} className="input max-w-[200px]">
           <option value="">All tiers</option>
           {tiers.map(t => <option key={t} value={t}>{t}</option>)}

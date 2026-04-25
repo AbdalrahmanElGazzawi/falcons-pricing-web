@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Search, Plus, X as XIcon, ChevronDown, ChevronUp, Check,
+  Plus, X as XIcon, ChevronDown, ChevronUp, Check,
   Twitter, Instagram, Youtube, Twitch, Facebook, ExternalLink,
 } from 'lucide-react';
+import { SearchInput } from '@/components/SearchInput';
 import { computeLine, type MeasurementConfidence } from '@/lib/pricing';
 import { fmtMoney, fmtPct, tierClass } from '@/lib/utils';
 import {
@@ -281,15 +282,12 @@ export function QuoteConfigurator({
           </div>
 
           {/* Search */}
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mute" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={`Search ${filtered.length} ${talentKind === 'creator' ? 'creators' : roleFilter === 'influencer' ? 'influencers' : 'players'}…`}
-              className="input pl-9"
-            />
-          </div>
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder={`Search ${filtered.length} ${talentKind === 'creator' ? 'creators' : roleFilter === 'influencer' ? 'influencers' : 'players'}…`}
+            size="sm"
+          />
 
           {/* Tier pills */}
           <div className="flex flex-wrap gap-1.5">
