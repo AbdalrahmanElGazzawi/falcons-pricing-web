@@ -64,6 +64,10 @@ export interface Player {
   followers_x?: number;
   followers_fb?: number;
   followers_snap?: number;
+  // Agency representation
+  agency_status?: 'direct' | 'agency' | 'unknown';
+  agency_name?: string | null;
+  agency_contact?: string | null;
 }
 
 export interface Creator {

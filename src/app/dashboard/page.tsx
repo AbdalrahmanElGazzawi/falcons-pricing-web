@@ -3,7 +3,7 @@ import { requireStaff } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { isSuperAdminEmail } from '@/lib/super-admin';
-import { Users, Sparkles, Trophy, Gamepad2, Layers, PlusCircle, ArrowUpRight, BarChart3, Megaphone, GraduationCap } from 'lucide-react';
+import { Users, Sparkles, Trophy, Gamepad2, Layers, PlusCircle, ArrowUpRight, BarChart3, Megaphone, GraduationCap, Briefcase } from 'lucide-react';
 import { AssetCharts } from './AssetCharts';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +24,7 @@ export default async function DashboardPage() {
     { data: tiers },
     { data: teams },
   ] = await Promise.all([
-    supabase.from('players').select('id, nickname, full_name, role, game, tier_code, avatar_url, ingame_role').eq('is_active', true),
+    supabase.from('players').select('id, nickname, full_name, role, game, tier_code, avatar_url, ingame_role, agency_status, agency_name, agency_contact').eq('is_active', true),
     supabase.from('creators').select('id, nickname, tier_code').eq('is_active', true),
     supabase.from('tiers').select('code, label, sort_order').order('sort_order'),
     supabase.from('esports_teams').select('*').eq('is_active', true).order('sort_order').order('game'),
@@ -55,6 +55,11 @@ export default async function DashboardPage() {
   // tier codes are stored as 'Tier S' / 'Tier 1' / 'Tier 2' — not single letters
   const tierSPlayers = playersOnly.filter(p => p.tier_code === 'Tier S');
   const games = new Set(playersOnly.map(p => p.game).filter(Boolean));
+
+  // Agency representation breakdown
+  const agencyDirect  = playersOnly.filter(p => p.agency_status === 'direct').length;
+  const agencyManaged = playersOnly.filter(p => p.agency_status === 'agency').length;
+  const agencyUnknown = playersOnly.filter(p => !p.agency_status || p.agency_status === 'unknown').length;
 
   // ── Roster by tier (players + creators only; staff are tracked separately) ─
   const tierBuckets = new Map<string, { players: number; creators: number }>();
@@ -118,10 +123,11 @@ export default async function DashboardPage() {
       />
 
       {/* Hero strip — asset inventory */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <HeroCard icon={Megaphone} tint="green" label="Owned channel reach" value={fmtFollow(totalReach)} sub={`${teamsWithChannels.length}/${allTeams.length} teams populated`} />
         <HeroCard icon={Users}     tint="navy"  label="Pro players"         value={totalPlayers.toString()} sub={`+ ${totalCreators} creators · ${totalInfluencers} influencers`} />
         <HeroCard icon={Trophy}    tint="amber" label="Tier S anchors"      value={tierSPlayers.length.toString()} sub={tierSPlayers.length > 0 ? tierSPlayers.slice(0, 2).map(p => p.nickname).join(' · ') : 'promote stars in /admin/tiers'} />
+        <HeroCard icon={Briefcase} tint="navy"  label="Direct vs agency"   value={`${agencyDirect}/${agencyManaged}`} sub={`${agencyUnknown} still to capture`} />
         <HeroCard icon={Gamepad2}  tint="green" label="Games covered"       value={games.size.toString()} sub={`${totalStaff} staff across teams`} />
       </div>
 
@@ -196,6 +202,14 @@ export default async function DashboardPage() {
                 <div className="mt-2 px-1">
                   <div className="text-sm font-semibold text-ink truncate group-hover:text-greenDark">{p.nickname}</div>
                   <div className="text-[10px] text-mute uppercase tracking-wide truncate">{p.game}{p.ingame_role ? ` · ${p.ingame_role}` : ''}</div>
+                  {p.agency_status === 'agency' ? (
+                    <div className="text-[10px] text-blue-700 mt-0.5 truncate" title={`${p.agency_name || ''}${p.agency_contact ? ' · ' + p.agency_contact : ''}`}>
+                      <Briefcase size={9} className="inline mr-0.5 mb-0.5" />
+                      {p.agency_name || p.agency_contact || 'Agency-managed'}
+                    </div>
+                  ) : p.agency_status === 'direct' ? (
+                    <div className="text-[10px] text-greenDark mt-0.5">Direct</div>
+                  ) : null}
                 </div>
               </Link>
             ))}
