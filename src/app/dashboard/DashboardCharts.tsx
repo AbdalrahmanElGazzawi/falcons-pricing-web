@@ -33,7 +33,7 @@ export function DashboardCharts({
 }: {
   monthly: Array<{ month: string; collected: number; pipeline: number; quotes: number }>;
   creators: Array<{ name: string; revenue: number; deals: number }>;
-  brands:   Array<{ name: string; revenue: number }>;
+  brands:   Array<{ name: string; revenue: number; domain: string | null }>;
   platforms:Array<{ name: string; revenue: number }>;
   funnel:   Array<{ stage: string; value: number }>;
   aging:    Array<{ bucket: string; amount: number }>;
@@ -107,21 +107,11 @@ export function DashboardCharts({
         </ResponsiveContainer>
       </div>
 
-      {/* Brand portfolio */}
+      {/* Brand portfolio — custom row layout with logos */}
       <div className="card card-p lg:col-span-3">
         <h3 className="font-semibold text-ink mb-1">Brand portfolio</h3>
-        <p className="text-xs text-mute mb-2">Revenue by client</p>
-        <ResponsiveContainer width="100%" height={Math.max(180, brands.length * 32)}>
-          <BarChart data={brands} layout="vertical" margin={{ left: 30, right: 30 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
-            <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={fmtKsar} />
-            <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11 }} />
-            <Tooltip formatter={(v: any) => `${fmtSar(Number(v))} SAR`} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-            <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
-              {brands.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <p className="text-xs text-mute mb-3">Revenue by client</p>
+        <BrandList brands={brands} />
       </div>
 
       {/* Funnel */}
@@ -181,3 +171,83 @@ export function DashboardCharts({
     </div>
   );
 }
+
+// ── Brand list with auto-sourced logos ─────────────────────────────────────
+function BrandList({ brands }: { brands: Array<{ name: string; revenue: number; domain: string | null }> }) {
+  const max = Math.max(...brands.map(b => b.revenue), 1);
+  return (
+    <ul className="space-y-2">
+      {brands.map((b, i) => {
+        const pct = (b.revenue / max) * 100;
+        return (
+          <li key={b.name} className="flex items-center gap-3">
+            <BrandLogo name={b.name} domain={b.domain} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-ink truncate">{b.name}</span>
+                <span className="text-xs font-semibold text-greenDark tabular-nums whitespace-nowrap ml-2">
+                  {fmtSar(b.revenue)} SAR
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-bg overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: pct + '%',
+                    backgroundColor: PALETTE[i % PALETTE.length],
+                  }}
+                />
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function BrandLogo({ name, domain }: { name: string; domain: string | null }) {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(s => s[0]?.toUpperCase() ?? '')
+    .join('') || '?';
+
+  if (!domain) {
+    // Coloured initials tile
+    const hue = Array.from(name).reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0) % 360;
+    return (
+      <div
+        className="w-9 h-9 rounded-lg grid place-items-center text-xs font-bold text-white flex-shrink-0"
+        style={{ backgroundColor: `hsl(${hue}, 55%, 45%)` }}
+      >
+        {initials}
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-9 h-9 rounded-lg bg-white border border-line grid place-items-center overflow-hidden flex-shrink-0">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`https://logo.clearbit.com/${domain}?size=72`}
+        alt={name}
+        className="w-7 h-7 object-contain"
+        onError={(e) => {
+          // Fallback to initials on logo failure
+          const el = e.currentTarget;
+          el.style.display = 'none';
+          const parent = el.parentElement;
+          if (parent && !parent.querySelector('.fallback-initials')) {
+            const span = document.createElement('span');
+            span.textContent = initials;
+            span.className = 'fallback-initials text-xs font-bold text-label';
+            parent.appendChild(span);
+          }
+        }}
+      />
+    </div>
+  );
+}
+

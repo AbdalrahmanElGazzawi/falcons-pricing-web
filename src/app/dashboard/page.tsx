@@ -68,23 +68,26 @@ export default async function DashboardPage() {
   // ── Top creators ─────────────────────────────────────────────────────────
   const creatorMap = new Map<string, { name: string; revenue: number; deals: number }>();
   for (const r of sales) {
-    const key = r.talent_name;
-    if (!creatorMap.has(key)) creatorMap.set(key, { name: key, revenue: 0, deals: 0 });
-    creatorMap.get(key)!.revenue += Number(r.total_with_vat_sar);
-    creatorMap.get(key)!.deals += 1;
+    const name = (r as any).talent_name_en || r.talent_name;
+    if (!creatorMap.has(name)) creatorMap.set(name, { name, revenue: 0, deals: 0 });
+    creatorMap.get(name)!.revenue += Number(r.total_with_vat_sar);
+    creatorMap.get(name)!.deals += 1;
   }
   const topCreators = [...creatorMap.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 6);
 
   // ── Brand mix ────────────────────────────────────────────────────────────
-  const brandMap = new Map<string, number>();
+  type BrandAgg = { name: string; revenue: number; domain: string | null };
+  const brandMap = new Map<string, BrandAgg>();
   for (const r of sales) {
-    const k = r.brand_name || 'Unknown';
-    brandMap.set(k, (brandMap.get(k) ?? 0) + Number(r.total_with_vat_sar));
+    const name = (r as any).brand_name_en || r.brand_name || 'Unknown';
+    const domain = (r as any).brand_domain ?? null;
+    if (!brandMap.has(name)) brandMap.set(name, { name, revenue: 0, domain });
+    brandMap.get(name)!.revenue += Number(r.total_with_vat_sar);
+    if (!brandMap.get(name)!.domain && domain) brandMap.get(name)!.domain = domain;
   }
-  const topBrands = [...brandMap.entries()]
-    .map(([name, revenue]) => ({ name, revenue }))
+  const topBrands = [...brandMap.values()]
     .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 6);
+    .slice(0, 8);
 
   // ── Platform mix ─────────────────────────────────────────────────────────
   const platMap = new Map<string, number>();
