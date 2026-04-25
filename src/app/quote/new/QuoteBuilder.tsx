@@ -641,7 +641,8 @@ export function QuoteBuilder({
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6 items-start">
         <div className="space-y-6 min-w-0">
           {/* ① CAMPAIGN — header / globals / addons */}
-          {view === 'campaign' && (() => {
+          <div className={view === 'campaign' ? '' : 'hidden'}>
+          {(() => {
             const ids = sectionOrder.filter(id => ['header','globals','addons'].includes(id));
             return (
               <div className="space-y-6">
@@ -665,21 +666,54 @@ export function QuoteBuilder({
               </div>
             );
           })()}
+          </div>
 
           {/* ② BUILD — configurator hero + compact lines list */}
-          {view === 'build' && (
-            <div className="space-y-6">
+          <div className={view === 'build' ? 'space-y-6' : 'hidden'}>
+              {/* Compact add-on pill row — adjust rights while building */}
+              <div className="card card-p">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-[11px] uppercase tracking-wider text-label font-semibold">
+                    Rights & add-ons <span className="text-mute font-normal normal-case ml-1.5">— uplift applied to every line</span>
+                  </div>
+                  {addonsUpliftPct > 0 && (
+                    <div className="text-xs text-greenDark font-semibold">+{fmtPct(addonsUpliftPct, 0)} total</div>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {addons.map(a => {
+                    const checked = addonIds.has(a.id);
+                    return (
+                      <button
+                        key={a.id}
+                        onClick={() => setAddonIds(s => {
+                          const next = new Set(s);
+                          if (next.has(a.id)) next.delete(a.id); else next.add(a.id);
+                          return next;
+                        })}
+                        title={a.description || ''}
+                        className={[
+                          'px-3 py-1.5 rounded-full text-xs font-medium border transition',
+                          checked
+                            ? 'bg-green text-white border-green'
+                            : 'bg-white text-label border-line hover:border-green hover:bg-greenSoft',
+                        ].join(' ')}
+                      >
+                        {a.label} <span className="opacity-75">+{fmtPct(a.uplift_pct, 0)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               {sectionNodes.configurator}
               {sectionNodes.lines}
               <div className="text-xs text-mute text-center pt-2">
                 Done adding? Switch to <button onClick={() => setView('summary')} className="text-greenDark hover:underline font-medium">③ Summary →</button> to review and submit.
               </div>
-            </div>
-          )}
+          </div>
 
           {/* ③ SUMMARY — preview + notes + lines (editable) */}
-          {view === 'summary' && (
-            <div className="space-y-6">
+          <div className={view === 'summary' ? 'space-y-6' : 'hidden'}>
               <QuotePreview
                 clientName={clientName}
                 clientEmail={clientEmail}
@@ -702,8 +736,7 @@ export function QuoteBuilder({
                 </summary>
                 <div className="border-t border-line">{sectionNodes.lines}</div>
               </details>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Desktop sticky save rail */}
