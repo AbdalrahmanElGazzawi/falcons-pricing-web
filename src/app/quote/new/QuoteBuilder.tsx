@@ -7,23 +7,75 @@ import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
   type Player, type Creator, type Tier, type Addon,
 } from '@/lib/types';
-import { Trash2, Plus, Save, ArrowLeft, Pencil } from 'lucide-react';
+import { Trash2, Plus, Save, ArrowLeft, Pencil, Settings, Check } from 'lucide-react';
 import Link from 'next/link';
 import { PricingWizard } from './PricingWizard';
 import type { LineDraft } from './line-draft';
+import { Section } from '@/components/Section';
+
+const SECTION_TITLES: Record<string, string> = {
+  header: 'Quote header',
+  globals: 'Campaign axes',
+  addons: 'Add-ons',
+  lines: 'Quote lines',
+  notes_totals: 'Notes & totals',
+};
 
 export function QuoteBuilder({
   players, creators, tiers, addons, ownerEmail,
+  initialSectionOrder, canEditLayout,
 }: {
   players: Player[];
   creators: Creator[];
   tiers: Tier[];
   addons: Addon[];
   ownerEmail: string;
+  initialSectionOrder: string[];
+  canEditLayout: boolean;
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Layout edit mode (super-admin only)
+  const [sectionOrder, setSectionOrder] = useState<string[]>(initialSectionOrder);
+  const [editingLayout, setEditingLayout] = useState(false);
+  const [layoutBusy, setLayoutBusy] = useState(false);
+  const [layoutError, setLayoutError] = useState<string | null>(null);
+
+  async function persistOrder(next: string[]) {
+    setLayoutBusy(true);
+    setLayoutError(null);
+    try {
+      const res = await fetch('/api/admin/layout/quote%2Fnew', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section_order: next }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || `Save failed (${res.status})`);
+      }
+    } catch (e: any) {
+      setLayoutError(e.message || 'Layout save failed');
+    } finally {
+      setLayoutBusy(false);
+    }
+  }
+
+  function moveSection(id: string, delta: -1 | 1) {
+    setSectionOrder(curr => {
+      const i = curr.indexOf(id);
+      if (i < 0) return curr;
+      const j = i + delta;
+      if (j < 0 || j >= curr.length) return curr;
+      const next = curr.slice();
+      next.splice(i, 1);
+      next.splice(j, 0, id);
+      void persistOrder(next);
+      return next;
+    });
+  }
 
   // ── Quote header
   const [clientName, setClientName] = useState('');
@@ -198,30 +250,9 @@ export function QuoteBuilder({
   const activeOverrides = (l: LineDraft) =>
     [l.o_ctype, l.o_eng, l.o_aud, l.o_seas, l.o_lang, l.o_auth].filter(v => v !== null).length;
 
-  return (
-    <div className="space-y-6">
-      <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-label hover:text-ink">
-        <ArrowLeft size={14} /> Back
-      </Link>
-
-      {/* Pricing wizard (replaces inline LinePanel) */}
-      {wizard && (
-        <PricingWizard
-          mode={wizard.mode}
-          initial={wizard.mode === 'edit' ? wizard.initial : undefined}
-          players={players}
-          creators={creators}
-          tiers={tiers}
-          globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
-          currency={currency}
-          addonsUpliftPct={addonsUpliftPct}
-          onCancel={closeWizard}
-          onCommit={commitWizard}
-          onCommitAndAnother={wizard.mode === 'add' ? commitAndAnother : undefined}
-        />
-      )}
-
-      {/* Header card */}
+  // ── Section nodes — built once, then rendered in sectionOrder order
+  const sectionNodes: Record<string, React.ReactNode> = {
+    header: (
       <div className="card card-p">
         <h2 className="font-semibold mb-4">Quote header</h2>
         <div className="grid grid-cols-3 gap-4">
@@ -255,8 +286,8 @@ export function QuoteBuilder({
           </div>
         </div>
       </div>
-
-      {/* Globals / campaign axes (untouched — feed defaults to every line) */}
+    ),
+    globals: (
       <div className="card card-p">
         <h2 className="font-semibold mb-1">Campaign-level pricing axes</h2>
         <p className="text-xs text-label mb-4">These apply to every line by default. Override any axis on a per-line basis from the wizard.</p>
@@ -285,8 +316,8 @@ export function QuoteBuilder({
           </div>
         </div>
       </div>
-
-      {/* Add-ons */}
+    ),
+    addons: (
       <div className="card card-p">
         <h2 className="font-semibold mb-4">Add-on rights packages</h2>
         <div className="grid grid-cols-3 gap-2">
@@ -321,8 +352,8 @@ export function QuoteBuilder({
           <div className="text-xs text-label mt-3">Total uplift: <strong className="text-green">+{fmtPct(addonsUpliftPct, 0)}</strong></div>
         )}
       </div>
-
-      {/* Lines */}
+    ),
+    lines: (
       <div className="card">
         <div className="px-5 py-4 border-b border-line flex items-center justify-between">
           <h2 className="font-semibold">Quote lines</h2>
@@ -413,8 +444,8 @@ export function QuoteBuilder({
           </div>
         )}
       </div>
-
-      {/* Notes + totals + save */}
+    ),
+    notes_totals: (
       <div className="grid grid-cols-3 gap-6">
         <div className="card card-p col-span-2">
           <label className="label">Internal notes</label>
@@ -452,7 +483,80 @@ export function QuoteBuilder({
           </div>
         </div>
       </div>
+    ),
+  };
 
+  // Defensive: only render sections we know how to render
+  const renderableOrder = sectionOrder.filter(id => sectionNodes[id]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-label hover:text-ink">
+          <ArrowLeft size={14} /> Back
+        </Link>
+        {canEditLayout && (
+          <div className="flex items-center gap-2">
+            {layoutError && <span className="text-xs text-red-600">{layoutError}</span>}
+            {layoutBusy && <span className="text-xs text-label">Saving layout…</span>}
+            {editingLayout ? (
+              <button
+                onClick={() => setEditingLayout(false)}
+                className="btn btn-primary text-sm"
+              >
+                <Check size={14} /> Done editing
+              </button>
+            ) : (
+              <button
+                onClick={() => setEditingLayout(true)}
+                className="btn btn-ghost text-sm"
+                title="Reorder sections (super admin only)"
+              >
+                <Settings size={14} /> Customize layout
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {editingLayout && (
+        <div className="rounded-lg border border-green/40 bg-greenSoft px-4 py-3 text-sm text-greenDark">
+          <strong>Layout edit mode.</strong> Use the ▲ ▼ buttons on each section to reorder.
+          Changes save automatically and are logged to the audit trail.
+        </div>
+      )}
+
+      {/* Pricing wizard (always at top — not part of the reorder flow) */}
+      {wizard && (
+        <PricingWizard
+          mode={wizard.mode}
+          initial={wizard.mode === 'edit' ? wizard.initial : undefined}
+          players={players}
+          creators={creators}
+          tiers={tiers}
+          globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
+          currency={currency}
+          addonsUpliftPct={addonsUpliftPct}
+          onCancel={closeWizard}
+          onCommit={commitWizard}
+          onCommitAndAnother={wizard.mode === 'add' ? commitAndAnother : undefined}
+        />
+      )}
+
+      {renderableOrder.map((id, idx) => (
+        <Section
+          key={id}
+          id={id}
+          title={SECTION_TITLES[id] ?? id}
+          editable={editingLayout}
+          isFirst={idx === 0}
+          isLast={idx === renderableOrder.length - 1}
+          onMoveUp={() => moveSection(id, -1)}
+          onMoveDown={() => moveSection(id, 1)}
+        >
+          {sectionNodes[id]}
+        </Section>
+      ))}
     </div>
   );
 }

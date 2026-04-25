@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import type { UserRole } from '@/lib/types';
-import { LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog, Sparkles, BookOpen, KeyRound } from 'lucide-react';
+import { isSuperAdminEmail } from '@/lib/super-admin';
+import { LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog, Sparkles, BookOpen, KeyRound, ScrollText } from 'lucide-react';
 
-const NAV = (role: UserRole) => [
+const NAV = (role: UserRole, email: string) => [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/quote/new', label: 'New Quote', icon: PlusCircle, highlight: true },
   { href: '/quotes', label: 'Quote Log', icon: FileText },
@@ -16,6 +17,9 @@ const NAV = (role: UserRole) => [
     { href: '/admin/tiers', label: 'Tiers', icon: Settings },
     { href: '/admin/addons', label: 'Add-ons', icon: Settings },
     { href: '/admin/assumptions', label: 'Assumptions', icon: BookOpen },
+  ] : []),
+  ...(isSuperAdminEmail(email) ? [
+    { href: '/admin/audit-log', label: 'Audit Log', icon: ScrollText },
   ] : []),
 ];
 
@@ -37,7 +41,7 @@ export function Shell({
     router.push('/login');
   }
 
-  const nav = NAV(role);
+  const nav = NAV(role, email);
 
   return (
     <div className="min-h-screen flex">

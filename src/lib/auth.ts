@@ -1,7 +1,9 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { createClient } from './supabase-server';
-import type { UserRole } from './types';
+import { isSuperAdminEmail } from './super-admin';
+
+export { SUPER_ADMIN_EMAIL, isSuperAdminEmail } from './super-admin';
 
 export async function requireAuth() {
   const supabase = createClient();
@@ -14,7 +16,6 @@ export async function requireAuth() {
     .eq('id', user.id)
     .single();
 
-  // Hard bounce: any user without an active profile goes to the revoked page.
   if (!profile || !profile.is_active) {
     redirect('/access-revoked');
   }
@@ -32,6 +33,14 @@ export async function requireStaff() {
 export async function requireAdmin() {
   const res = await requireAuth();
   if (res.denied || res.profile.role !== 'admin') {
+    return { ...res, denied: true as const };
+  }
+  return { ...res, denied: false as const };
+}
+
+export async function requireSuperAdmin() {
+  const res = await requireAuth();
+  if (res.denied || !isSuperAdminEmail(res.profile.email)) {
     return { ...res, denied: true as const };
   }
   return { ...res, denied: false as const };
