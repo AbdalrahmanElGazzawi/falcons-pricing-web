@@ -178,12 +178,14 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10).text('PRICING METHODOLOGY', methX, y);
   y += 14;
   doc.fillColor(LABEL).font('Helvetica').fontSize(8.5);
-  doc.text('Final price = MAX(Social Price, Authority Floor) × Confidence Cap × (1 + Rights Uplift)', methX, y, { width: methW });
-  y += 14;
+  const formulaText = 'Final = MAX(Social Price, Authority Floor) × Confidence Cap × (1 + Rights Uplift)';
+  const formulaHeight = doc.heightOfString(formulaText, { width: methW, lineGap: 1 });
+  doc.text(formulaText, methX, y, { width: methW, lineGap: 1 });
+  y += formulaHeight + 8;
 
   // Campaign-level axes
   doc.fillColor(MUTE).font('Helvetica').fontSize(7.5).text('CAMPAIGN AXES', methX, y);
-  y += 10;
+  y += 11;
   const axes: Array<[string, string, number]> = [
     ['Engagement',  'eng',   Number(quote.eng_factor || 1)],
     ['Audience',    'aud',   Number(quote.audience_factor || 1)],
