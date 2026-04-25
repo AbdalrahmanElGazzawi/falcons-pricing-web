@@ -12,6 +12,14 @@ export async function POST(req: Request, { params }: { params: { token: string }
   if (decision !== 'approved' && decision !== 'rejected') {
     return NextResponse.json({ error: 'Invalid decision' }, { status: 400 });
   }
+  const respondentName = (body?.name ?? '').toString().trim().slice(0, 200);
+  const respondentEmail = (body?.email ?? '').toString().trim().slice(0, 200);
+  if (decision === 'approved' && !respondentName) {
+    return NextResponse.json({ error: 'Name is required to accept' }, { status: 400 });
+  }
+  if (decision === 'rejected' && !respondentName) {
+    return NextResponse.json({ error: 'Name is required to decline' }, { status: 400 });
+  }
 
   const supabase = createServiceClient();
 
@@ -30,26 +38,36 @@ export async function POST(req: Request, { params }: { params: { token: string }
   }
 
   const nextStatus = decision === 'approved' ? 'client_approved' : 'client_rejected';
+  const now = new Date().toISOString();
+  const update: Record<string, any> = {
+    status: nextStatus,
+    client_responded_at: now,
+    client_response: decision,
+    accepted_by_name: respondentName,
+    accepted_by_email: respondentEmail || null,
+  };
+  if (decision === 'approved') update.accepted_at = now;
+  if (decision === 'rejected') {
+    update.declined_at = now;
+    if (body.comment) update.decline_reason = String(body.comment).slice(0, 1000);
+  }
+  if (body.comment) {
+    update.internal_notes = `[Client ${decision} ${now} — ${respondentName}]\n${body.comment}`;
+  }
   const { error } = await supabase
     .from('quotes')
-    .update({
-      status: nextStatus,
-      client_responded_at: new Date().toISOString(),
-      client_response: decision,
-      internal_notes: body.comment
-        ? `[Client response ${new Date().toISOString()}]\n${body.comment}`
-        : undefined,
-    })
+    .update(update)
     .eq('id', quote.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   await supabase.from('audit_log').insert({
-    actor_email: 'client@portal',
+    actor_email: respondentEmail || 'client@portal',
+    actor_kind: 'system',
     action: `quote.client.${decision}`,
     entity_type: 'quote',
     entity_id: quote.id,
-    diff: { decision, comment: body.comment ?? null },
+    diff: { decision, name: respondentName, email: respondentEmail || null, comment: body.comment ?? null },
   });
 
   return NextResponse.json({ ok: true });

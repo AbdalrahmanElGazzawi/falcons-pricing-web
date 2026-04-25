@@ -7,6 +7,7 @@ import { fmtMoney, fmtPct, statusColor, statusLabel } from '@/lib/utils';
 import { QuoteActions } from './QuoteActions';
 import { ArrowLeft, Download, ExternalLink, Copy } from 'lucide-react';
 import { ShareLinkBox } from './ShareLinkBox';
+import { EngagementCard } from './EngagementCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -177,6 +178,19 @@ export default async function QuoteDetail({ params }: { params: { id: string } }
             status={quote.status}
             role={profile.role}
             canDelete={isSuperAdminEmail(profile.email)}
+          />
+
+          {/* Client engagement (views, accept, decline) */}
+          <EngagementCard
+            viewedAt={quote.viewed_at}
+            lastViewedAt={quote.last_viewed_at}
+            viewedCount={quote.viewed_count ?? 0}
+            acceptedAt={quote.accepted_at}
+            acceptedByName={quote.accepted_by_name}
+            acceptedByEmail={quote.accepted_by_email}
+            declinedAt={quote.declined_at}
+            declineReason={quote.decline_reason}
+            status={quote.status}
           />
 
           {/* Client share */}

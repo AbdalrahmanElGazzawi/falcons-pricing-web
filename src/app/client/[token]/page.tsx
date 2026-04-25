@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase-server';
-import { fmtMoney, fmtPct, statusLabel } from '@/lib/utils';
+import { fmtCurrency, fmtMoney, fmtPct, statusLabel } from '@/lib/utils';
 import { ClientResponse } from './ClientResponse';
 
 export const dynamic = 'force-dynamic';
@@ -23,6 +23,32 @@ export default async function ClientPortal({ params }: { params: { token: string
 
   // Restrict client view: hide drafts / approved-but-not-sent
   const visible = ['sent_to_client', 'client_approved', 'client_rejected', 'closed_won'].includes(quote.status);
+
+  // Log this view (fire-and-forget — don't block the render on it)
+  if (visible) {
+    const now = new Date().toISOString();
+    void supabase
+      .from('quotes')
+      .update({
+        viewed_at: quote.viewed_at ?? now,
+        last_viewed_at: now,
+        viewed_count: (quote.viewed_count ?? 0) + 1,
+      })
+      .eq('id', quote.id)
+      .then(() => null);
+
+    // First view → audit-log entry. Subsequent views just bump the counter.
+    if (!quote.viewed_at) {
+      void supabase.from('audit_log').insert({
+        actor_email: 'client@portal',
+        actor_kind: 'system',
+        action: 'quote.client.viewed',
+        entity_type: 'quote',
+        entity_id: quote.id,
+        diff: { quote_number: quote.quote_number, client_name: quote.client_name },
+      }).then(() => null);
+    }
+  }
   if (!visible) {
     return (
       <PublicShell>
@@ -95,8 +121,8 @@ export default async function ClientPortal({ params }: { params: { token: string
                   </td>
                   <td className="px-6 py-3">{l.platform}</td>
                   <td className="px-6 py-3 text-right">{l.qty}</td>
-                  <td className="px-6 py-3 text-right">{fmtMoney(l.final_unit, quote.currency)}</td>
-                  <td className="px-6 py-3 text-right font-medium">{fmtMoney(l.final_amount, quote.currency)}</td>
+                  <td className="px-6 py-3 text-right">{fmtCurrency(l.final_unit, quote.currency, quote.usd_rate ?? 3.75)}</td>
+                  <td className="px-6 py-3 text-right font-medium">{fmtCurrency(l.final_amount, quote.currency, quote.usd_rate ?? 3.75)}</td>
                 </tr>
               ))}
             </tbody>
@@ -129,10 +155,10 @@ export default async function ClientPortal({ params }: { params: { token: string
           <div className="card card-p">
             <div className="text-xs text-label uppercase tracking-wide mb-3">Summary</div>
             <div className="space-y-2 text-sm">
-              <Row label="Subtotal" value={fmtMoney(quote.subtotal, quote.currency)} />
-              <Row label={`VAT (${fmtPct(quote.vat_rate, 0)})`} value={fmtMoney(quote.vat_amount, quote.currency)} />
+              <Row label="Subtotal" value={fmtCurrency(quote.subtotal, quote.currency, quote.usd_rate ?? 3.75)} />
+              <Row label={`VAT (${fmtPct(quote.vat_rate, 0)})`} value={fmtCurrency(quote.vat_amount, quote.currency, quote.usd_rate ?? 3.75)} />
               <div className="border-t border-line pt-2 mt-2">
-                <Row label="TOTAL" value={fmtMoney(quote.total, quote.currency)} bold />
+                <Row label="TOTAL" value={fmtCurrency(quote.total, quote.currency, quote.usd_rate ?? 3.75)} bold />
               </div>
             </div>
           </div>
@@ -140,7 +166,7 @@ export default async function ClientPortal({ params }: { params: { token: string
 
         {/* Approve / Reject — client-side response is disabled for now.
             All approvals are handled internally by Team Falcons staff. */}
-        {false && quote.status === 'sent_to_client' && !responded ? (
+        {quote.status === 'sent_to_client' && !responded ? (
           <ClientResponse token={params.token} />
         ) : responded ? (
           <div className="card card-p text-center">

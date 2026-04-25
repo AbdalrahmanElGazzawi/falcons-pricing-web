@@ -5,3 +5,8 @@ node_modules/
 .DS_Store
 *.log
 .vercel/
+
+# build artifacts
+next-env.d.ts
+tsconfig.tsbuildinfo
+package-lock.json
