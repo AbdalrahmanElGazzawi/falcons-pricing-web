@@ -37,6 +37,9 @@ export function QuoteBuilder({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Build/Preview tab
+  const [view, setView] = useState<'build' | 'preview'>('build');
+
   // ── Layout edit mode (super-admin only)
   const [sectionOrder, setSectionOrder] = useState<string[]>(initialSectionOrder);
   const [editingLayout, setEditingLayout] = useState(false);
@@ -353,7 +356,21 @@ export function QuoteBuilder({
         )}
       </div>
     ),
-    lines: (
+    lines: wizard ? (
+      <PricingWizard
+        mode={wizard.mode}
+        initial={wizard.mode === 'edit' ? wizard.initial : undefined}
+        players={players}
+        creators={creators}
+        tiers={tiers}
+        globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
+        currency={currency}
+        addonsUpliftPct={addonsUpliftPct}
+        onCancel={closeWizard}
+        onCommit={commitWizard}
+        onCommitAndAnother={wizard.mode === 'add' ? commitAndAnother : undefined}
+      />
+    ) : (
       <div className="card">
         <div className="px-5 py-4 border-b border-line flex items-center justify-between">
           <h2 className="font-semibold">Quote lines</h2>
@@ -498,31 +515,67 @@ export function QuoteBuilder({
         </div>
       )}
 
-      {/* Pricing wizard — fixed full-screen modal so the page below
-          doesn't shift when it opens. */}
-      {wizard && (
-        <div
-          className="modal-backdrop"
-          onClick={(e) => { if (e.target === e.currentTarget) closeWizard(); }}
-        >
-          <div className="modal-panel" role="dialog" aria-modal="true" aria-label="Pricing wizard">
-            <PricingWizard
-              mode={wizard.mode}
-              initial={wizard.mode === 'edit' ? wizard.initial : undefined}
-              players={players}
-              creators={creators}
-              tiers={tiers}
-              globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
-              currency={currency}
-              addonsUpliftPct={addonsUpliftPct}
-              onCancel={closeWizard}
-              onCommit={commitWizard}
-              onCommitAndAnother={wizard.mode === 'add' ? commitAndAnother : undefined}
-            />
-          </div>
+      {/* Build / Preview tab strip */}
+      <div className="flex items-center gap-1 border-b border-line">
+        <TabButton active={view === 'build'} onClick={() => setView('build')}>Build</TabButton>
+        <TabButton active={view === 'preview'} onClick={() => setView('preview')}>Preview</TabButton>
+        <div className="ml-auto text-xs text-label pb-2">
+          {view === 'preview'
+            ? 'Read-only preview of the saved quote'
+            : `${computed.rows.length} line${computed.rows.length === 1 ? '' : 's'} · ${fmtMoney(computed.totals.total, currency)}`}
         </div>
-      )}
+      </div>
 
+      {view === 'preview' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-6 items-start">
+          <QuotePreview
+            clientName={clientName}
+            clientEmail={clientEmail}
+            campaign={campaign}
+            ownerEmail={ownerEmail}
+            currency={currency}
+            vatRate={vatRate}
+            notes={notes}
+            rows={computed.rows}
+            totals={computed.totals}
+            addonsUpliftPct={addonsUpliftPct}
+          />
+          {/* Sticky rail repeats here so save buttons stay reachable from preview */}
+          <aside className="lg:sticky lg:top-6">
+            <div className="card p-4 space-y-3">
+              <div className="kpi-label">Live total</div>
+              <div>
+                <div className="kpi-value">{fmtMoney(computed.totals.total, currency)}</div>
+                <div className="kpi-sub mt-1">
+                  {computed.rows.length} line{computed.rows.length === 1 ? '' : 's'} · VAT {fmtPct(vatRate, 0)}
+                </div>
+              </div>
+              <div className="border-t border-line pt-3 space-y-1.5 text-xs">
+                <Row label="Subtotal" value={fmtMoney(computed.totals.subtotal, currency)} muted />
+                {addonsUpliftPct > 0 && (
+                  <Row label={`Add-on uplift +${fmtPct(addonsUpliftPct, 0)}`} value="in lines" muted />
+                )}
+                <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtMoney(computed.totals.vatAmount, currency)} muted />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => save('draft')} disabled={saving}
+                  className="btn btn-ghost text-xs justify-center disabled:opacity-50">
+                  <Save size={12} /> Draft
+                </button>
+                <button onClick={() => save('pending_approval')} disabled={saving}
+                  className="btn btn-navy text-xs justify-center disabled:opacity-50">
+                  {saving ? 'Saving…' : 'Submit'}
+                </button>
+              </div>
+              {error && <div className="text-xs text-red-600">{error}</div>}
+              <button onClick={() => setView('build')}
+                className="btn btn-ghost w-full text-xs justify-center">
+                ← Back to build
+              </button>
+            </div>
+          </aside>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-6 items-start">
         <div className="space-y-6 min-w-0">
           {renderableOrder.map((id, idx) => (
@@ -581,6 +634,7 @@ export function QuoteBuilder({
           </div>
         </aside>
       </div>
+      )}
     </div>
   );
 }
@@ -612,3 +666,139 @@ function Row({ label, value, bold, muted }: {
     </div>
   );
 }
+// ─── Tab strip ──────────────────────────────────────────────────────────────
+function TabButton({ active, onClick, children }: {
+  active: boolean; onClick: () => void; children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        'relative px-4 py-2.5 text-sm font-medium transition',
+        active ? 'text-ink' : 'text-mute hover:text-ink',
+      ].join(' ')}
+    >
+      {children}
+      {active && (
+        <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-green rounded-full" />
+      )}
+    </button>
+  );
+}
+
+// ─── Quote preview (read-only formatted view) ───────────────────────────────
+function QuotePreview({
+  clientName, clientEmail, campaign, ownerEmail, currency, vatRate, notes,
+  rows, totals, addonsUpliftPct,
+}: {
+  clientName: string;
+  clientEmail: string;
+  campaign: string;
+  ownerEmail: string;
+  currency: string;
+  vatRate: number;
+  notes: string;
+  rows: any[];
+  totals: { subtotal: number; preVat: number; vatAmount: number; total: number };
+  addonsUpliftPct: number;
+}) {
+  const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return (
+    <div className="card overflow-hidden">
+      {/* Brand banner */}
+      <div className="bg-gradient-to-r from-green to-greenDark text-white p-6">
+        <div className="flex items-start justify-between gap-6 flex-wrap">
+          <div>
+            <div className="text-[10px] tracking-widest opacity-80">QUOTATION · DRAFT</div>
+            <div className="text-2xl font-bold mt-1 tracking-tight">Team Falcons</div>
+            <div className="text-xs opacity-90 mt-0.5">Pricing OS · {today}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] tracking-widest opacity-80">TOTAL ({currency})</div>
+            <div className="text-3xl font-extrabold mt-1">{fmtMoney(totals.total, currency)}</div>
+            <div className="text-xs opacity-90 mt-0.5">VAT inclusive</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Client + owner block */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-6 py-5 border-b border-line">
+        <div>
+          <div className="kpi-label">Client</div>
+          <div className="text-sm font-semibold text-ink mt-1">{clientName || <em className="text-mute">Add client name</em>}</div>
+          {clientEmail && <div className="text-xs text-label">{clientEmail}</div>}
+        </div>
+        <div>
+          <div className="kpi-label">Campaign</div>
+          <div className="text-sm font-semibold text-ink mt-1">{campaign || <em className="text-mute">—</em>}</div>
+        </div>
+        <div>
+          <div className="kpi-label">Owner</div>
+          <div className="text-sm font-semibold text-ink mt-1">{ownerEmail}</div>
+        </div>
+      </div>
+
+      {/* Lines */}
+      {rows.length === 0 ? (
+        <div className="px-6 py-12 text-center text-sm text-mute">
+          No lines yet. Switch back to <strong className="text-ink">Build</strong> and add deliverables.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[11px] text-label uppercase tracking-wider bg-bg">
+                <th className="px-6 py-3">Talent</th>
+                <th className="px-4 py-3">Deliverable</th>
+                <th className="px-4 py-3 text-right">Qty</th>
+                <th className="px-4 py-3 text-right">Unit price</th>
+                <th className="px-6 py-3 text-right">Line total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r: any) => (
+                <tr key={r.uid} className="border-t border-line">
+                  <td className="px-6 py-3">
+                    <div className="font-medium text-ink">{r.talent_name}</div>
+                    <div className="text-xs text-mute capitalize">{r.talent_type}</div>
+                  </td>
+                  <td className="px-4 py-3 text-label">{r.platform_label}</td>
+                  <td className="px-4 py-3 text-right">{r.qty}</td>
+                  <td className="px-4 py-3 text-right">{fmtMoney(r.finalUnit, currency)}</td>
+                  <td className="px-6 py-3 text-right font-semibold text-ink">{fmtMoney(r.finalAmount, currency)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Totals */}
+      <div className="px-6 py-5 border-t border-line">
+        <div className="ml-auto max-w-xs space-y-1.5 text-sm">
+          <Row label="Subtotal" value={fmtMoney(totals.subtotal, currency)} muted />
+          {addonsUpliftPct > 0 && (
+            <Row label={`Add-on uplift +${fmtPct(addonsUpliftPct, 0)}`} value="in lines" muted />
+          )}
+          <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtMoney(totals.vatAmount, currency)} muted />
+          <div className="border-t border-line pt-2">
+            <Row label="TOTAL" value={fmtMoney(totals.total, currency)} bold />
+          </div>
+        </div>
+      </div>
+
+      {/* Notes */}
+      {notes && (
+        <div className="px-6 py-5 border-t border-line">
+          <div className="kpi-label mb-1.5">Internal notes</div>
+          <div className="text-sm text-ink whitespace-pre-wrap">{notes}</div>
+        </div>
+      )}
+
+      <div className="px-6 py-3 border-t border-line bg-bg text-xs text-mute text-center">
+        This is a preview. Click <strong>Submit</strong> in the rail to send the quote for approval, or <strong>Draft</strong> to save without submitting.
+      </div>
+    </div>
+  );
+}
+
