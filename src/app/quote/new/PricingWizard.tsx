@@ -4,10 +4,11 @@ import { computeLine, type MeasurementConfidence } from '@/lib/pricing';
 import { fmtMoney } from '@/lib/utils';
 import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
-  type Player, type Creator, type Tier,
+  type Player, type Creator, type Tier, type PlatformGroup,
 } from '@/lib/types';
 import {
   ArrowLeft, ArrowRight, Check, ChevronRight, Plus, Search, User, Users, X,
+  Megaphone, ExternalLink, Twitter, Instagram, Youtube, Twitch, Facebook,
 } from 'lucide-react';
 import { newUid, type LineDraft } from './line-draft';
 
@@ -60,6 +61,11 @@ const MATRIX = {
   ],
 } as const;
 
+// Influencers live in the players table with role='Influencer'.
+// 'Player' tab excludes them; 'Influencer' tab is players-where-role-Influencer.
+function influencerPredicate(p: Player) { return (p.role || '').toLowerCase() === 'influencer'; }
+function isPlayerSource(t: string | null) { return t === 'player' || t === 'influencer'; }
+
 type Globals = {
   eng: number; aud: number; seas: number; ctype: number; lang: number; auth: number;
   obj: number; conf: MeasurementConfidence;
@@ -69,13 +75,14 @@ type WizardStep = 1 | 2 | 3 | 4 | 5;
 
 type WizardState = {
   step: WizardStep;
-  talent_type: 'player' | 'creator' | null;
+  talent_type: 'player' | 'creator' | 'influencer' | null;
   tier_code: string | null;
   game: string | null;
   team: string | null;
   talent_id: number | null;
   platform_key: string | null;
   qty: number;
+  manual_rate: number | null; // entered when picking a manual deliverable
   o_ctype: number | null;
   o_eng: number | null;
   o_aud: number | null;
@@ -115,6 +122,7 @@ export function PricingWizard({
         talent_id: initial.talent_id,
         platform_key: initial.platform,
         qty: initial.qty,
+        manual_rate: initial.platform.startsWith('manual_') ? initial.base_rate : null,
         o_ctype: initial.o_ctype,
         o_eng: initial.o_eng,
         o_aud: initial.o_aud,
@@ -126,7 +134,7 @@ export function PricingWizard({
     return {
       step: 1,
       talent_type: null, tier_code: null, game: null, team: null,
-      talent_id: null, platform_key: null, qty: 1,
+      talent_id: null, platform_key: null, qty: 1, manual_rate: null,
       o_ctype: null, o_eng: null, o_aud: null, o_seas: null, o_lang: null, o_auth: null,
     };
   });
@@ -142,7 +150,7 @@ export function PricingWizard({
   }, [onCancel]);
 
   // ── Selected talent objects
-  const selectedPlayer = state.talent_id && state.talent_type === 'player'
+  const selectedPlayer = state.talent_id && isPlayerSource(state.talent_type)
     ? players.find(p => p.id === state.talent_id) ?? null
     : null;
   const selectedCreator = state.talent_id && state.talent_type === 'creator'
@@ -158,9 +166,12 @@ export function PricingWizard({
   // ── Build current LineDraft shape
   const draft: LineDraft | null = useMemo(() => {
     if (!state.talent_type || !state.talent_id || !state.platform_key) return null;
-    if (state.talent_type === 'player' && selectedPlayer) {
+    if (isPlayerSource(state.talent_type) && selectedPlayer) {
       const opt = PLAYER_PLATFORMS.find(o => o.key === state.platform_key);
-      const rate = (selectedPlayer as any)[state.platform_key] as number | undefined;
+      const isManual = !!opt?.manual;
+      const rate = isManual
+        ? (state.manual_rate ?? 0)
+        : ((selectedPlayer as any)[state.platform_key] as number | undefined);
       const tier = selectedPlayer.tier_code ? tierMap.get(selectedPlayer.tier_code) : undefined;
       return {
         uid: initial?.uid ?? newUid(),
@@ -218,9 +229,16 @@ export function PricingWizard({
     });
   }, [draft, globals, addonsUpliftPct]);
 
+  // Influencer count (shown on Step 1 type card)
+  const influencerCount = useMemo(() => players.filter(influencerPredicate).length, [players]);
+
   // ── Filter counts for step 2
   const tierCounts = useMemo(() => {
-    const list: Array<Player | Creator> = state.talent_type === 'creator' ? creators : players;
+    const list: Array<Player | Creator> =
+      state.talent_type === 'creator' ? creators :
+      state.talent_type === 'influencer' ? players.filter(influencerPredicate) :
+      state.talent_type === 'player' ? players.filter(p => !influencerPredicate(p)) :
+      players;
     const m = new Map<string, number>();
     list.forEach(t => {
       const code = t.tier_code;
@@ -261,10 +279,14 @@ export function PricingWizard({
         id: c.id, nickname: c.nickname, tier: c.tier_code || '', game: '', team: '',
       }));
     }
-    let list = players;
+    let list = state.talent_type === 'influencer'
+      ? players.filter(influencerPredicate)
+      : players.filter(p => !influencerPredicate(p));
     if (state.tier_code) list = list.filter(p => p.tier_code === state.tier_code);
-    if (state.game)      list = list.filter(p => p.game === state.game);
-    if (state.team)      list = list.filter(p => p.team === state.team);
+    if (state.talent_type === 'player') {
+      if (state.game) list = list.filter(p => p.game === state.game);
+      if (state.team) list = list.filter(p => p.team === state.team);
+    }
     if (q) list = list.filter(p =>
       p.nickname.toLowerCase().includes(q) ||
       (p.full_name ?? '').toLowerCase().includes(q)
@@ -275,16 +297,28 @@ export function PricingWizard({
     }));
   }, [state, players, creators, search]);
 
-  // ── Step 3 deliverables (only rates > 0)
+  // ── Step 3 deliverables — grouped, with manual entries always shown
   const deliverables = useMemo(() => {
-    if (state.talent_type === 'player' && selectedPlayer) {
+    if (isPlayerSource(state.talent_type) && selectedPlayer) {
       return PLAYER_PLATFORMS
-        .map(p => ({ key: p.key, label: p.label, rate: ((selectedPlayer as any)[p.key] as number) || 0 }))
-        .filter(d => d.rate > 0);
+        .map(p => ({
+          key: p.key,
+          label: p.label,
+          rate: p.manual ? 0 : ((selectedPlayer as any)[p.key] as number) || 0,
+          group: p.group,
+          manual: p.manual,
+        }))
+        .filter(d => d.manual || d.rate > 0);
     }
     if (state.talent_type === 'creator' && selectedCreator) {
       return CREATOR_PLATFORMS
-        .map(p => ({ key: p.key, label: p.label, rate: ((selectedCreator as any)[p.key] as number) || 0 }))
+        .map(p => ({
+          key: p.key,
+          label: p.label,
+          rate: ((selectedCreator as any)[p.key] as number) || 0,
+          group: 'Social Media' as const,
+          manual: false,
+        }))
         .filter(d => d.rate > 0);
     }
     return [];
@@ -293,7 +327,7 @@ export function PricingWizard({
   // ── Breadcrumbs
   const crumbs: Array<{ label: string; step: WizardStep }> = [];
   crumbs.push({
-    label: state.talent_type ? (state.talent_type === 'player' ? 'Player' : 'Creator') : 'Type',
+    label: state.talent_type ? (state.talent_type === 'player' ? 'Player' : state.talent_type === 'influencer' ? 'Influencer' : 'Creator') : 'Type',
     step: 1,
   });
   if (state.tier_code) crumbs.push({ label: state.tier_code, step: 2 });
@@ -345,6 +379,7 @@ export function PricingWizard({
             onPick={(kind) => patch({ talent_type: kind, step: 2 })}
             playerCount={players.length}
             creatorCount={creators.length}
+            influencerCount={influencerCount}
           />
         )}
         {state.step === 2 && (
@@ -379,12 +414,20 @@ export function PricingWizard({
             tierCode={selectedPlayer?.tier_code ?? selectedCreator?.tier_code}
             game={selectedPlayer?.game}
             team={selectedPlayer?.team}
+            talent={selectedPlayer ?? selectedCreator}
             deliverables={deliverables}
             selectedKey={state.platform_key}
+            selectedManual={(() => {
+              if (!state.platform_key) return false;
+              const opt = PLAYER_PLATFORMS.find(o => o.key === state.platform_key);
+              return !!opt?.manual;
+            })()}
+            manualRate={state.manual_rate}
             qty={state.qty}
             currency={currency}
-            onPick={(key) => patch({ platform_key: key })}
+            onPick={(key, manual) => patch({ platform_key: key, manual_rate: manual ? state.manual_rate : null })}
             onQty={(q) => patch({ qty: q })}
+            onManualRate={(n) => patch({ manual_rate: n })}
             onBack={() => jumpTo(2)}
             onNext={() => jumpTo(4)}
           />
@@ -422,27 +465,34 @@ export function PricingWizard({
 // ───────────────────────────────────────────────────────────────────────────
 // Step 1 — Type
 // ───────────────────────────────────────────────────────────────────────────
-function StepType({ onPick, playerCount, creatorCount }: {
-  onPick: (k: 'player' | 'creator') => void;
-  playerCount: number; creatorCount: number;
+function StepType({ onPick, playerCount, creatorCount, influencerCount }: {
+  onPick: (k: 'player' | 'creator' | 'influencer') => void;
+  playerCount: number; creatorCount: number; influencerCount: number;
 }) {
   return (
     <div>
       <h2 className="text-lg font-semibold mb-1">What are we pricing?</h2>
       <p className="text-sm text-label mb-5">Pick a roster to narrow down from.</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <TypeCard
           kind="player"
           title="Player"
-          count={playerCount}
-          subtitle="Team Falcons pro players. Filter by tier, game, team."
+          count={playerCount - influencerCount}
+          subtitle="Team Falcons pro players + coaching staff. Filter by tier, game, team."
           onClick={() => onPick('player')}
         />
         <TypeCard
+          kind="influencer"
+          title="Esports Influencer"
+          count={influencerCount}
+          subtitle="Roster-side influencers — gaming-adjacent personalities under the Falcons banner."
+          onClick={() => onPick('influencer')}
+        />
+        <TypeCard
           kind="creator"
-          title="Creator"
+          title="Content Creator"
           count={creatorCount}
-          subtitle="Partner creators with scripted and organic content rates."
+          subtitle="Partner creators with ceiling-based rates and scripted/organic options."
           onClick={() => onPick('creator')}
         />
       </div>
@@ -451,8 +501,9 @@ function StepType({ onPick, playerCount, creatorCount }: {
 }
 
 function TypeCard({ kind, title, count, subtitle, onClick }: {
-  kind: 'player' | 'creator'; title: string; count: number; subtitle: string; onClick: () => void;
+  kind: 'player' | 'creator' | 'influencer'; title: string; count: number; subtitle: string; onClick: () => void;
 }) {
+  const Icon = kind === 'player' ? Users : kind === 'influencer' ? Megaphone : User;
   return (
     <button
       onClick={onClick}
@@ -461,7 +512,7 @@ function TypeCard({ kind, title, count, subtitle, onClick }: {
     >
       <div className="flex items-center gap-3 mb-3">
         <div className="w-10 h-10 rounded-lg bg-navy text-white grid place-items-center">
-          {kind === 'player' ? <Users size={20} /> : <User size={20} />}
+          <Icon size={20} />
         </div>
         <div>
           <div className="text-lg font-semibold text-ink leading-tight">{title}</div>
@@ -638,20 +689,32 @@ function FilterChip({ active, disabled, onClick, children }: {
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// Step 3 — Deliverable
+// Step 3 — Deliverable (grouped + manual-rate aware + clickable socials)
 // ───────────────────────────────────────────────────────────────────────────
+const GROUP_ORDER: PlatformGroup[] = ['Social Media', 'Live & Stream', 'On-Ground & Events', 'Other'];
+
 function StepDeliverable({
-  talentName, tierCode, game, team, deliverables, selectedKey,
-  qty, currency, onPick, onQty, onBack, onNext,
+  talentName, tierCode, game, team, talent, deliverables, selectedKey, selectedManual,
+  manualRate, qty, currency, onPick, onQty, onManualRate, onBack, onNext,
 }: {
   talentName: string; tierCode?: string; game?: string; team?: string;
-  deliverables: Array<{ key: string; label: string; rate: number }>;
+  talent?: Player | Creator | null;
+  deliverables: Array<{ key: string; label: string; rate: number; group: string; manual: boolean }>;
   selectedKey: string | null;
+  selectedManual: boolean;
+  manualRate: number | null;
   qty: number; currency: string;
-  onPick: (key: string) => void;
+  onPick: (key: string, manual: boolean) => void;
   onQty: (q: number) => void;
+  onManualRate: (n: number | null) => void;
   onBack: () => void; onNext: () => void;
 }) {
+  const groups: Record<string, typeof deliverables> = {};
+  for (const d of deliverables) {
+    const g = d.group || 'Other';
+    (groups[g] ||= []).push(d);
+  }
+
   return (
     <div className="space-y-5">
       <div className="rounded-lg border border-line bg-bg px-4 py-3">
@@ -661,42 +724,61 @@ function StepDeliverable({
           {game && <span> · {game}</span>}
           {team && <span> · {team}</span>}
         </div>
+        <SocialChips talent={talent} />
       </div>
 
       <div>
         <h2 className="text-lg font-semibold mb-1">Pick a deliverable</h2>
-        <p className="text-sm text-label">Base rates from the roster. Only deliverables with a set rate are shown.</p>
+        <p className="text-sm text-label">Grouped by category. Manual entries below let you enter a one-off rate.</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {deliverables.map(d => {
-          const active = selectedKey === d.key;
-          return (
-            <button
-              key={d.key}
-              onClick={() => onPick(d.key)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { onPick(d.key); onNext(); } }}
-              className={[
-                'text-left rounded-lg border-2 p-3 transition focus:outline-none focus:ring-2 focus:ring-green/40',
-                active
-                  ? 'border-green bg-greenSoft'
-                  : 'border-line bg-white hover:border-green/60',
-              ].join(' ')}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-sm font-medium text-ink">{d.label}</div>
-                {active && <Check size={14} className="text-green" />}
-              </div>
-              <div className="text-[10px] text-mute uppercase tracking-wide">Base</div>
-              <div className="text-sm font-semibold text-ink">{fmtMoney(d.rate, currency)}</div>
-            </button>
-          );
-        })}
-      </div>
+      {GROUP_ORDER.filter(g => groups[g]?.length).map(g => (
+        <div key={g}>
+          <div className="text-[11px] uppercase tracking-wider text-label font-semibold mb-2">{g}</div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {groups[g].map(d => {
+              const active = selectedKey === d.key;
+              return (
+                <button
+                  key={d.key}
+                  onClick={() => onPick(d.key, d.manual)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { onPick(d.key, d.manual); if (!d.manual) onNext(); } }}
+                  className={[
+                    'text-left rounded-lg border-2 p-3 transition focus:outline-none focus:ring-2 focus:ring-green/40',
+                    active ? 'border-green bg-greenSoft' : 'border-line bg-white hover:border-green/60',
+                    d.manual ? 'border-dashed' : '',
+                  ].join(' ')}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-sm font-medium text-ink">{d.label}</div>
+                    {active && <Check size={14} className="text-green" />}
+                  </div>
+                  <div className="text-[10px] text-mute uppercase tracking-wide">{d.manual ? 'Enter rate' : 'Base'}</div>
+                  <div className="text-sm font-semibold text-ink">
+                    {d.manual ? <span className="text-mute italic text-xs">manual</span> : fmtMoney(d.rate, currency)}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
 
       {deliverables.length === 0 && (
         <div className="rounded-lg border border-line bg-bg p-4 text-sm text-mute">
           This talent has no deliverable rates set. Go back and pick another.
+        </div>
+      )}
+
+      {selectedKey && selectedManual && (
+        <div className="rounded-lg border border-green/40 bg-greenSoft/40 p-3">
+          <label className="label">Manual base rate ({currency})</label>
+          <input
+            type="number" min={0} value={manualRate ?? ''} placeholder="e.g. 5000"
+            onChange={e => onManualRate(e.target.value === '' ? null : Math.max(0, parseFloat(e.target.value) || 0))}
+            className="input"
+          />
+          <p className="text-xs text-mute mt-1.5">No fixed rate is stored for this deliverable. Negotiate per campaign and enter the SAR amount here.</p>
         </div>
       )}
 
@@ -891,7 +973,7 @@ function StepReview({
         {draft ? (
           <div className="rounded-lg border border-line divide-y divide-line overflow-hidden">
             <SumRow label="Talent"       value={draft.talent_name} />
-            <SumRow label="Type"         value={draft.talent_type === 'player' ? 'Player' : 'Creator'} />
+            <SumRow label="Type"         value={draft.talent_type === 'player' ? (state.talent_type === 'influencer' ? 'Esports Influencer' : 'Player') : 'Creator'} />
             <SumRow label="Deliverable"  value={draft.platform_label} />
             <SumRow label="Quantity"     value={String(draft.qty)} />
             <SumRow label="Base rate"    value={fmtMoney(draft.base_rate, currency)} />
@@ -990,3 +1072,49 @@ function Row({ label, value, bold, muted }: {
     </div>
   );
 }
+
+// Clickable social-handle chips for the talent summary card on Step 3.
+// Falls through any field that is empty / not a real URL.
+function SocialChips({ talent }: { talent?: Player | Creator | null }) {
+  if (!talent) return null;
+  const t = talent as any;
+  const items: Array<{ key: string; href: string; label: string; icon: any }> = [];
+  function pushIfUrl(key: string, label: string, icon: any) {
+    const v = t[key];
+    if (!v || typeof v !== 'string') return;
+    const s = v.trim();
+    if (!s || s === '-' || s === '—') return;
+    const href = /^https?:\/\//i.test(s) ? s : `https://${s.replace(/^@/, '')}`;
+    items.push({ key, href, label, icon });
+  }
+  pushIfUrl('x_handle',  'X / Twitter', Twitter);
+  pushIfUrl('instagram', 'Instagram',   Instagram);
+  pushIfUrl('twitch',    'Twitch',      Twitch);
+  pushIfUrl('youtube',   'YouTube',     Youtube);
+  pushIfUrl('facebook',  'Facebook',    Facebook);
+  pushIfUrl('tiktok',    'TikTok',      ExternalLink);
+  pushIfUrl('kick',      'Kick',        ExternalLink);
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      {items.map(it => {
+        const Icon = it.icon;
+        return (
+          <a
+            key={it.key}
+            href={it.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={it.label}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-line text-[11px] text-label hover:text-ink hover:border-green hover:bg-greenSoft transition"
+          >
+            <Icon size={12} />
+            <span>{it.label}</span>
+            <ExternalLink size={10} className="opacity-50" />
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+

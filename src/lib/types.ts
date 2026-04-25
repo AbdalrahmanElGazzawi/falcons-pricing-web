@@ -164,17 +164,34 @@ export interface QuoteLine {
   final_amount: number;
 }
 
+export type PlatformGroup = 'Social Media' | 'Live & Stream' | 'On-Ground & Events' | 'Other';
+
+/**
+ * Player deliverables. `manual: true` means there's no fixed per-player rate
+ * (e.g. Podcast Guesting, Fan Meet) — sales enters the rate when adding the
+ * line. Mirrors the v7 Apps Script DELIVERABLES table.
+ */
 export const PLAYER_PLATFORMS = [
-  { key: 'rate_ig_reel', label: 'IG Reel' },
-  { key: 'rate_ig_static', label: 'IG Static' },
-  { key: 'rate_ig_story', label: 'IG Story' },
-  { key: 'rate_tiktok_video', label: 'TikTok Video' },
-  { key: 'rate_yt_short', label: 'YT Short' },
-  { key: 'rate_x_post', label: 'X Post' },
-  { key: 'rate_fb_post', label: 'FB Post' },
-  { key: 'rate_twitch_stream', label: 'Twitch Stream 2h' },
-  { key: 'rate_twitch_integ', label: 'Twitch Integ.' },
-  { key: 'rate_irl', label: 'IRL Appearance' },
+  // Social Media — fixed rates per player
+  { key: 'rate_ig_reel',       label: 'IG Reel',            group: 'Social Media' as PlatformGroup,        manual: false },
+  { key: 'rate_ig_static',     label: 'IG Static',          group: 'Social Media' as PlatformGroup,        manual: false },
+  { key: 'rate_ig_story',      label: 'IG Story',           group: 'Social Media' as PlatformGroup,        manual: false },
+  { key: 'rate_tiktok_video',  label: 'TikTok Video',       group: 'Social Media' as PlatformGroup,        manual: false },
+  { key: 'rate_yt_short',      label: 'YT Short',           group: 'Social Media' as PlatformGroup,        manual: false },
+  { key: 'rate_x_post',        label: 'X Post',             group: 'Social Media' as PlatformGroup,        manual: false },
+  { key: 'rate_fb_post',       label: 'FB Post / Video',    group: 'Social Media' as PlatformGroup,        manual: false },
+  // Live & Stream
+  { key: 'rate_twitch_stream', label: 'Twitch Stream 2h',   group: 'Live & Stream' as PlatformGroup,       manual: false },
+  { key: 'rate_twitch_integ', label: 'Twitch Integration',  group: 'Live & Stream' as PlatformGroup,       manual: false },
+  // On-Ground & Events
+  { key: 'rate_irl',           label: 'IRL Appearance',     group: 'On-Ground & Events' as PlatformGroup,  manual: false },
+  { key: 'manual_podcast',     label: 'Podcast Guesting',   group: 'On-Ground & Events' as PlatformGroup,  manual: true  },
+  { key: 'manual_pr_csr',      label: 'PR Appearance (CSR)', group: 'On-Ground & Events' as PlatformGroup, manual: true  },
+  { key: 'manual_fan_meet',    label: 'Fan Meet & Greet',   group: 'On-Ground & Events' as PlatformGroup,  manual: true  },
+  // Other
+  { key: 'manual_photo_shoot', label: 'Photo Shoot (Brand)', group: 'Other' as PlatformGroup,              manual: true  },
+  { key: 'manual_snapchat',    label: 'Snapchat Coverage',  group: 'Other' as PlatformGroup,               manual: true  },
+  { key: 'manual_repost',      label: 'Content Repost',     group: 'Other' as PlatformGroup,               manual: true  },
 ] as const;
 
 export const CREATOR_PLATFORMS = [
