@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const { header, lines, addonIds } = body || {};
+  const { header, lines, addonIds, addonItems } = body || {};
   if (!header || !Array.isArray(lines) || lines.length === 0) {
     return NextResponse.json({ error: 'Missing header or lines' }, { status: 400 });
   }
@@ -62,17 +62,35 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Lines insert failed: ${lErr.message}` }, { status: 500 });
   }
 
-  // 3. Insert add-on toggles
-  if (Array.isArray(addonIds) && addonIds.length > 0) {
+  // 3. Insert add-on toggles (new shape: addonItems = [{addon_id, months}], legacy: addonIds = [id])
+  type AddonItem = { addon_id: number; months: number };
+  let items: AddonItem[] = [];
+  if (Array.isArray(addonItems) && addonItems.length > 0) {
+    items = addonItems
+      .filter((x: any) => x && typeof x.addon_id === 'number')
+      .map((x: any) => ({
+        addon_id: x.addon_id,
+        months: Math.max(1, Math.min(60, Math.round(x.months ?? 1))),
+      }));
+  } else if (Array.isArray(addonIds) && addonIds.length > 0) {
+    items = addonIds.map((id: number) => ({ addon_id: id, months: 1 }));
+  }
+
+  if (items.length > 0) {
+    const ids = items.map(i => i.addon_id);
     const { data: addonRows } = await supabase
       .from('addons')
       .select('id, uplift_pct')
-      .in('id', addonIds);
-    const upserts = (addonRows || []).map(a => ({
-      quote_id: quote.id,
-      addon_id: a.id,
-      uplift_pct: a.uplift_pct,
-    }));
+      .in('id', ids);
+    const byId = new Map((addonRows || []).map(a => [a.id, a.uplift_pct]));
+    const upserts = items
+      .filter(i => byId.has(i.addon_id))
+      .map(i => ({
+        quote_id: quote.id,
+        addon_id: i.addon_id,
+        uplift_pct: byId.get(i.addon_id),
+        months: i.months,
+      }));
     if (upserts.length > 0) {
       await supabase.from('quote_addons').insert(upserts);
     }

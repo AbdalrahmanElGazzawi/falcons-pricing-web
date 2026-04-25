@@ -109,14 +109,29 @@ export function QuoteBuilder({
   const [obj, setObj] = useState(AXIS_OPTIONS.objective[1].weight);
   const [conf, setConf] = useState<MeasurementConfidence>('exact');
 
-  // ── Add-ons
-  const [addonIds, setAddonIds] = useState<Set<number>>(new Set());
+  // ── Add-ons (months per addon, presence of key = selected, 1 = default)
+  const [addonMonths, setAddonMonths] = useState<Record<number, number>>({});
+  const addonIds = useMemo(() => new Set(Object.keys(addonMonths).map(Number)), [addonMonths]);
   const addonsUpliftPct = useMemo(() => {
-    return Array.from(addonIds).reduce((sum, id) => {
-      const a = addons.find(x => x.id === id);
-      return sum + (a?.uplift_pct ?? 0);
+    return Object.entries(addonMonths).reduce((sum, [idStr, months]) => {
+      const a = addons.find(x => x.id === Number(idStr));
+      return sum + (a?.uplift_pct ?? 0) * (months || 1);
     }, 0);
-  }, [addonIds, addons]);
+  }, [addonMonths, addons]);
+
+  // Toggle on/off (clicking a pill / checkbox)
+  const toggleAddon = (id: number) => {
+    setAddonMonths(s => {
+      const next = { ...s };
+      if (id in next) delete next[id]; else next[id] = 1;
+      return next;
+    });
+  };
+  // Bump months up/down (only when already selected)
+  const setAddonMonth = (id: number, months: number) => {
+    const clamped = Math.max(1, Math.min(60, Math.round(months || 1)));
+    setAddonMonths(s => ({ ...s, [id]: clamped }));
+  };
 
   // ── Lines
   const [lines, setLines] = useState<LineDraft[]>([]);
@@ -154,7 +169,12 @@ export function QuoteBuilder({
         if (typeof d.auth === 'number') setAuth(d.auth);
         if (typeof d.obj === 'number') setObj(d.obj);
         if (d.conf) setConf(d.conf);
-        if (Array.isArray(d.addonIds)) setAddonIds(new Set(d.addonIds));
+        if (d.addonMonths && typeof d.addonMonths === 'object') {
+          setAddonMonths(d.addonMonths);
+        } else if (Array.isArray(d.addonIds)) {
+          // legacy draft — treat as 1 month each
+          setAddonMonths(Object.fromEntries(d.addonIds.map((i: number) => [i, 1])));
+        }
         if (Array.isArray(d.lines)) setLines(d.lines);
         setDraftFound(true);
       }
@@ -171,13 +191,13 @@ export function QuoteBuilder({
         clientName, clientEmail, campaign, currency, vatRate, usdRate, notes,
         preparedByName, preparedByEmail,
         eng, aud, seas, ctype, lang, auth, obj, conf,
-        addonIds: Array.from(addonIds),
+        addonMonths,
         lines,
       };
       window.localStorage.setItem(LS_KEY, JSON.stringify(draft));
     } catch {}
   }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, usdRate, notes, preparedByName, preparedByEmail,
-      eng, aud, seas, ctype, lang, auth, obj, conf, addonIds, lines]);
+      eng, aud, seas, ctype, lang, auth, obj, conf, addonMonths, lines]);
 
   function openAddWizard() { setWizard({ mode: 'add' }); }
   function openEditWizard(uid: string) {
@@ -300,7 +320,9 @@ export function QuoteBuilder({
             final_unit: r.finalUnit,
             final_amount: r.finalAmount,
           })),
-          addonIds: Array.from(addonIds),
+          addonItems: Object.entries(addonMonths).map(([id, months]) => ({
+            addon_id: Number(id), months,
+          })),
         }),
       });
       if (!res.ok) {
@@ -410,37 +432,58 @@ export function QuoteBuilder({
     ),
     addons: (
       <div className="card card-p">
-        <h2 className="font-semibold mb-4">Add-on rights packages</h2>
+        <h2 className="font-semibold mb-1">Add-on rights packages</h2>
+        <p className="text-xs text-mute mb-4">Each package has a per-month rate. Bump the months to extend the rights term.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {addons.map(a => {
             const checked = addonIds.has(a.id);
+            const months = addonMonths[a.id] ?? 1;
+            const totalUplift = (a.uplift_pct ?? 0) * months;
             return (
-              <label key={a.id} className={[
-                'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition',
+              <div key={a.id} className={[
+                'p-3 rounded-lg border transition',
                 checked ? 'border-green bg-green/5' : 'border-line hover:border-mute',
               ].join(' ')}>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => {
-                    setAddonIds(s => {
-                      const next = new Set(s);
-                      if (next.has(a.id)) next.delete(a.id); else next.add(a.id);
-                      return next;
-                    });
-                  }}
-                  className="mt-0.5"
-                />
-                <div className="text-sm">
-                  <div className="font-medium text-ink">{a.label} <span className="text-green">+{fmtPct(a.uplift_pct, 0)}</span></div>
-                  {a.description && <div className="text-xs text-mute mt-0.5">{a.description}</div>}
-                </div>
-              </label>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleAddon(a.id)}
+                    className="mt-0.5"
+                  />
+                  <div className="text-sm flex-1 min-w-0">
+                    <div className="font-medium text-ink flex items-center gap-1.5 flex-wrap">
+                      <span>{a.label}</span>
+                      <span className="text-green text-xs">+{fmtPct(a.uplift_pct, 0)}/mo</span>
+                    </div>
+                    {a.description && <div className="text-xs text-mute mt-0.5">{a.description}</div>}
+                  </div>
+                </label>
+                {checked && (
+                  <div className="mt-3 pt-3 border-t border-green/20 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-label">Months</span>
+                    <div className="flex items-center gap-1">
+                      <button type="button"
+                        onClick={() => setAddonMonth(a.id, months - 1)}
+                        disabled={months <= 1}
+                        className="w-6 h-6 rounded border border-line text-label hover:bg-bg disabled:opacity-40">−</button>
+                      <input type="number" min={1} max={60} value={months}
+                        onChange={e => setAddonMonth(a.id, parseInt(e.target.value, 10) || 1)}
+                        className="w-12 text-center text-sm input !py-1 !px-1" />
+                      <button type="button"
+                        onClick={() => setAddonMonth(a.id, months + 1)}
+                        disabled={months >= 60}
+                        className="w-6 h-6 rounded border border-line text-label hover:bg-bg disabled:opacity-40">+</button>
+                    </div>
+                    <span className="text-xs text-greenDark font-semibold tabular-nums">+{fmtPct(totalUplift, 0)}</span>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
         {addonsUpliftPct > 0 && (
-          <div className="text-xs text-label mt-3">Total uplift: <strong className="text-green">+{fmtPct(addonsUpliftPct, 0)}</strong></div>
+          <div className="text-xs text-label mt-3">Total uplift across all add-ons: <strong className="text-green">+{fmtPct(addonsUpliftPct, 0)}</strong></div>
         )}
       </div>
     ),
@@ -614,7 +657,7 @@ export function QuoteBuilder({
               if (!confirm('Discard the saved draft and start fresh?')) return;
               try { window.localStorage.removeItem(LS_KEY); } catch {}
               setLines([]); setClientName(''); setClientEmail(''); setCampaign(''); setNotes('');
-              setAddonIds(new Set()); setDraftFound(false);
+              setAddonMonths({}); setDraftFound(false);
             }}
             className="text-xs underline hover:text-ink">Discard draft</button>
         </div>
@@ -674,33 +717,52 @@ export function QuoteBuilder({
               <div className="card card-p">
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-[11px] uppercase tracking-wider text-label font-semibold">
-                    Rights & add-ons <span className="text-mute font-normal normal-case ml-1.5">— uplift applied to every line</span>
+                    Rights & add-ons <span className="text-mute font-normal normal-case ml-1.5">— per-month rate, multiplied by your duration</span>
                   </div>
                   {addonsUpliftPct > 0 && (
                     <div className="text-xs text-greenDark font-semibold">+{fmtPct(addonsUpliftPct, 0)} total</div>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {addons.map(a => {
                     const checked = addonIds.has(a.id);
+                    const months = addonMonths[a.id] ?? 1;
+                    const totalUplift = (a.uplift_pct ?? 0) * months;
                     return (
-                      <button
+                      <div
                         key={a.id}
-                        onClick={() => setAddonIds(s => {
-                          const next = new Set(s);
-                          if (next.has(a.id)) next.delete(a.id); else next.add(a.id);
-                          return next;
-                        })}
-                        title={a.description || ''}
                         className={[
-                          'px-3 py-1.5 rounded-full text-xs font-medium border transition',
-                          checked
-                            ? 'bg-green text-white border-green'
-                            : 'bg-white text-label border-line hover:border-green hover:bg-greenSoft',
+                          'p-2.5 rounded-lg border transition',
+                          checked ? 'border-green bg-green/5' : 'border-line hover:border-mute',
                         ].join(' ')}
                       >
-                        {a.label} <span className="opacity-75">+{fmtPct(a.uplift_pct, 0)}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleAddon(a.id)}
+                          className="w-full text-left"
+                        >
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={['text-sm font-medium', checked ? 'text-greenDark' : 'text-ink'].join(' ')}>{a.label}</span>
+                            <span className="text-[11px] text-green font-semibold">+{fmtPct(a.uplift_pct, 0)}/mo</span>
+                          </div>
+                          {a.description && <div className="text-[11px] text-mute mt-0.5 leading-snug">{a.description}</div>}
+                        </button>
+                        {checked && (
+                          <div className="mt-2 pt-2 border-t border-green/20 flex items-center justify-between gap-2">
+                            <span className="text-[10px] uppercase tracking-wider text-label font-semibold">Months</span>
+                            <div className="flex items-center gap-1">
+                              <button type="button" onClick={() => setAddonMonth(a.id, months - 1)} disabled={months <= 1}
+                                className="w-6 h-6 rounded border border-line text-label hover:bg-bg disabled:opacity-40 text-sm leading-none">−</button>
+                              <input type="number" min={1} max={60} value={months}
+                                onChange={e => setAddonMonth(a.id, parseInt(e.target.value, 10) || 1)}
+                                className="w-10 text-center text-xs input !py-0.5 !px-1" />
+                              <button type="button" onClick={() => setAddonMonth(a.id, months + 1)} disabled={months >= 60}
+                                className="w-6 h-6 rounded border border-line text-label hover:bg-bg disabled:opacity-40 text-sm leading-none">+</button>
+                            </div>
+                            <span className="text-[11px] text-greenDark font-semibold tabular-nums">+{fmtPct(totalUplift, 0)}</span>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
