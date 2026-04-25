@@ -8,12 +8,14 @@ import { isSuperAdminEmail } from '@/lib/super-admin';
 import {
   LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog,
   Sparkles, BookOpen, KeyRound, ScrollText, Calculator, Map, Menu, X,
+  Inbox,
 } from 'lucide-react';
 
 const NAV = (role: UserRole, email: string) => [
   { href: '/dashboard',         label: 'Dashboard',  icon: LayoutDashboard },
   { href: '/quote/new',         label: 'New Quote',  icon: PlusCircle, highlight: true },
   { href: '/quotes',            label: 'Quote Log',  icon: FileText },
+  { href: '/inquiries',         label: 'Inquiries',  icon: Inbox },
   { href: '/roster/players',    label: 'Roster',     icon: Users },
   { href: '/roster/creators',   label: 'Creators',   icon: Sparkles },
   { href: '/admin/roadmap',     label: 'Roadmap',    icon: Map },
