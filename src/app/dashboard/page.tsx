@@ -5,6 +5,7 @@ import { AccessDenied } from '@/components/AccessDenied';
 import { isSuperAdminEmail } from '@/lib/super-admin';
 import { getPageLayout } from '@/lib/layout';
 import { DashboardLayout } from './DashboardLayout';
+import { ATeamGrid, BrainTrustGrid } from './PlayerTiles';
 import { Users, Sparkles, Trophy, Gamepad2, Layers, PlusCircle, ArrowUpRight, BarChart3, Megaphone, GraduationCap, Briefcase } from 'lucide-react';
 import { AssetCharts } from './AssetCharts';
 
@@ -184,35 +185,7 @@ export default async function DashboardPage() {
         {tierSPlayers.length === 0 ? (
           <div className="p-8 text-center text-mute text-sm">No Tier S talent yet — promote your top performers in /admin/tiers.</div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 p-4">
-            {tierSPlayers.map(p => (
-              <Link key={p.id} href={`/roster/players?focus=${p.id}`} className="group">
-                <div className="aspect-square rounded-xl bg-gradient-to-br from-navy/5 to-amber-50 border border-line overflow-hidden grid place-items-center relative">
-                  {p.avatar_url ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={p.avatar_url} alt={p.nickname} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-3xl font-bold text-navy/40">{p.nickname.slice(0, 2).toUpperCase()}</div>
-                  )}
-                  <div className="absolute top-1.5 right-1.5">
-                    <span className="px-1.5 py-0.5 rounded bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider">S</span>
-                  </div>
-                </div>
-                <div className="mt-2 px-1">
-                  <div className="text-sm font-semibold text-ink truncate group-hover:text-greenDark">{p.nickname}</div>
-                  <div className="text-[10px] text-mute uppercase tracking-wide truncate">{p.game}{p.ingame_role ? ` · ${p.ingame_role}` : ''}</div>
-                  {p.agency_status === 'agency' ? (
-                    <div className="text-[10px] text-blue-700 mt-0.5 truncate" title={`${p.agency_name || ''}${p.agency_contact ? ' · ' + p.agency_contact : ''}`}>
-                      <Briefcase size={9} className="inline mr-0.5 mb-0.5" />
-                      {p.agency_name || p.agency_contact || 'Agency-managed'}
-                    </div>
-                  ) : p.agency_status === 'direct' ? (
-                    <div className="text-[10px] text-greenDark mt-0.5">Direct</div>
-                  ) : null}
-                </div>
-              </Link>
-            ))}
-          </div>
+          <ATeamGrid players={tierSPlayers as any} />
         )}
       </div>
       </>
@@ -229,24 +202,7 @@ export default async function DashboardPage() {
             </div>
             <Link href="/roster/players?role=staff" className="text-xs text-greenDark hover:underline">View all →</Link>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
-            {staffOnly.slice(0, 8).map(p => (
-              <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg border border-line bg-bg/40">
-                <div className="w-10 h-10 rounded-full bg-navy text-white grid place-items-center font-bold text-xs flex-shrink-0">
-                  {p.nickname.slice(0, 2).toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-ink truncate">{p.nickname}</div>
-                  <div className="text-[10px] text-mute uppercase tracking-wide truncate">{p.role} · {p.game}</div>
-                </div>
-              </div>
-            ))}
-            {staffOnly.length > 8 && (
-              <Link href="/roster/players?role=staff" className="flex items-center justify-center p-2 rounded-lg border border-dashed border-line text-xs text-greenDark hover:bg-greenSoft">
-                + {staffOnly.length - 8} more →
-              </Link>
-            )}
-          </div>
+          <BrainTrustGrid players={staffOnly as any} totalCount={staffOnly.length} />
         </div>
       )}
       </>
