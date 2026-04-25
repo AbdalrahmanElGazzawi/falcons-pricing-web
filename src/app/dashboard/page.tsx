@@ -3,10 +3,16 @@ import { requireStaff } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { isSuperAdminEmail } from '@/lib/super-admin';
-import { Users, Sparkles, Trophy, Gamepad2, Layers, PlusCircle, ArrowUpRight, BarChart3 } from 'lucide-react';
+import { Users, Sparkles, Trophy, Gamepad2, Layers, PlusCircle, ArrowUpRight, BarChart3, Megaphone } from 'lucide-react';
 import { AssetCharts } from './AssetCharts';
 
 export const dynamic = 'force-dynamic';
+function fmtFollow(n: number) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1_000)     return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return n.toLocaleString('en-US');
+}
+
 
 export default async function DashboardPage() {
   const { denied, profile, supabase } = await requireStaff();
@@ -16,15 +22,23 @@ export default async function DashboardPage() {
     { data: players },
     { data: creators },
     { data: tiers },
+    { data: teams },
   ] = await Promise.all([
     supabase.from('players').select('id, nickname, full_name, role, game, tier_code, avatar_url, ingame_role').eq('is_active', true),
     supabase.from('creators').select('id, nickname, tier_code').eq('is_active', true),
     supabase.from('tiers').select('code, label, sort_order').order('sort_order'),
+    supabase.from('esports_teams').select('*').eq('is_active', true).order('sort_order').order('game'),
   ]);
 
   const allPlayers = players ?? [];
   const allCreators = creators ?? [];
   const allTiers = tiers ?? [];
+  const allTeams = (teams ?? []) as any[];
+
+  const totalReach = allTeams.reduce((s, t) =>
+    s + Number(t.followers_ig||0) + Number(t.followers_x||0) + Number(t.followers_tiktok||0) +
+        Number(t.subscribers_yt||0) + Number(t.followers_twitch||0), 0);
+  const teamsWithChannels = allTeams.filter(t => t.handle_ig || t.handle_x || t.handle_tiktok || t.handle_yt || t.handle_twitch);
 
   // ── Hero counts ───────────────────────────────────────────────────────────
   const totalPlayers = allPlayers.length;
@@ -92,18 +106,60 @@ export default async function DashboardPage() {
 
       {/* Hero strip — asset inventory */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <HeroCard icon={Users}    tint="navy"  label="Total roster"     value={totalRoster.toString()} sub={`${totalPlayers} players · ${totalCreators} creators`} />
-        <HeroCard icon={Trophy}   tint="amber" label="Tier S talent"    value={tierSPlayers.length.toString()} sub="elite anchors" />
-        <HeroCard icon={Gamepad2} tint="green" label="Games covered"    value={games.size.toString()} sub="active esports titles" />
-        <HeroCard icon={Layers}   tint="navy"  label="Deliverable types" value={(playerPlatforms.length + creatorPlatforms.length).toString()} sub="across both rosters" />
+        <HeroCard icon={Megaphone} tint="green" label="Owned channel reach" value={fmtFollow(totalReach)} sub={`${teamsWithChannels.length}/${allTeams.length} teams populated`} />
+        <HeroCard icon={Users}     tint="navy"  label="Talent represented"  value={totalRoster.toString()} sub={`${totalPlayers} players · ${totalCreators} creators`} />
+        <HeroCard icon={Trophy}    tint="amber" label="Tier S talent"       value={tierSPlayers.length.toString()} sub="elite anchors" />
+        <HeroCard icon={Gamepad2}  tint="green" label="Games covered"       value={games.size.toString()} sub="active esports titles" />
+      </div>
+
+      {/* OWNED MEDIA — what we sell directly */}
+      <div className="card overflow-hidden mb-6">
+        <div className="px-5 py-3 border-b border-line flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold flex items-center gap-2"><Megaphone size={14} className="text-greenDark" /> Owned Media — Team Channels</h2>
+            <p className="text-xs text-mute mt-0.5">Falcons-owned social channels per game. <strong>This is what we sell directly.</strong> Brand pays us, content lives on our channel.</p>
+          </div>
+          {profile.role === 'admin' && (
+            <Link href="/admin/esports-teams" className="text-xs text-greenDark hover:underline">Manage →</Link>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 p-4">
+          {allTeams.map(t => {
+            const reach = Number(t.followers_ig||0) + Number(t.followers_x||0) + Number(t.followers_tiktok||0) +
+                          Number(t.subscribers_yt||0) + Number(t.followers_twitch||0);
+            const channels = [t.handle_ig, t.handle_x, t.handle_tiktok, t.handle_yt, t.handle_twitch].filter(Boolean).length;
+            const populated = channels > 0;
+            return (
+              <div key={t.id} className={['relative rounded-xl border overflow-hidden', populated ? 'border-line bg-white' : 'border-dashed border-line bg-bg/60'].join(' ')}>
+                <div className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-md bg-navy text-white grid place-items-center text-[11px] font-bold flex-shrink-0">
+                      {t.game.split(' ').map((s: string) => s[0]).slice(0, 2).join('').toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[11px] text-mute uppercase tracking-wider truncate">{t.game}</div>
+                      <div className="text-sm font-semibold text-ink truncate">{t.team_name}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={populated ? 'text-greenDark font-semibold tabular-nums' : 'text-mute italic'}>
+                      {populated ? fmtFollow(reach) : 'Add handles →'}
+                    </span>
+                    <span className="text-[10px] text-label uppercase tracking-wider font-semibold">{channels}/5</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* A-team showcase — Tier S spotlight */}
       <div className="card overflow-hidden mb-6">
         <div className="px-5 py-3 border-b border-line flex items-center justify-between">
           <div>
-            <h2 className="font-semibold flex items-center gap-2"><Trophy size={14} className="text-amber-500" /> A-Team — Tier S anchors</h2>
-            <p className="text-xs text-mute mt-0.5">Our most marketable talent. Lead with these in pitches.</p>
+            <h2 className="font-semibold flex items-center gap-2"><Trophy size={14} className="text-amber-500" /> Talent We Represent — Tier S anchors</h2>
+            <p className="text-xs text-mute mt-0.5">Players we represent. Brand pays us, content lives on the player's personal channels — we take a fee/markup.</p>
           </div>
           <Link href="/roster/players?tier=S" className="text-xs text-greenDark hover:underline">View all →</Link>
         </div>

@@ -23,6 +23,7 @@ export const dict = {
   'nav.roadmap':      { en: 'Roadmap',      ar: 'خارطة الطريق' },
   'nav.about':        { en: 'About',        ar: 'حول' },
   'nav.users':        { en: 'Users',        ar: 'المستخدمون' },
+  'nav.esports_teams':{ en: 'Owned Media', ar: 'القنوات المملوكة' },
   'nav.tiers':        { en: 'Tiers',        ar: 'الفئات' },
   'nav.addons':       { en: 'Add-ons',      ar: 'الإضافات' },
   'nav.assumptions':  { en: 'Assumptions',  ar: 'الفرضيات' },

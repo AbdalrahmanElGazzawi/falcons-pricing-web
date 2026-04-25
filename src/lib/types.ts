@@ -242,3 +242,27 @@ export interface SalesEntry {
   created_at: string;
   updated_at: string;
 }
+
+// ── Esports Teams (owned media channels) ─────────────────────────────────────
+export interface EsportsTeam {
+  id: number;
+  game: string;
+  team_name: string;
+  logo_url: string | null;
+  brand_color: string | null;
+  handle_ig: string | null;
+  handle_x: string | null;
+  handle_tiktok: string | null;
+  handle_yt: string | null;
+  handle_twitch: string | null;
+  handle_kick: string | null;
+  discord_url: string | null;
+  followers_ig: number;
+  followers_x: number;
+  followers_tiktok: number;
+  subscribers_yt: number;
+  followers_twitch: number;
+  is_active: boolean;
+  sort_order: number;
+  notes: string | null;
+}
