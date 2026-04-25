@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { requireStaff } from '@/lib/auth';
+import { requireStaff, isSuperAdminEmail } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { fmtMoney, fmtPct, statusColor, statusLabel } from '@/lib/utils';
@@ -176,6 +176,7 @@ export default async function QuoteDetail({ params }: { params: { id: string } }
             quoteId={quote.id}
             status={quote.status}
             role={profile.role}
+            canDelete={isSuperAdminEmail(profile.email)}
           />
 
           {/* Client share */}

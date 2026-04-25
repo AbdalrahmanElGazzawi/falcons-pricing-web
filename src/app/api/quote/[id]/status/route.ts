@@ -24,6 +24,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const patch: any = { status: next };
   if (next === 'sent_to_client') patch.sent_at = new Date().toISOString();
+  if (next === 'approved') {
+    patch.approved_at = new Date().toISOString();
+    patch.approved_by_name = profile.full_name || (profile.email || '').split('@')[0];
+    patch.approved_by_email = profile.email;
+  }
 
   const { error } = await supabase
     .from('quotes')

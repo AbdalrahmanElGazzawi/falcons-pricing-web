@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { UserRole, QuoteStatus } from '@/lib/types';
-import { Send, Check, X, Lock, Trophy, Frown } from 'lucide-react';
+import { Send, Check, X, Lock, Trophy, Frown, Trash2 } from 'lucide-react';
 
 const NEXT_STATUSES: Record<QuoteStatus, { status: QuoteStatus; label: string; icon: any; cls: string; staffOnly?: boolean; adminOnly?: boolean }[]> = {
   draft: [
@@ -31,7 +31,7 @@ const NEXT_STATUSES: Record<QuoteStatus, { status: QuoteStatus; label: string; i
   ],
 };
 
-export function QuoteActions({ quoteId, status, role }: { quoteId: string; status: QuoteStatus; role: UserRole }) {
+export function QuoteActions({ quoteId, status, role, canDelete }: { quoteId: string; status: QuoteStatus; role: UserRole; canDelete?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -61,6 +61,22 @@ export function QuoteActions({ quoteId, status, role }: { quoteId: string; statu
     }
   }
 
+  async function deleteQuote() {
+    if (!confirm('Delete this quote? This cannot be undone. The audit log keeps a record.')) return;
+    setErr(null); setBusy(true);
+    try {
+      const res = await fetch(`/api/quote/${quoteId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || 'Delete failed');
+      }
+      window.location.href = '/quotes';
+    } catch (e: any) {
+      setErr(e.message);
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="card card-p">
       <div className="text-xs text-label uppercase tracking-wide mb-3">Workflow</div>
@@ -84,6 +100,19 @@ export function QuoteActions({ quoteId, status, role }: { quoteId: string; statu
         </div>
       )}
       {err && <div className="text-xs text-red-600 mt-2">{err}</div>}
+      {canDelete && (
+        <div className="mt-4 pt-4 border-t border-line">
+          <div className="text-[10px] uppercase tracking-wider text-mute mb-2">Super admin</div>
+          <button
+            disabled={busy}
+            onClick={deleteQuote}
+            className="btn btn-danger w-full justify-center text-sm disabled:opacity-50"
+            title="Permanent delete — only you can do this."
+          >
+            <Trash2 size={14} /> Delete this quote
+          </button>
+        </div>
+      )}
     </div>
   );
 }

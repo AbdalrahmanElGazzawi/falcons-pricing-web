@@ -38,6 +38,7 @@ export default async function NewQuotePage() {
         tiers={tiers ?? []}
         addons={addons ?? []}
         ownerEmail={profile.email}
+        ownerName={profile.full_name || profile.email.split('@')[0]}
         initialSectionOrder={sectionOrder}
         canEditLayout={isSuperAdminEmail(profile.email)}
       />

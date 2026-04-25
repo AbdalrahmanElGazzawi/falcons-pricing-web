@@ -26,7 +26,7 @@ const SECTION_TITLES: Record<string, string> = {
 const LS_KEY = 'falcons.quote-draft.v2';
 
 export function QuoteBuilder({
-  players, creators, tiers, addons, ownerEmail,
+  players, creators, tiers, addons, ownerEmail, ownerName,
   initialSectionOrder, canEditLayout,
 }: {
   players: Player[];
@@ -34,6 +34,7 @@ export function QuoteBuilder({
   tiers: Tier[];
   addons: Addon[];
   ownerEmail: string;
+  ownerName?: string;
   initialSectionOrder: string[];
   canEditLayout: boolean;
 }) {
@@ -88,6 +89,8 @@ export function QuoteBuilder({
   }
 
   // ── Quote header
+  const [preparedByName, setPreparedByName] = useState(ownerName ?? '');
+  const [preparedByEmail, setPreparedByEmail] = useState(ownerEmail ?? '');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [campaign, setCampaign] = useState('');
@@ -139,6 +142,8 @@ export function QuoteBuilder({
         if (d.currency) setCurrency(d.currency);
         if (typeof d.vatRate === 'number') setVatRate(d.vatRate);
         if (d.notes) setNotes(d.notes);
+        if (d.preparedByName) setPreparedByName(d.preparedByName);
+        if (d.preparedByEmail) setPreparedByEmail(d.preparedByEmail);
         if (typeof d.eng === 'number') setEng(d.eng);
         if (typeof d.aud === 'number') setAud(d.aud);
         if (typeof d.seas === 'number') setSeas(d.seas);
@@ -162,13 +167,14 @@ export function QuoteBuilder({
     try {
       const draft = {
         clientName, clientEmail, campaign, currency, vatRate, notes,
+        preparedByName, preparedByEmail,
         eng, aud, seas, ctype, lang, auth, obj, conf,
         addonIds: Array.from(addonIds),
         lines,
       };
       window.localStorage.setItem(LS_KEY, JSON.stringify(draft));
     } catch {}
-  }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, notes,
+  }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, notes, preparedByName, preparedByEmail,
       eng, aud, seas, ctype, lang, auth, obj, conf, addonIds, lines]);
 
   function openAddWizard() { setWizard({ mode: 'add' }); }
@@ -256,6 +262,8 @@ export function QuoteBuilder({
             client_email: clientEmail.trim() || null,
             campaign: campaign.trim() || null,
             owner_email: ownerEmail,
+            prepared_by_name: preparedByName.trim() || null,
+            prepared_by_email: preparedByEmail.trim() || null,
             currency,
             vat_rate: vatRate,
             eng_factor: eng, audience_factor: aud, seasonality_factor: seas,
@@ -325,6 +333,16 @@ export function QuoteBuilder({
           <div>
             <label className="label">Campaign</label>
             <input value={campaign} onChange={e => setCampaign(e.target.value)} className="input" placeholder="e.g. Ramadan 2026" />
+          </div>
+          <div>
+            <label className="label">Prepared by — your name</label>
+            <input value={preparedByName} onChange={e => setPreparedByName(e.target.value)} className="input" placeholder="e.g. Abdalrahman ElGazzawi" />
+            <p className="text-[10px] text-mute mt-1">Shown on the quotation PDF.</p>
+          </div>
+          <div>
+            <label className="label">Prepared by — official email</label>
+            <input value={preparedByEmail} onChange={e => setPreparedByEmail(e.target.value)} className="input" placeholder="sales@falcons.sa" />
+            <p className="text-[10px] text-mute mt-1">Overrides your auth email on the PDF.</p>
           </div>
           <div>
             <label className="label">Currency</label>
