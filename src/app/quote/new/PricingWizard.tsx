@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { computeLine, type MeasurementConfidence } from '@/lib/pricing';
-import { fmtMoney } from '@/lib/utils';
+import { fmtMoney, tierClass } from '@/lib/utils';
 import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
   type Player, type Creator, type Tier, type PlatformGroup,
@@ -650,14 +650,20 @@ function StepFilter({
               key={t.id}
               onClick={() => onPickTalent(t.id)}
               onKeyDown={(e) => { if (e.key === 'Enter') onPickTalent(t.id); }}
-              className="w-full text-left px-4 py-2.5 hover:bg-greenSoft text-sm grid grid-cols-[1fr,auto] items-center gap-3 focus:bg-greenSoft focus:outline-none"
+              className="w-full text-left px-4 py-2.5 hover:bg-greenSoft text-sm focus:bg-greenSoft focus:outline-none"
             >
-              <span className="font-medium text-ink truncate">{t.nickname}</span>
-              <span className="text-xs text-mute flex items-center gap-2 whitespace-nowrap">
-                {t.tier && <span>{t.tier}</span>}
-                {t.game && <span>· {t.game}</span>}
-                {t.team && <span>· {t.team}</span>}
-              </span>
+              <div className="font-medium text-ink truncate">{t.nickname}</div>
+              {(t.tier || t.game || t.team) && (
+                <div className="text-[11px] text-mute flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  {t.tier && (
+                    <span className={`chip border ${tierClass(t.tier)} !px-1.5 !py-0 text-[10px]`}>
+                      {t.tier}
+                    </span>
+                  )}
+                  {t.game && <span className="truncate">{t.game}</span>}
+                  {t.team && <span className="opacity-75">· {t.team}</span>}
+                </div>
+              )}
             </button>
           ))}
         </div>
