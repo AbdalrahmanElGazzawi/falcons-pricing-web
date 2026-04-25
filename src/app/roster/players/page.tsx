@@ -2,32 +2,35 @@ import Link from 'next/link';
 import { requireStaff } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
-import { fmtMoney, tierClass } from '@/lib/utils';
-import { PlayersTable } from './PlayersTable';
+import { RosterOverview } from './RosterOverview';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PlayersPage() {
+export default async function RosterPage() {
   const { denied, profile, supabase } = await requireStaff();
   if (denied) return <AccessDenied />;
 
-  const { data: players } = await supabase
-    .from('players')
-    .select('*')
-    .eq('is_active', true)
-    .order('tier_code', { ascending: true })
-    .order('nickname', { ascending: true });
+  const [{ data: players }, { data: tiers }] = await Promise.all([
+    supabase.from('players').select('*').eq('is_active', true)
+      .order('tier_code', { ascending: true })
+      .order('nickname', { ascending: true }),
+    supabase.from('tiers').select('code, label').order('sort_order'),
+  ]);
 
   return (
     <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
-        title="Player Rate Card"
-        subtitle={`${players?.length ?? 0} active players — read-only for sales, admins can edit`}
+        title="Roster"
+        subtitle="Players · Coaches · Management · Analysts · Influencers — everyone in one editable view"
         action={profile.role === 'admin' ? (
-          <Link href="/admin/players/new" className="btn btn-primary">+ Add player</Link>
+          <Link href="/admin/players/new" className="btn btn-primary">+ Add roster member</Link>
         ) : undefined}
       />
-      <PlayersTable players={players ?? []} isAdmin={profile.role === 'admin'} />
+      <RosterOverview
+        players={players ?? []}
+        tiers={tiers ?? []}
+        isAdmin={profile.role === 'admin'}
+      />
     </Shell>
   );
 }

@@ -10,7 +10,7 @@ const NAV = (role: UserRole, email: string) => [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/quote/new', label: 'New Quote', icon: PlusCircle, highlight: true },
   { href: '/quotes', label: 'Quote Log', icon: FileText },
-  { href: '/roster/players', label: 'Players', icon: Users },
+  { href: '/roster/players', label: 'Roster', icon: Users },
   { href: '/roster/creators', label: 'Creators', icon: Sparkles },
   ...(role === 'admin' ? [
     { href: '/admin/users', label: 'Users', icon: UserCog },
