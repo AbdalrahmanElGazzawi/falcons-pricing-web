@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { PricingWizard } from './PricingWizard';
 import type { LineDraft } from './line-draft';
 import { Section } from '@/components/Section';
+import { PricingReference } from './PricingReference';
 
 const SECTION_TITLES: Record<string, string> = {
   header: 'Quote header',
@@ -38,7 +39,7 @@ export function QuoteBuilder({
   const [error, setError] = useState<string | null>(null);
 
   // ── Build/Preview tab
-  const [view, setView] = useState<'build' | 'preview'>('build');
+  const [view, setView] = useState<'build' | 'preview' | 'reference'>('build');
 
   // ── Layout edit mode (super-admin only)
   const [sectionOrder, setSectionOrder] = useState<string[]>(initialSectionOrder);
@@ -519,14 +520,21 @@ export function QuoteBuilder({
       <div className="flex items-center gap-1 border-b border-line">
         <TabButton active={view === 'build'} onClick={() => setView('build')}>Build</TabButton>
         <TabButton active={view === 'preview'} onClick={() => setView('preview')}>Preview</TabButton>
+        <TabButton active={view === 'reference'} onClick={() => setView('reference')}>Reference</TabButton>
         <div className="ml-auto text-xs text-label pb-2">
           {view === 'preview'
             ? 'Read-only preview of the saved quote'
-            : `${computed.rows.length} line${computed.rows.length === 1 ? '' : 's'} · ${fmtMoney(computed.totals.total, currency)}`}
+            : view === 'reference'
+              ? 'How the 9-axis pricing matrix actually works'
+              : `${computed.rows.length} line${computed.rows.length === 1 ? '' : 's'} · ${fmtMoney(computed.totals.total, currency)}`}
         </div>
       </div>
 
-      {view === 'preview' ? (
+      {view === 'reference' ? (
+        <div className="max-w-5xl">
+          <PricingReference />
+        </div>
+      ) : view === 'preview' ? (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-6 items-start">
           <QuotePreview
             clientName={clientName}
