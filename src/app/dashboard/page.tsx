@@ -3,6 +3,8 @@ import { requireStaff } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { isSuperAdminEmail } from '@/lib/super-admin';
+import { getPageLayout } from '@/lib/layout';
+import { DashboardLayout } from './DashboardLayout';
 import { Users, Sparkles, Trophy, Gamepad2, Layers, PlusCircle, ArrowUpRight, BarChart3, Megaphone, GraduationCap, Briefcase } from 'lucide-react';
 import { AssetCharts } from './AssetCharts';
 
@@ -103,25 +105,16 @@ export default async function DashboardPage() {
     'YT Pre-roll','YT Shorts','Snapchat','TikTok','Twitch / Kick Live','Telegram',
   ];
 
-  return (
-    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
-      <PageHeader
-        title={`Hello, ${profile.full_name || profile.email.split('@')[0]}`}
-        subtitle="Roster & Assets — what we have to sell"
-        action={
-          <div className="flex items-center gap-2">
-            {isSuperAdminEmail(profile.email) && (
-              <Link href="/admin/revenue" className="btn btn-ghost">
-                <BarChart3 size={14} /> Revenue insights
-              </Link>
-            )}
-            <Link href="/quote/new" className="btn btn-primary">
-              <PlusCircle size={16} /> New quote
-            </Link>
-          </div>
-        }
-      />
 
+  // Super admin can reorder sections; persisted in page_layouts
+  const sectionOrder = await getPageLayout(
+    supabase, 'dashboard',
+    ['hero', 'owned_media', 'a_team', 'brain_trust', 'charts', 'inventory']
+  );
+
+  const sectionNodes: Record<string, React.ReactNode> = {
+    hero: (
+      <>
       {/* Hero strip — asset inventory */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <HeroCard icon={Megaphone} tint="green" label="Owned channel reach" value={fmtFollow(totalReach)} sub={`${teamsWithChannels.length}/${allTeams.length} teams populated`} />
@@ -130,7 +123,10 @@ export default async function DashboardPage() {
         <HeroCard icon={Briefcase} tint="navy"  label="Direct vs agency"   value={`${agencyDirect}/${agencyManaged}`} sub={`${agencyUnknown} still to capture`} />
         <HeroCard icon={Gamepad2}  tint="green" label="Games covered"       value={games.size.toString()} sub={`${totalStaff} staff across teams`} />
       </div>
-
+      </>
+    ),
+    owned_media: (
+      <>
       {/* OWNED MEDIA — what we sell directly */}
       <div className="card overflow-hidden mb-6">
         <div className="px-5 py-3 border-b border-line flex items-center justify-between">
@@ -172,7 +168,10 @@ export default async function DashboardPage() {
           })}
         </div>
       </div>
-
+      </>
+    ),
+    a_team: (
+      <>
       {/* A-team showcase — Tier S spotlight */}
       <div className="card overflow-hidden mb-6">
         <div className="px-5 py-3 border-b border-line flex items-center justify-between">
@@ -216,9 +215,10 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
-
-
-
+      </>
+    ),
+    brain_trust: (
+      <>
       {/* Coaching staff & analysts — under-leveraged commercial asset */}
       {staffOnly.length > 0 && (
         <div className="card overflow-hidden mb-6">
@@ -249,7 +249,10 @@ export default async function DashboardPage() {
           </div>
         </div>
       )}
-
+      </>
+    ),
+    charts: (
+      <>
       {/* Charts — roster shape */}
       <AssetCharts
         byTier={byTier}
@@ -257,12 +260,43 @@ export default async function DashboardPage() {
         playerPlatforms={playerPlatforms}
         creatorPlatforms={creatorPlatforms}
       />
-
+      </>
+    ),
+    inventory: (
+      <>
       {/* Deliverable inventory tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
         <DeliverableInventory title="Player deliverables" subtitle="What pro athletes can deliver" items={playerPlatforms} icon={Users} />
         <DeliverableInventory title="Creator deliverables" subtitle="Influencer & content-creator inventory" items={creatorPlatforms} icon={Sparkles} />
       </div>
+      </>
+    ),
+  };
+
+  return (
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
+      <PageHeader
+        title={`Hello, ${profile.full_name || profile.email.split('@')[0]}`}
+        subtitle="Roster & Assets — what we have to sell"
+        action={
+          <div className="flex items-center gap-2">
+            {isSuperAdminEmail(profile.email) && (
+              <Link href="/admin/revenue" className="btn btn-ghost">
+                <BarChart3 size={14} /> Revenue insights
+              </Link>
+            )}
+            <Link href="/quote/new" className="btn btn-primary">
+              <PlusCircle size={16} /> New quote
+            </Link>
+          </div>
+        }
+      />
+
+      <DashboardLayout
+        initialOrder={sectionOrder}
+        sectionNodes={sectionNodes}
+        isSuperAdmin={isSuperAdminEmail(profile.email)}
+      />
     </Shell>
   );
 }

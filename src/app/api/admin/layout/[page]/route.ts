@@ -6,12 +6,14 @@ export const runtime = 'nodejs';
 // Whitelist of legal page keys. Add more as we extend the layout system.
 const ALLOWED_PAGES = new Set([
   'quote/new',
+  'dashboard',
 ]);
 
 // Whitelist of legal section ids per page so a malicious payload can't inject
 // arbitrary strings into our render switch.
 const ALLOWED_SECTIONS: Record<string, Set<string>> = {
   'quote/new': new Set(['header', 'globals', 'addons', 'lines', 'notes_totals']),
+  'dashboard': new Set(['hero', 'owned_media', 'a_team', 'brain_trust', 'charts', 'inventory']),
 };
 
 export async function GET(_req: Request, { params }: { params: { page: string } }) {
