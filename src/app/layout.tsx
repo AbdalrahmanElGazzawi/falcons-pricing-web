@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { ToastProvider } from '@/components/Toast';
 import { LocaleProvider } from '@/lib/i18n/Locale';
+import { ThemeProvider, type Theme } from '@/lib/theme/Theme';
 import { cookies } from 'next/headers';
 import type { Locale } from '@/lib/i18n/dict';
 
@@ -21,9 +22,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const initialLocale: Locale =
     (cookies().get('falcons_locale')?.value as Locale) === 'ar' ? 'ar' : 'en';
   const dir: 'ltr' | 'rtl' = initialLocale === 'ar' ? 'rtl' : 'ltr';
+  const initialTheme: Theme =
+    (cookies().get('falcons_theme')?.value as Theme) === 'dark' ? 'dark' : 'light';
 
   return (
-    <html lang={initialLocale} dir={dir}>
+    <html lang={initialLocale} dir={dir} data-theme={initialTheme}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -33,9 +36,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen bg-bg text-ink antialiased">
-        <LocaleProvider initial={initialLocale}>
-          <ToastProvider>{children}</ToastProvider>
-        </LocaleProvider>
+        <ThemeProvider initial={initialTheme}>
+          <LocaleProvider initial={initialLocale}>
+            <ToastProvider>{children}</ToastProvider>
+          </LocaleProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

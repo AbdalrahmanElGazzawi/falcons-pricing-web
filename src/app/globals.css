@@ -4,14 +4,68 @@
 
 :root {
   --font-sans: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+  /* Light theme — semantic tokens. Values are 'r g b' so Tailwind alpha works. */
+  --color-navy:        11 35 64;
+  --color-navy-dark:   6 22 40;
+  --color-green:       46 208 110;
+  --color-green-dark:  38 166 87;
+  --color-green-soft:  233 249 238;
+  --color-gold:        212 165 20;
+  --color-ink:         34 44 59;
+  --color-label:       90 102 120;
+  --color-mute:        148 163 184;
+  --color-line:        228 232 238;
+  --color-bg:          247 249 251;
+  --color-danger:      229 57 53;
+  --color-amber:       247 181 0;
+
+  /* Misc surface tones used directly */
+  --surface-card:        255 255 255;     /* card body */
+  --surface-card-hover:  248 250 252;
+  --surface-elevated:    255 255 255;
+}
+
+html[data-theme="dark"] {
+  /* Dark theme — keep brand greens and amber intact, invert surfaces and ink. */
+  --color-navy:        16 23 42;          /* slate-950-ish, used for sidebar still */
+  --color-navy-dark:   8 12 24;
+  --color-green:       46 208 110;
+  --color-green-dark:  38 166 87;
+  --color-green-soft:  18 56 36;          /* deep green tint for hovers */
+  --color-gold:        212 165 20;
+  --color-ink:         226 232 240;       /* slate-200 */
+  --color-label:       148 163 184;       /* slate-400 */
+  --color-mute:        100 116 139;       /* slate-500 */
+  --color-line:        51 65 85;          /* slate-700 — borders */
+  --color-bg:          15 23 42;          /* slate-900 — page bg */
+  --color-danger:      248 113 113;
+  --color-amber:       251 191 36;
+
+  --surface-card:        30 41 59;        /* slate-800 — card body */
+  --surface-card-hover:  51 65 85;
+  --surface-elevated:    30 41 59;
 }
 
 html, body {
   font-family: var(--font-sans);
-  background: #F7F9FB;
-  color: #222C3B;
+  background: rgb(var(--color-bg));
+  color: rgb(var(--color-ink));
   -webkit-font-smoothing: antialiased;
 }
+
+/* Dark-mode card surface uses --surface-card (not --color-bg) so cards float above the page */
+html[data-theme="dark"] .card { background-color: rgb(var(--surface-card)); }
+html[data-theme="dark"] .input { background-color: rgb(var(--surface-card)); }
+html[data-theme="dark"] .btn-ghost { background-color: rgb(var(--surface-card)); }
+html[data-theme="dark"] select.input,
+html[data-theme="dark"] textarea.input { background-color: rgb(var(--surface-card)); }
+
+/* Soft white backgrounds in light mode become subtle surface in dark */
+html[data-theme="dark"] .bg-white { background-color: rgb(var(--surface-card)) !important; }
+
+/* Smooth fade when toggling the theme */
+html, body, .card, .input, .btn { transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease; }
 
 button { cursor: pointer; }
 

@@ -1,23 +1,28 @@
 import type { Config } from 'tailwindcss';
 
+// Color tokens come from CSS variables defined in globals.css.
+// Light + dark themes swap via [data-theme="dark"] on <html>.
+const cssVar = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+
 const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
+  darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
-        navy:       '#0B2340',
-        navyDark:   '#061628',
-        green:      '#2ED06E',
-        greenDark:  '#26A657',
-        greenSoft:  '#E9F9EE',
-        gold:       '#D4A514',
-        ink:        '#222C3B',
-        label:      '#5A6678',
-        mute:       '#94A3B8',
-        line:       '#E4E8EE',
-        bg:         '#F7F9FB',
-        danger:     '#E53935',
-        amber:      '#F7B500',
+        navy:       cssVar('color-navy'),
+        navyDark:   cssVar('color-navy-dark'),
+        green:      cssVar('color-green'),
+        greenDark:  cssVar('color-green-dark'),
+        greenSoft:  cssVar('color-green-soft'),
+        gold:       cssVar('color-gold'),
+        ink:        cssVar('color-ink'),
+        label:      cssVar('color-label'),
+        mute:       cssVar('color-mute'),
+        line:       cssVar('color-line'),
+        bg:         cssVar('color-bg'),
+        danger:     cssVar('color-danger'),
+        amber:      cssVar('color-amber'),
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

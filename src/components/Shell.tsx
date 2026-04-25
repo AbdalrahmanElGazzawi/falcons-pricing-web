@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
 import { LocaleSwitcher } from './LocaleSwitcher';
+import { ThemeToggle } from './ThemeToggle';
 import { useLocale } from '@/lib/i18n/Locale';
 
 const WELCOME_KEY = 'falcons_welcome_seen_v1';
@@ -200,6 +201,9 @@ export function Shell({
                 </span>
               )}
             </div>
+          </div>
+          <div className="mt-2">
+            <ThemeToggle compact />
           </div>
           <div className="mt-2">
             <LocaleSwitcher compact />
