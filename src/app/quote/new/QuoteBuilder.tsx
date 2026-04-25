@@ -1071,18 +1071,55 @@ function QuotePreview({
   const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   return (
     <div className="card overflow-hidden">
-      {/* Brand banner */}
-      <div className="bg-gradient-to-r from-green to-greenDark text-white p-6">
-        <div className="flex items-start justify-between gap-6 flex-wrap">
+      {/* Brand banner with dual-currency total + talent mix preview */}
+      <div className="bg-gradient-to-br from-green via-greenDark to-greenDark text-white p-6 relative overflow-hidden">
+        {/* decorative dots */}
+        <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/5" />
+        <div className="absolute -right-6 -bottom-12 w-32 h-32 rounded-full bg-white/5" />
+
+        <div className="relative flex items-start justify-between gap-6 flex-wrap">
           <div>
             <div className="text-[10px] tracking-widest opacity-80">QUOTATION · DRAFT</div>
             <div className="text-2xl font-bold mt-1 tracking-tight">Team Falcons</div>
             <div className="text-xs opacity-90 mt-0.5">Pricing OS · {today}</div>
+
+            {/* Talent mix preview — small chips showing distinct talents */}
+            {rows.length > 0 && (() => {
+              const distinct = Array.from(new Set(rows.map((r: any) => r.talent_name)));
+              return (
+                <div className="flex flex-wrap gap-1.5 mt-3 max-w-md">
+                  {distinct.slice(0, 6).map((n: string) => (
+                    <span key={n} className="px-2 py-0.5 rounded-full bg-white/15 text-[11px] font-medium backdrop-blur-sm">
+                      {n}
+                    </span>
+                  ))}
+                  {distinct.length > 6 && (
+                    <span className="px-2 py-0.5 rounded-full bg-white/10 text-[11px] font-medium">
+                      + {distinct.length - 6} more
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
-          <div className="text-right">
-            <div className="text-[10px] tracking-widest opacity-80">TOTAL ({currency})</div>
-            <div className="text-3xl font-extrabold mt-1">{fmtCurrency(totals.total, currency, usdRate)}</div>
-            <div className="text-xs opacity-90 mt-0.5">VAT inclusive</div>
+
+          <div className="text-right relative">
+            <div className="text-[10px] tracking-widest opacity-80">TOTAL</div>
+            <div className="text-4xl font-extrabold mt-1 tabular-nums leading-tight">
+              {fmtCurrency(totals.total, currency, usdRate)}
+            </div>
+            <div className="flex items-center gap-3 justify-end mt-2 pt-2 border-t border-white/15 text-xs">
+              <div className="text-right">
+                <div className="opacity-70">SAR</div>
+                <div className="font-semibold tabular-nums">{fmtCurrency(totals.total, 'SAR', usdRate)}</div>
+              </div>
+              <div className="text-white/30 text-[10px]">/</div>
+              <div className="text-right">
+                <div className="opacity-70">USD</div>
+                <div className="font-semibold tabular-nums">{fmtCurrency(totals.total, 'USD', usdRate)}</div>
+              </div>
+            </div>
+            <div className="text-[10px] opacity-80 mt-1">VAT inclusive · {rows.length} line{rows.length === 1 ? '' : 's'}</div>
           </div>
         </div>
       </div>
