@@ -212,3 +212,33 @@ export const CREATOR_PLATFORMS = [
   { key: 'rate_kick_irl', label: 'Kick IRL' },
   { key: 'rate_telegram', label: 'Telegram' },
 ] as const;
+
+// ── Sales Log (realized revenue ledger) ─────────────────────────────────────
+
+export type SalesStatus = 'in_progress' | 'waiting_for_payment' | 'payment_collected' | 'cancelled';
+
+export interface SalesEntry {
+  id: string;
+  deal_date: string;             // ISO date
+  category: string;              // 'Esports Influencer' default
+  talent_name: string;           // Arabic-supported free text
+  creator_id: number | null;
+  player_id: number | null;
+  brand_name: string | null;
+  description: string | null;
+  platform: string | null;
+  amount_usd: number;
+  amount_sar: number;
+  total_with_vat_sar: number;
+  vat_rate: number;
+  status: SalesStatus;
+  invoice_issued: boolean;
+  payment_collected: boolean;
+  claim_filed: boolean;
+  cc_pay: boolean;
+  quote_id: string | null;
+  attachments: string[] | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}

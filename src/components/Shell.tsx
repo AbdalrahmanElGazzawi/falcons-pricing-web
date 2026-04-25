@@ -24,6 +24,9 @@ const NAV = (role: UserRole, email: string) => [
   { href: '/roster/creators',   label: 'Creators',   icon: Sparkles },
   { href: '/admin/roadmap',     label: 'Roadmap',    icon: Map },
   { href: '/welcome',           label: 'About',      icon: HelpCircle },
+  ...(['admin','sales','finance'].includes(role) ? [
+    { href: '/admin/sales-log', label: 'Sales Log',  icon: ScrollText },
+  ] : []),
   ...(role === 'admin' ? [
     { href: '/admin/users',       label: 'Users',       icon: UserCog },
     { href: '/admin/tiers',       label: 'Tiers',       icon: Settings },
