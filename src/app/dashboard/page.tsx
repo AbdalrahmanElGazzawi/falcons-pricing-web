@@ -5,6 +5,16 @@ import { AccessDenied } from '@/components/AccessDenied';
 import { fmtMoney } from '@/lib/utils';
 import { PlusCircle, TrendingUp, Trophy, Users, Sparkles, DollarSign, ArrowUpRight, FileBarChart } from 'lucide-react';
 import { DashboardCharts } from './DashboardCharts';
+import { cookies } from 'next/headers';
+import { translate } from '@/lib/i18n/dict';
+import type { Locale, DictKey } from '@/lib/i18n/dict';
+
+function getLocale(): Locale {
+  return (cookies().get('falcons_locale')?.value as Locale) === 'ar' ? 'ar' : 'en';
+}
+function tx(key: DictKey): string {
+  return translate(key, getLocale());
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -138,15 +148,15 @@ export default async function DashboardPage() {
   return (
     <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
-        title={`Welcome, ${profile.full_name || profile.email.split('@')[0]}`}
-        subtitle="Team Falcons · Pricing OS"
+        title={`${tx('dash.welcome')}, ${profile.full_name || profile.email.split('@')[0]}`}
+        subtitle={tx('dash.subtitle')}
         action={
           <div className="flex items-center gap-2">
             <Link href="/dashboard/ops" className="btn btn-ghost">
-              <FileBarChart size={14} /> Operations view
+              <FileBarChart size={14} /> {tx('dash.ops_view')}
             </Link>
             <Link href="/quote/new" className="btn btn-primary">
-              <PlusCircle size={16} /> New quote
+              <PlusCircle size={16} /> {tx('dash.new_quote')}
             </Link>
           </div>
         }
@@ -157,21 +167,21 @@ export default async function DashboardPage() {
         <HeroCard
           icon={DollarSign}
           tint="green"
-          label="Revenue collected"
+          label={tx('dash.revenue_collected')}
           value={`${Math.round(collectedSar).toLocaleString('en-US')} SAR`}
           sub={`${collected.length} deal${collected.length === 1 ? '' : 's'} · $${Math.round(collected.reduce((s,r)=>s+Number(r.amount_usd),0)).toLocaleString('en-US')} USD`}
         />
         <HeroCard
           icon={TrendingUp}
           tint="navy"
-          label="Open pipeline"
+          label={tx('dash.open_pipeline')}
           value={`${Math.round(pipelineSar + quotePipelineSar).toLocaleString('en-US')} SAR`}
           sub={`${pipelineSales.length} in-flight · ${allQuotes.filter(q => liveStatuses.includes(q.status)).length} live quotes`}
         />
         <HeroCard
           icon={Trophy}
           tint="amber"
-          label="Avg deal size"
+          label={tx('dash.avg_deal')}
           value={`${Math.round(avgDealSar).toLocaleString('en-US')} SAR`}
           sub={`across ${sales.length} ledger entries`}
         />
@@ -191,15 +201,15 @@ export default async function DashboardPage() {
       {/* Roster + recent quotes — supplementary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
         <div className="card card-p">
-          <div className="text-xs text-label uppercase tracking-wider mb-2">Roster</div>
+          <div className="text-xs text-label uppercase tracking-wider mb-2">{tx('dash.roster')}</div>
           <div className="flex items-center gap-4">
             <div>
               <div className="text-3xl font-bold text-ink tabular-nums">{playerCount ?? 0}</div>
-              <div className="text-xs text-mute flex items-center gap-1.5"><Users size={12} /> Active players</div>
+              <div className="text-xs text-mute flex items-center gap-1.5"><Users size={12} /> {tx('dash.active_players')}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-ink tabular-nums">{creatorCount ?? 0}</div>
-              <div className="text-xs text-mute flex items-center gap-1.5"><Sparkles size={12} /> Active creators</div>
+              <div className="text-xs text-mute flex items-center gap-1.5"><Sparkles size={12} /> {tx('dash.active_creators')}</div>
             </div>
           </div>
           <div className="flex items-center gap-3 mt-3">
@@ -210,11 +220,11 @@ export default async function DashboardPage() {
 
         <div className="card card-p lg:col-span-2 overflow-hidden">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-xs text-label uppercase tracking-wider">Recent quotes</div>
-            <Link href="/quotes" className="text-xs text-greenDark hover:underline">View all →</Link>
+            <div className="text-xs text-label uppercase tracking-wider">{tx('dash.recent_quotes')}</div>
+            <Link href="/quotes" className="text-xs text-greenDark hover:underline">{tx('dash.view_all')}</Link>
           </div>
           {(recentQuotes ?? []).length === 0 ? (
-            <div className="text-sm text-mute py-6 text-center">No quotes yet.</div>
+            <div className="text-sm text-mute py-6 text-center">{tx('dash.no_quotes')}</div>
           ) : (
             <ul className="divide-y divide-line">
               {(recentQuotes ?? []).map((q: any) => (

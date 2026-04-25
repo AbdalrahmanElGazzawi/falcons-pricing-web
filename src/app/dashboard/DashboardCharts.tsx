@@ -1,4 +1,5 @@
 'use client';
+import { useLocale } from '@/lib/i18n/Locale';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -39,14 +40,15 @@ export function DashboardCharts({
   aging:    Array<{ bucket: string; amount: number }>;
   statusMix:Array<{ name: string; value: number }>;
 }) {
+  const { t } = useLocale();
   return (
     <div className="grid grid-cols-1 lg:grid-cols-6 gap-4">
       {/* Monthly trend — wide */}
       <div className="card card-p lg:col-span-4">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="font-semibold text-ink">Revenue trend</h3>
-            <p className="text-xs text-mute">Collected (solid) vs pipeline (translucent), by month</p>
+            <h3 className="font-semibold text-ink">{t('dash.revenue_trend')}</h3>
+            <p className="text-xs text-mute">{t('dash.revenue_trend_sub')}</p>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={260}>
@@ -77,8 +79,8 @@ export function DashboardCharts({
 
       {/* Status mix donut */}
       <div className="card card-p lg:col-span-2">
-        <h3 className="font-semibold text-ink mb-1">Status mix</h3>
-        <p className="text-xs text-mute mb-2">Deal count by stage</p>
+        <h3 className="font-semibold text-ink mb-1">{t('dash.status_mix')}</h3>
+        <p className="text-xs text-mute mb-2">{t('dash.status_mix_sub')}</p>
         <ResponsiveContainer width="100%" height={220}>
           <PieChart>
             <Pie data={statusMix} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
@@ -92,8 +94,8 @@ export function DashboardCharts({
 
       {/* Top creators */}
       <div className="card card-p lg:col-span-3">
-        <h3 className="font-semibold text-ink mb-1">Top creators</h3>
-        <p className="text-xs text-mute mb-2">By total revenue (SAR + VAT)</p>
+        <h3 className="font-semibold text-ink mb-1">{t('dash.top_creators')}</h3>
+        <p className="text-xs text-mute mb-2">{t('dash.top_creators_sub')}</p>
         <ResponsiveContainer width="100%" height={Math.max(180, creators.length * 32)}>
           <BarChart data={creators} layout="vertical" margin={{ left: 30, right: 30 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
@@ -109,15 +111,15 @@ export function DashboardCharts({
 
       {/* Brand portfolio — custom row layout with logos */}
       <div className="card card-p lg:col-span-3">
-        <h3 className="font-semibold text-ink mb-1">Brand portfolio</h3>
-        <p className="text-xs text-mute mb-3">Revenue by client</p>
+        <h3 className="font-semibold text-ink mb-1">{t('dash.brand_portfolio')}</h3>
+        <p className="text-xs text-mute mb-3">{t('dash.brand_portfolio_sub')}</p>
         <BrandList brands={brands} />
       </div>
 
       {/* Funnel */}
       <div className="card card-p lg:col-span-3">
-        <h3 className="font-semibold text-ink mb-1">Quote → cash funnel</h3>
-        <p className="text-xs text-mute mb-2">Conversion across the lifecycle</p>
+        <h3 className="font-semibold text-ink mb-1">{t('dash.funnel')}</h3>
+        <p className="text-xs text-mute mb-2">{t('dash.funnel_sub')}</p>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={funnel}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
@@ -135,8 +137,8 @@ export function DashboardCharts({
 
       {/* AR aging */}
       <div className="card card-p lg:col-span-3">
-        <h3 className="font-semibold text-ink mb-1">AR aging</h3>
-        <p className="text-xs text-mute mb-2">Invoices issued, awaiting payment</p>
+        <h3 className="font-semibold text-ink mb-1">{t('dash.aging')}</h3>
+        <p className="text-xs text-mute mb-2">{t('dash.aging_sub')}</p>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={aging}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
@@ -154,8 +156,8 @@ export function DashboardCharts({
 
       {/* Platform mix — full width */}
       <div className="card card-p lg:col-span-6">
-        <h3 className="font-semibold text-ink mb-1">Platform mix</h3>
-        <p className="text-xs text-mute mb-2">Where the revenue lives</p>
+        <h3 className="font-semibold text-ink mb-1">{t('dash.platform_mix')}</h3>
+        <p className="text-xs text-mute mb-2">{t('dash.platform_mix_sub')}</p>
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={platforms}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />

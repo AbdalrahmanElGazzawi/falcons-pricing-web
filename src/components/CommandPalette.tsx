@@ -1,4 +1,5 @@
 'use client';
+import { useLocale } from '@/lib/i18n/Locale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -62,6 +63,7 @@ function fuzzyScore(text: string, query: string): number {
 }
 
 export function CommandPalette() {
+  const { t } = useLocale();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -172,7 +174,7 @@ export function CommandPalette() {
             value={query}
             onChange={e => { setQuery(e.target.value); setActive(0); }}
             onKeyDown={onInputKey}
-            placeholder="Search quotes, talent, inquiries…"
+            placeholder={t('cmdk.placeholder')}
             className="flex-1 bg-transparent outline-none text-sm text-ink placeholder:text-mute"
             autoFocus
           />
@@ -187,12 +189,12 @@ export function CommandPalette() {
             <div className="px-4 py-8 text-center text-sm text-mute">Loading…</div>
           ) : results.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-mute">
-              {query ? 'No matches.' : 'Type to search…'}
+              {query ? t('cmdk.no_match') : t('cmdk.type')}
             </div>
           ) : (
             <ul role="listbox">
               {!query.trim() && recent.length > 0 && (
-                <li className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-mute font-semibold">Recent</li>
+                <li className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-mute font-semibold">{t('cmdk.recent')}</li>
               )}
               {!query.trim() && recent.length > 0 && (
                 <li className="px-4 pb-2 pt-1 text-[10px] uppercase tracking-wider text-mute font-semibold sr-only">end recent</li>
@@ -204,7 +206,7 @@ export function CommandPalette() {
                 return (
                   <li key={`${it.kind}-${it.href}-${i}`}>
                     {showNavHeader && (
-                      <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-mute font-semibold">Quick links</div>
+                      <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-mute font-semibold">{t('cmdk.quick')}</div>
                     )}
                     <button
                       onClick={() => pick(it)}

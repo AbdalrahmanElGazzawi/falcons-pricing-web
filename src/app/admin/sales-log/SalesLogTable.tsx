@@ -1,4 +1,5 @@
 'use client';
+import { useLocale } from '@/lib/i18n/Locale';
 import { useMemo, useState } from 'react';
 import { Plus, Pencil, Trash2, X, Check, Search } from 'lucide-react';
 import type { SalesEntry, SalesStatus } from '@/lib/types';
@@ -21,6 +22,7 @@ function fmtSAR(n: number) { return Math.round(n).toLocaleString('en-US') + ' SA
 function fmtUSD(n: number) { return '$' + Math.round(n).toLocaleString('en-US'); }
 
 export function SalesLogTable({ initial }: { initial: SalesEntry[] }) {
+  const { t } = useLocale();
   const [rows, setRows] = useState(initial);
   const [editing, setEditing] = useState<SalesEntry | null>(null);
   const [creating, setCreating] = useState(false);
@@ -77,18 +79,18 @@ export function SalesLogTable({ initial }: { initial: SalesEntry[] }) {
         <div className="relative flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mute" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search talent / brand / description…"
+            placeholder={t('sales.search')}
             className="input pl-9" />
         </div>
         <select value={filter} onChange={e => setFilter(e.target.value as any)} className="input sm:w-48">
-          <option value="all">All statuses</option>
+          <option value="all">{t('sales.filter.all')}</option>
           <option value="payment_collected">Collected</option>
           <option value="waiting_for_payment">Awaiting payment</option>
           <option value="in_progress">In progress</option>
           <option value="cancelled">Cancelled</option>
         </select>
         <button onClick={() => setCreating(true)} className="btn btn-primary">
-          <Plus size={14} /> New entry
+          <Plus size={14} /> {t('sales.new')}
         </button>
       </div>
 
