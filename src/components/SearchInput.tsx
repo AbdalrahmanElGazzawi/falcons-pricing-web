@@ -2,11 +2,15 @@
 import { Search, X } from 'lucide-react';
 
 /**
- * Unified search input. Replaces all ad-hoc <Search/> + <input> pairs.
+ * Unified search input.
  *
- * Fixes the perceived overlap of the cursor caret with the placeholder by
- * using a more visible icon (text-label), more left-padding (pl-11), and
- * adding a clear button when there's a value.
+ * Why this exists: native <input type="search"> renders browser-controlled
+ * decorations (magnifying glass on Safari, X clear button on Chrome) INSIDE
+ * the content area, on top of any custom icon — which made the caret look
+ * like it was kissing the first letter of the placeholder. Using type="text"
+ * gives us full control of the visual layout. The `!pl-11` override is
+ * required because the global `.input` class applies `px-3` via @apply,
+ * which in some build orderings can win over a plain `pl-11` utility.
  */
 export function SearchInput({
   value,
@@ -29,16 +33,18 @@ export function SearchInput({
     <div className={`relative ${className}`}>
       <Search
         size={iconSize}
-        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-label pointer-events-none"
+        strokeWidth={2.25}
+        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-navy/55 pointer-events-none"
         aria-hidden="true"
       />
       <input
-        type="search"
+        type="text"
         autoFocus={autoFocus}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`input pl-11 pr-9 ${size === 'sm' ? 'py-1.5 text-sm' : ''}`}
+        className={`input !pl-11 !pr-9 appearance-none ${size === 'sm' ? '!py-1.5 text-sm' : ''}`}
+        aria-label={placeholder}
       />
       {showClear && (
         <button

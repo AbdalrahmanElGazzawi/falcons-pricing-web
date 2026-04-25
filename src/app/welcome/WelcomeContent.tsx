@@ -10,14 +10,42 @@ import type { UserRole } from '@/lib/types';
 
 const WELCOME_KEY = 'falcons_welcome_seen_v1';
 
+// Derive a friendly greeting name from whatever profile data is available.
+// Priority: full_name first word → email prefix (capitalized + cleaned) → "there".
+function deriveFirstName(fullName: string | null, email: string): string {
+  const n = (fullName ?? '').trim();
+  if (n) {
+    const first = n.split(/\s+/)[0];
+    if (first) return first;
+  }
+  const prefix = (email.split('@')[0] ?? '')
+    .replace(/[._+-]+/g, ' ')
+    .replace(/\d+$/, '')
+    .trim();
+  if (prefix) {
+    return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+  }
+  return 'there';
+}
+
+const ROLE_LABEL: Record<UserRole, string> = {
+  admin:   'Admin',
+  sales:   'Sales',
+  finance: 'Finance',
+  viewer:  'Viewer',
+};
+
 export function WelcomeContent({
   role,
-  firstName,
+  email,
+  fullName,
 }: {
   role: UserRole;
-  firstName: string;
+  email: string;
+  fullName: string | null;
 }) {
   const router = useRouter();
+  const firstName = deriveFirstName(fullName, email);
 
   const dismiss = (href: string) => {
     try { localStorage.setItem(WELCOME_KEY, new Date().toISOString()); } catch {}
@@ -29,6 +57,8 @@ export function WelcomeContent({
       ? { label: 'Review pending quotes', href: '/quotes?status=pending_approval' }
       : role === 'sales'
       ? { label: 'Build your first quote', href: '/quote/new' }
+      : role === 'finance'
+      ? { label: 'Open the quote log', href: '/quotes' }
       : { label: 'Open the dashboard', href: '/dashboard' };
 
   return (
@@ -54,6 +84,12 @@ export function WelcomeContent({
             <h1 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">
               Hey {firstName}, this is how Team Falcons prices its activations now.
             </h1>
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur text-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-green inline-block" />
+              <span className="text-white/90">Signed in as <strong className="font-semibold text-white">{email}</strong></span>
+              <span className="text-white/40">·</span>
+              <span className="uppercase tracking-wider font-semibold text-white/80">{ROLE_LABEL[role]}</span>
+            </div>
             <p className="mt-4 text-base sm:text-lg text-white/80 max-w-2xl">
               No more spreadsheets passed around in DMs. Pricing OS is the single source of truth for
               every quote that goes out the door — measured, audited, on-brand.

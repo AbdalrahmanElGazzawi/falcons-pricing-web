@@ -4,6 +4,8 @@ import { AccessDenied } from '@/components/AccessDenied';
 import { WelcomeContent } from './WelcomeContent';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 export default async function WelcomePage() {
   const { denied, profile } = await requireStaff();
@@ -13,7 +15,8 @@ export default async function WelcomePage() {
     <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <WelcomeContent
         role={profile.role}
-        firstName={(profile.full_name ?? profile.email).split(/[\s@]/)[0] || 'there'}
+        email={profile.email}
+        fullName={profile.full_name ?? null}
       />
     </Shell>
   );
