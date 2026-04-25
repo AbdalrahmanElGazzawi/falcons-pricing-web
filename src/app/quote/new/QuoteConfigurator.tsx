@@ -5,7 +5,7 @@ import {
   Twitter, Instagram, Youtube, Twitch, Facebook, ExternalLink,
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
-import { computeLine, type MeasurementConfidence } from '@/lib/pricing';
+import { computeLine, AXIS_OPTIONS, CREATOR_AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
 import { fmtMoney, fmtPct, tierClass, fmtCurrency } from '@/lib/utils';
 import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
@@ -531,11 +531,65 @@ export function QuoteConfigurator({
                 <div className="p-4 space-y-3 border-t border-line bg-white">
                   <p className="text-xs text-label">Override the campaign defaults for these specific deliverables. Leave on Campaign default to inherit.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <AxisRow label="Engagement" hint="Talent's last-90-day engagement rate. Best predictor of campaign ROI." value={overrides.o_eng} globalVal={globals.eng} onChange={v => setOverrides(o => ({ ...o, o_eng: v }))} options={[0.70,0.90,1.00,1.20,1.40,1.60]} labels={['<2%','2–4%','4–6%','6–8%','8–10%','>10%']} />
-                    <AxisRow label="Audience"   hint="How well the audience matches the brand. MENA/Saudi unlocks +30% premium." value={overrides.o_aud} globalVal={globals.aud} onChange={v => setOverrides(o => ({ ...o, o_aud: v }))} options={[0.85,1.00,1.20,1.30,1.40,1.50]} labels={['Generic','Gaming-adj.','Core','MENA','Esports','Elite']} />
-                    <AxisRow label="Seasonality" hint="Campaign window. Ramadan + Worlds = peak demand." value={overrides.o_seas} globalVal={globals.seas} onChange={v => setOverrides(o => ({ ...o, o_seas: v }))} options={[0.80,1.00,1.20,1.25,1.30,1.35,1.40,1.50]} labels={['Off','Reg','Q4','Major','Launch','Ramadan','Worlds','Mega']} />
-                    <AxisRow label="Language"   hint="Bilingual reaches both audiences in one activation — highest leverage." value={overrides.o_lang} globalVal={globals.lang} onChange={v => setOverrides(o => ({ ...o, o_lang: v }))} options={[1.00,1.05,1.15]} labels={['EN','AR','EN+AR']} />
-                    <AxisRow label="Authority"  hint="Championship credentials. Pro status = price floor protection." value={overrides.o_auth} globalVal={globals.auth} onChange={v => setOverrides(o => ({ ...o, o_auth: v }))} options={[1.00,1.15,1.30,1.50]} labels={['Normal','Proven','Elite','Star']} />
+                    {/* Talent-aware axis options. Creators get sector-based audience, conversion-driven authority,
+                         and a Production axis (vs Seasonality on players). */}
+                    {(() => {
+                      const opts = talentKind === 'creator' ? CREATOR_AXIS_OPTIONS : AXIS_OPTIONS;
+                      const isCreator = talentKind === 'creator';
+                      return (
+                        <>
+                          <AxisRow label="Engagement"
+                            hint={isCreator
+                              ? "Creator's avg engagement rate. >10% means cult-following levels of community heat."
+                              : "Talent's last-90-day engagement rate. Best predictor of campaign ROI."}
+                            value={overrides.o_eng} globalVal={globals.eng}
+                            onChange={v => setOverrides(o => ({ ...o, o_eng: v }))}
+                            options={opts.engagement.map(e => e.factor)}
+                            labels={opts.engagement.map(e => e.label.replace(/ —.*$/, ''))} />
+
+                          <AxisRow label={isCreator ? "Audience fit" : "Audience"}
+                            hint={isCreator
+                              ? "Sector-based: how well the creator's audience matches the BRAND vertical."
+                              : "How well the audience matches the brand. MENA/Saudi unlocks +30% premium."}
+                            value={overrides.o_aud} globalVal={globals.aud}
+                            onChange={v => setOverrides(o => ({ ...o, o_aud: v }))}
+                            options={opts.audience.map(e => e.factor)}
+                            labels={opts.audience.map(e => isCreator ? e.label.replace(/ \/.*/g, '').slice(0, 14) : e.label)} />
+
+                          {isCreator ? (
+                            <AxisRow label="Production"
+                              hint="How heavy is the creative effort? Scripted/on-ground = more revisions and cost."
+                              value={overrides.o_seas} globalVal={globals.seas}
+                              onChange={v => setOverrides(o => ({ ...o, o_seas: v }))}
+                              options={(opts as any).production.map((e: any) => e.factor)}
+                              labels={(opts as any).production.map((e: any) => e.label.split(' / ')[0])} />
+                          ) : (
+                            <AxisRow label="Seasonality"
+                              hint="Campaign window. Ramadan + Worlds = peak demand."
+                              value={overrides.o_seas} globalVal={globals.seas}
+                              onChange={v => setOverrides(o => ({ ...o, o_seas: v }))}
+                              options={[0.80,1.00,1.20,1.25,1.30,1.35,1.40,1.50]}
+                              labels={['Off','Reg','Q4','Major','Launch','Ramadan','Worlds','Mega']} />
+                          )}
+
+                          <AxisRow label="Language"
+                            hint="Bilingual reaches both audiences in one activation — highest leverage."
+                            value={overrides.o_lang} globalVal={globals.lang}
+                            onChange={v => setOverrides(o => ({ ...o, o_lang: v }))}
+                            options={opts.language.map(e => e.factor)}
+                            labels={opts.language.map(e => e.label.split(' ')[0])} />
+
+                          <AxisRow label="Authority"
+                            hint={isCreator
+                              ? "Creator-side authority: 'Hero' = category-defining cultural force; converts at premium."
+                              : "Championship credentials. Pro status = price floor protection."}
+                            value={overrides.o_auth} globalVal={globals.auth}
+                            onChange={v => setOverrides(o => ({ ...o, o_auth: v }))}
+                            options={opts.authority.map(e => e.factor)}
+                            labels={opts.authority.map(e => e.label.split(' / ')[0])} />
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </details>
