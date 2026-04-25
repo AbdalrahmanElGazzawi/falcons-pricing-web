@@ -34,24 +34,26 @@ function fmtPct(n: number) { return `${(n * 100).toFixed(0)}%`; }
 function fmtMult(n: number) { return `${Number(n).toFixed(2)}×`; }
 function dateStr(iso?: string) { return iso ? new Date(iso).toLocaleDateString('en-GB') : '—'; }
 
-// Map an axis multiplier to a human label using the standard catalogues.
-function axisLabel(axis: string, value: number): string {
+import { labelForFactor } from '@/lib/pricing';
+
+// Map an axis multiplier to a human label — talent-aware (uses labelForFactor from pricing engine).
+function axisLabel(axis: string, value: number, kind: 'player' | 'creator' = 'player'): string {
   const round = (v: number) => Math.round(v * 100) / 100;
   const v = round(value);
-  const tables: Record<string, Array<[number, string]>> = {
-    eng:  [[0.70,'<2%'],[0.90,'2–4%'],[1.00,'4–6%'],[1.20,'6–8%'],[1.40,'8–10%'],[1.60,'>10%']],
-    aud:  [[0.85,'Generic'],[1.00,'Gaming-adj.'],[1.20,'Core gaming'],[1.30,'MENA / Saudi'],[1.40,'Esports-focused'],[1.50,'Global Elite']],
-    seas: [[0.80,'Off-season'],[1.00,'Regular'],[1.20,'Holiday Q4'],[1.25,'Regional Major'],[1.30,'Game launch'],[1.35,'Ramadan MENA'],[1.40,'Worlds'],[1.50,'Mega peak']],
-    ctype:[[0.85,'Organic'],[1.00,'Integrated'],[1.15,'Sponsored']],
-    lang: [[1.00,'English'],[1.05,'Arabic'],[1.15,'Bilingual']],
-    auth: [[1.00,'Normal'],[1.15,'Proven'],[1.30,'Elite contender'],[1.50,'Global star']],
+  // Translate short axis key → labelForFactor's expected key
+  const axisMap: Record<string, 'engagement'|'audience'|'authority'|'language'|'seasonality'|'production'|'contentType'> = {
+    eng: 'engagement',
+    aud: 'audience',
+    seas: kind === 'creator' ? 'production' : 'seasonality',
+    ctype: 'contentType',
+    lang: 'language',
+    auth: 'authority',
   };
-  const t = tables[axis];
-  if (!t) return fmtMult(v);
-  for (const [factor, label] of t) {
-    if (Math.abs(factor - v) < 0.005) return `${label} (${fmtMult(v)})`;
-  }
-  return fmtMult(v);
+  const k = axisMap[axis];
+  if (!k) return fmtMult(v);
+  const lbl = labelForFactor(k, v, kind);
+  if (lbl.includes('×')) return lbl; // unmatched fallback
+  return `${lbl} (${fmtMult(v)})`;
 }
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
@@ -174,7 +176,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   (lines || []).forEach((l: any, idx: number) => {
     if (idx % 2 === 0) doc.rect(tableX, y, tableW, rowH).fill(LIGHT);
     doc.fillColor(INK).font('Helvetica').fontSize(10);
+    const tKind = l.talent_type === 'creator' ? 'creator' : 'player';
+    const kindBadge = tKind === 'creator' ? 'CREATOR' : 'PLAYER';
+    doc.fillColor(INK).font('Helvetica').fontSize(10);
     doc.text(`${l.talent_name} — ${l.platform}`, col.desc, y + 7, { width: tableW * 0.5 });
+    // Small uppercase kind chip below the name (subtle)
+    doc.fillColor(MUTE).font('Helvetica').fontSize(7).text(kindBadge, col.desc, y + 19, { width: tableW * 0.5 });
     doc.text(fmtMoney(Number(l.final_unit || 0), currency), col.unit, y + 7, { width: tableW * 0.16, align: 'right' });
     doc.text(`${Number(l.qty || 1)}`, col.qty, y + 7, { width: tableW * 0.07, align: 'right' });
     doc.text(fmtMoney(Number(l.final_amount || 0), currency), col.amt, y + 7, { width: colEnd - col.amt, align: 'right' });
@@ -199,13 +206,22 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   doc.text(formulaText, methX, y, { width: methW, lineGap: 1 });
   y += formulaHeight + 8;
 
-  // Campaign-level axes
-  doc.fillColor(MUTE).font('Helvetica').fontSize(7.5).text('CAMPAIGN AXES', methX, y);
+  // Campaign-level axes — talent-aware labels
+  const hasCreator = (lines || []).some((l: any) => l.talent_type === 'creator');
+  const hasPlayer  = (lines || []).some((l: any) => l.talent_type === 'player');
+  const dominantKind: 'player' | 'creator' = hasCreator && !hasPlayer ? 'creator' : 'player';
+  doc.fillColor(MUTE).font('Helvetica').fontSize(7.5).text(
+    hasCreator && hasPlayer ? 'CAMPAIGN AXES (mixed roster)' :
+    dominantKind === 'creator' ? 'CAMPAIGN AXES (creator pricing)' : 'CAMPAIGN AXES',
+    methX, y
+  );
   y += 11;
+  const audienceLabel = dominantKind === 'creator' ? 'Audience fit' : 'Audience';
+  const seasLabel     = dominantKind === 'creator' ? 'Production'   : 'Seasonality';
   const axes: Array<[string, string, number]> = [
     ['Engagement',  'eng',   Number(quote.eng_factor || 1)],
-    ['Audience',    'aud',   Number(quote.audience_factor || 1)],
-    ['Seasonality', 'seas',  Number(quote.seasonality_factor || 1)],
+    [audienceLabel, 'aud',   Number(quote.audience_factor || 1)],
+    [seasLabel,     'seas',  Number(quote.seasonality_factor || 1)],
     ['Content',     'ctype', Number(quote.content_type_factor || 1)],
     ['Language',    'lang',  Number(quote.language_factor || 1)],
     ['Authority',   'auth',  Number(quote.authority_factor || 1)],
@@ -213,7 +229,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   doc.font('Helvetica').fontSize(8.5).fillColor(INK);
   axes.forEach(([name, key, val]) => {
     doc.fillColor(LABEL).text(`${name}:`, methX, y);
-    doc.fillColor(INK).text(axisLabel(key, val), methX + 80, y);
+    doc.fillColor(INK).text(axisLabel(key, val, dominantKind), methX + 80, y);
     y += 11;
   });
   if (Number(quote.addons_uplift_pct || 0) > 0) {
@@ -225,6 +241,28 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     doc.fillColor(LABEL).text('FX rate:', methX, y);
     doc.fillColor(INK).text(`${usdRate.toFixed(2)} SAR per 1 USD`, methX + 80, y);
     y += 11;
+  }
+
+
+  // Brand brief block (conditional — only render if anything captured)
+  const briefFields: Array<[string, string]> = [];
+  if (Array.isArray(quote.demo_target) && quote.demo_target.length > 0)
+    briefFields.push(['Demographic', (quote.demo_target as string[]).join(', ')]);
+  if (quote.gender_skew && quote.gender_skew !== 'mixed')
+    briefFields.push(['Gender skew', String(quote.gender_skew).replace(/^./, c => c.toUpperCase())]);
+  if (quote.region) briefFields.push(['Region', quote.region]);
+  if (quote.kpi_focus) briefFields.push(['Primary KPI', String(quote.kpi_focus).replace(/^./, c => c.toUpperCase())]);
+  if (quote.exclusivity) briefFields.push(['Exclusivity', `${quote.exclusivity_months || ''}mo category lockout`.trim()]);
+
+  if (briefFields.length > 0) {
+    doc.fillColor(MUTE).font('Helvetica').fontSize(7.5).text('BRAND BRIEF', methX, y);
+    y += 11;
+    briefFields.forEach(([name, val]) => {
+      doc.fillColor(LABEL).font('Helvetica').fontSize(8.5).text(`${name}:`, methX, y);
+      doc.fillColor(INK).font('Helvetica').text(val, methX + 80, y, { width: methW - 80 });
+      y += 11;
+    });
+    y += 4;
   }
 
   // Notes block on right
