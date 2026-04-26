@@ -1,7 +1,47 @@
 import { NextResponse } from 'next/server';
-import { requireSuperAdmin } from '@/lib/auth';
+import { requireStaff, requireSuperAdmin } from '@/lib/auth';
 
 export const runtime = 'nodejs';
+
+/**
+ * GET /api/quote/[id] — staff only.
+ * Returns a full quote (header + lines + add-ons) so the New Quote page
+ * can rehydrate a saved draft into the builder. Restricted to status='draft'
+ * and (the user's own quotes OR super admin) to keep things simple.
+ */
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const { denied, profile, supabase } = await requireStaff();
+  if (denied) return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+
+  const { data: header, error: hErr } = await supabase
+    .from('quotes')
+    .select('*')
+    .eq('id', params.id)
+    .maybeSingle();
+  if (hErr) return NextResponse.json({ error: hErr.message }, { status: 500 });
+  if (!header) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // Only allow loading the user's own drafts (admins can load any draft).
+  const isOwner = header.owner_id === profile.id || header.owner_email === profile.email;
+  const isAdmin = profile.role === 'admin';
+  if (!isOwner && !isAdmin) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+  }
+  if (header.status !== 'draft') {
+    return NextResponse.json({ error: 'Only drafts can be loaded into the builder' }, { status: 400 });
+  }
+
+  const [{ data: lines }, { data: addonRows }] = await Promise.all([
+    supabase.from('quote_lines').select('*').eq('quote_id', params.id).order('sort_order'),
+    supabase.from('quote_addons').select('addon_id, months').eq('quote_id', params.id),
+  ]);
+
+  return NextResponse.json({
+    header,
+    lines: lines ?? [],
+    addons: addonRows ?? [],
+  });
+}
 
 /**
  * DELETE /api/quote/[id] — super-admin only.

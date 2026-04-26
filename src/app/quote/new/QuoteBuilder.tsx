@@ -8,10 +8,10 @@ import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
   type Player, type Creator, type Tier, type Addon,
 } from '@/lib/types';
-import { Trash2, Plus, Save, ArrowLeft, Pencil, Settings, Check, X as XIcon, HelpCircle, Send } from 'lucide-react';
+import { Trash2, Plus, Save, ArrowLeft, Pencil, Settings, Check, X as XIcon, HelpCircle, Send, FolderOpen } from 'lucide-react';
 import Link from 'next/link';
 import { QuoteConfigurator } from './QuoteConfigurator';
-import type { LineDraft } from './line-draft';
+import { newUid, type LineDraft } from './line-draft';
 import { Section } from '@/components/Section';
 import { PricingReference } from './PricingReference';
 
@@ -27,9 +27,20 @@ const SECTION_TITLES: Record<string, string> = {
 
 const LS_KEY = 'falcons.quote-draft.v2';
 
+// Lightweight summary of a saved draft (status='draft' quote) shown in the picker.
+export type DraftSummary = {
+  id: string;
+  quote_number: string;
+  client_name: string;
+  campaign: string | null;
+  currency: string;
+  total: number;
+  updated_at: string;
+};
+
 export function QuoteBuilder({
   players, creators, tiers, addons, ownerEmail, ownerName,
-  initialSectionOrder, canEditLayout,
+  initialSectionOrder, canEditLayout, drafts,
 }: {
   players: Player[];
   creators: Creator[];
@@ -39,6 +50,7 @@ export function QuoteBuilder({
   ownerName?: string;
   initialSectionOrder: string[];
   canEditLayout: boolean;
+  drafts?: DraftSummary[];
 }) {
   const { t } = useLocale();
   const router = useRouter();
@@ -46,11 +58,14 @@ export function QuoteBuilder({
   const [error, setError] = useState<string | null>(null);
 
   // ── Build/Preview tab
-  // Land on Campaign tab — sales should set client/campaign + the campaign-level
-  // axes BEFORE picking deliverables. The line-level overrides on Build then
-  // inherit those defaults instead of the engine's neutral 1.0× factors.
-  const [view, setView] = useState<'campaign' | 'build' | 'summary'>('campaign');
+  const [view, setView] = useState<'campaign' | 'build' | 'summary'>('build');
   const [referenceOpen, setReferenceOpen] = useState(false);
+
+  // ── Draft picker (load a saved status='draft' quote into the builder)
+  const draftsList = drafts ?? [];
+  const [draftPickerOpen, setDraftPickerOpen] = useState(false);
+  const [loadingDraftId, setLoadingDraftId] = useState<string | null>(null);
+  const [draftLoadError, setDraftLoadError] = useState<string | null>(null);
 
   // ── Layout edit mode (super-admin only)
   const [sectionOrder, setSectionOrder] = useState<string[]>(
@@ -418,6 +433,129 @@ export function QuoteBuilder({
 
   const activeOverrides = (l: LineDraft) =>
     [l.o_ctype, l.o_eng, l.o_aud, l.o_seas, l.o_lang, l.o_auth].filter(v => v !== null).length;
+
+  /**
+   * Load an existing draft (status='draft' quote) into the builder.
+   * Pulls header + lines + addons from the API, then rehydrates every state slot.
+   * Lines are reconstructed best-effort: the DB stores the human platform label,
+   * so we resolve it back to a platform key by label match. irl/floorShare are
+   * looked up from the local players/tiers props.
+   */
+  async function loadDraft(draftId: string) {
+    setDraftLoadError(null);
+    setLoadingDraftId(draftId);
+    try {
+      const res = await fetch(`/api/quote/${draftId}`, { cache: 'no-store' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || `Load failed (${res.status})`);
+      }
+      const { header: h, lines: dbLines, addons: dbAddons } = await res.json();
+
+      // ── Hydrate header
+      setClientName(h.client_name ?? '');
+      setClientEmail(h.client_email ?? '');
+      setCampaign(h.campaign ?? '');
+      setCurrency(h.currency ?? 'SAR');
+      setVatRate(typeof h.vat_rate === 'number' ? h.vat_rate : 0.15);
+      setUsdRate(typeof h.usd_rate === 'number' ? h.usd_rate : 3.75);
+      setNotes(h.notes ?? '');
+      setPreparedByName(h.prepared_by_name ?? ownerName ?? '');
+      setPreparedByEmail(h.prepared_by_email ?? ownerEmail ?? '');
+      setDemoTarget(Array.isArray(h.demo_target) ? h.demo_target : []);
+      setGenderSkew(h.gender_skew === 'male' || h.gender_skew === 'female' ? h.gender_skew : 'mixed');
+      setRegion(h.region ?? 'KSA');
+      setExclusivity(!!h.exclusivity);
+      setExclusivityMonths(typeof h.exclusivity_months === 'number' ? h.exclusivity_months : 0);
+      setKpiFocus(h.kpi_focus ?? '');
+
+      // ── Hydrate global axes
+      if (typeof h.eng_factor === 'number') setEng(h.eng_factor);
+      if (typeof h.audience_factor === 'number') setAud(h.audience_factor);
+      if (typeof h.seasonality_factor === 'number') setSeas(h.seasonality_factor);
+      if (typeof h.content_type_factor === 'number') setCtype(h.content_type_factor);
+      if (typeof h.language_factor === 'number') setLang(h.language_factor);
+      if (typeof h.authority_factor === 'number') setAuth(h.authority_factor);
+      if (typeof h.objective_weight === 'number') setObj(h.objective_weight);
+      if (h.measurement_confidence) setConf(h.measurement_confidence);
+
+      // The brief auto-suggested axes once when loaded; rep can override anytime.
+      // Clear the 'auto' badges since these factors came from a saved draft, not a fresh inference.
+      setAutoAxes(new Set());
+
+      // ── Hydrate add-ons
+      const addonMap: Record<number, number> = {};
+      (dbAddons || []).forEach((a: any) => {
+        if (typeof a?.addon_id === 'number') {
+          addonMap[a.addon_id] = Math.max(1, Math.min(60, Math.round(a.months ?? 1)));
+        }
+      });
+      setAddonMonths(addonMap);
+
+      // ── Hydrate lines (reverse-map platform label → platform key, look up irl/floorShare)
+      const newLines: LineDraft[] = (dbLines || []).map((l: any) => {
+        const isPlayer = l.talent_type === 'player';
+        const playerObj = isPlayer ? players.find(p => p.id === l.player_id) : null;
+        const creatorObj = !isPlayer ? creators.find(c => c.id === l.creator_id) : null;
+
+        // The save path stores the human label under quote_lines.platform, so we
+        // resolve back to the platform key. Fall back to the stored value so the
+        // line still renders even if the label changed since it was saved.
+        const allPlatforms = isPlayer ? PLAYER_PLATFORMS : CREATOR_PLATFORMS;
+        const matched = allPlatforms.find(p => p.label === l.platform);
+        const platformKey = matched?.key ?? l.platform;
+        const platformLabel = matched?.label ?? l.platform;
+
+        // irl + floorShare aren't in quote_lines — derive from the talent
+        const irl = (playerObj as any)?.rate_irl ?? 0;
+        const tierCode = (playerObj as any)?.tier_code ?? (creatorObj as any)?.tier_code;
+        const tier = tierCode ? tiers.find(tt => tt.code === tierCode) : undefined;
+        const floorShare = tier?.floor_share ?? (playerObj as any)?.floor_share ?? 0.5;
+
+        const addonMonthsForLine: Record<number, number> = {};
+        if (l.addon_months && typeof l.addon_months === 'object') {
+          Object.entries(l.addon_months).forEach(([k, v]) => {
+            const idNum = Number(k);
+            const moNum = Number(v);
+            if (!Number.isNaN(idNum) && !Number.isNaN(moNum)) {
+              addonMonthsForLine[idNum] = Math.max(1, Math.min(60, Math.round(moNum)));
+            }
+          });
+        }
+
+        return {
+          uid: newUid(),
+          talent_type: isPlayer ? 'player' : 'creator',
+          talent_id: isPlayer ? (l.player_id ?? null) : (l.creator_id ?? null),
+          talent_name: l.talent_name ?? '',
+          platform: platformKey,
+          platform_label: platformLabel,
+          base_rate: Number(l.base_rate ?? 0),
+          qty: Math.max(1, Math.round(Number(l.qty ?? 1))),
+          irl,
+          floorShare,
+          o_ctype: l.line_content_type ?? null,
+          o_eng:   l.line_eng          ?? null,
+          o_aud:   l.line_audience     ?? null,
+          o_seas:  l.line_seasonality  ?? null,
+          o_lang:  l.line_language     ?? null,
+          o_auth:  l.line_authority    ?? null,
+          addon_months: addonMonthsForLine,
+        };
+      });
+      setLines(newLines);
+
+      setDraftPickerOpen(false);
+      // Drop the auto-saved single-slot draft so it doesn't fight us on the next render.
+      try { window.localStorage.removeItem(LS_KEY); } catch {}
+      setDraftFound(false);
+      setView('build');
+    } catch (e: any) {
+      setDraftLoadError(e?.message || 'Could not load draft');
+    } finally {
+      setLoadingDraftId(null);
+    }
+  }
 
   // ── Section nodes — built once, then rendered in sectionOrder order
   const sectionNodes: Record<string, React.ReactNode> = {
@@ -793,6 +931,18 @@ export function QuoteBuilder({
         </Link>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => { setDraftPickerOpen(true); setDraftLoadError(null); }}
+            className="inline-flex items-center gap-1.5 text-xs text-label hover:text-ink px-2.5 py-1.5 rounded-md hover:bg-bg"
+            title={draftsList.length > 0 ? `Load one of your ${draftsList.length} saved drafts` : 'No saved drafts yet'}
+          >
+            <FolderOpen size={14} /> Load draft
+            {draftsList.length > 0 && (
+              <span className="ml-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-greenSoft text-greenDark tabular-nums">
+                {draftsList.length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setReferenceOpen(true)}
             className="inline-flex items-center gap-1.5 text-xs text-label hover:text-ink px-2.5 py-1.5 rounded-md hover:bg-bg"
             title="Quick reference: how the engine works"
@@ -951,6 +1101,99 @@ export function QuoteBuilder({
           onSubmit={() => save('pending_approval')}
         />
       </div>
+
+      {/* Draft picker modal */}
+      {draftPickerOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-navy/50 backdrop-blur-sm flex items-start md:items-center justify-center p-4 overflow-y-auto"
+          onClick={() => setDraftPickerOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-lift w-full max-w-2xl my-8 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line bg-bg">
+              <div>
+                <h2 className="text-base font-semibold">Load a saved draft</h2>
+                <p className="text-xs text-mute">
+                  Picks up where you left off. Loading replaces the current builder state.
+                </p>
+              </div>
+              <button onClick={() => setDraftPickerOpen(false)} className="p-2 -mr-2 hover:bg-line rounded-md">
+                <XIcon size={18} />
+              </button>
+            </div>
+            <div className="p-5 max-h-[70vh] overflow-y-auto">
+              {draftLoadError && (
+                <div className="mb-3 rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
+                  {draftLoadError}
+                </div>
+              )}
+              {draftsList.length === 0 ? (
+                <div className="text-center py-10 text-sm text-mute">
+                  <div className="text-ink font-medium mb-1">No drafts yet</div>
+                  <p>
+                    Click <strong>Save as draft</strong> on a quote to keep it here for later.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-line divide-y divide-line overflow-hidden">
+                  {draftsList.map(d => {
+                    const isLoading = loadingDraftId === d.id;
+                    const isAnyLoading = loadingDraftId !== null;
+                    const updated = d.updated_at
+                      ? new Date(d.updated_at).toLocaleString('en-GB', {
+                          day: '2-digit', month: 'short', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit',
+                        })
+                      : '—';
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        disabled={isAnyLoading}
+                        onClick={() => loadDraft(d.id)}
+                        className={[
+                          'w-full text-left px-4 py-3 transition flex items-center gap-3',
+                          isLoading ? 'bg-greenSoft' : 'bg-white hover:bg-bg',
+                          isAnyLoading && !isLoading ? 'opacity-50 cursor-not-allowed' : '',
+                        ].join(' ')}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="font-medium text-ink truncate">
+                              {d.client_name || <span className="italic text-mute">Untitled draft</span>}
+                            </div>
+                            {d.quote_number && (
+                              <span className="text-[10px] uppercase tracking-wider text-mute font-mono">
+                                {d.quote_number}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-mute mt-0.5 flex items-center gap-2 flex-wrap">
+                            {d.campaign && <span className="truncate">{d.campaign}</span>}
+                            {d.campaign && <span>·</span>}
+                            <span>Updated {updated}</span>
+                          </div>
+                        </div>
+                        <div className="text-right text-sm font-semibold text-ink tabular-nums whitespace-nowrap">
+                          {fmtCurrency(d.total, d.currency, 3.75)}
+                        </div>
+                        {isLoading && (
+                          <span className="text-xs text-greenDark font-medium ml-2">Loading…</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[11px] text-mute mt-3 leading-snug">
+                Showing your {draftsList.length === 0 ? '0' : `${draftsList.length} most recent`} drafts. Older drafts can still be opened from the Dashboard.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reference modal */}
       {referenceOpen && (

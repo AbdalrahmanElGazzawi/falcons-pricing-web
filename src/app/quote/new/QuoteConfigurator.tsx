@@ -53,6 +53,7 @@ export function QuoteConfigurator({
   const [tierFilter, setTierFilter] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<string>(''); // '', 'player', 'influencer', 'creator'
   const [gameFilter, setGameFilter] = useState<string>('');
+  const [saudiOnly, setSaudiOnly] = useState<boolean>(false); // filter players by Saudi nationality
 
   // ── Selected talent
   const [talentKind, setTalentKind] = useState<'player' | 'creator'>(
@@ -129,6 +130,8 @@ export function QuoteConfigurator({
     else list = list.filter(p => (p.role || '').toLowerCase() !== 'influencer');
     if (tierFilter) list = list.filter(p => p.tier_code === tierFilter);
     if (gameFilter) list = list.filter(p => p.game === gameFilter);
+    // "Saudi" matches both 'Saudi' and 'Saudi Arabia' in the seed data — case-insensitive
+    if (saudiOnly) list = list.filter(p => (p.nationality || '').trim().toLowerCase().startsWith('saudi'));
     if (q) list = list.filter(p =>
       p.nickname.toLowerCase().includes(q) ||
       (p.full_name ?? '').toLowerCase().includes(q) ||
@@ -139,7 +142,7 @@ export function QuoteConfigurator({
       full_name: p.full_name || '', tier: p.tier_code || '', game: p.game || '',
       team: p.team || '', role: p.role || '',
     }));
-  }, [search, tierFilter, roleFilter, gameFilter, talentKind, players, creators]);
+  }, [search, tierFilter, roleFilter, gameFilter, saudiOnly, talentKind, players, creators]);
 
   const games = useMemo(
     () => Array.from(new Set(players.map(p => p.game).filter(Boolean))).sort() as string[],
@@ -287,7 +290,7 @@ export function QuoteConfigurator({
             {([
               ['player',     'Players',    () => { setTalentKind('player');  setRoleFilter('');           setSearch(''); setTierFilter(''); setGameFilter(''); }],
               ['influencer', 'Influencer', () => { setTalentKind('player');  setRoleFilter('influencer'); setSearch(''); setTierFilter(''); setGameFilter(''); }],
-              ['creator',    'Creators',   () => { setTalentKind('creator'); setRoleFilter('');           setSearch(''); setTierFilter(''); setGameFilter(''); }],
+              ['creator',    'Creators',   () => { setTalentKind('creator'); setRoleFilter('');           setSearch(''); setTierFilter(''); setGameFilter(''); setSaudiOnly(false); }],
             ] as const).map(([k, lbl, fn]) => {
               const active =
                 k === 'creator' ? talentKind === 'creator' :
@@ -338,6 +341,25 @@ export function QuoteConfigurator({
               <option value="">All games</option>
               {games.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
+          )}
+
+          {/* Nationality filter (Players + Influencers — anyone with a nationality field) */}
+          {talentKind === 'player' && (
+            <button
+              type="button"
+              onClick={() => setSaudiOnly(v => !v)}
+              aria-pressed={saudiOnly}
+              title="Show only Saudi nationals"
+              className={[
+                'w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition',
+                saudiOnly
+                  ? 'bg-green text-white border-green'
+                  : 'bg-white text-label border-line hover:border-green hover:text-ink',
+              ].join(' ')}
+            >
+              <span>Saudi players only</span>
+              {saudiOnly && <Check size={12} />}
+            </button>
           )}
 
           {/* Talent list */}

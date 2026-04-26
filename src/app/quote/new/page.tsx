@@ -18,13 +18,33 @@ export default async function NewQuotePage() {
     { data: tiers },
     { data: addons },
     sectionOrder,
+    { data: draftsRaw },
   ] = await Promise.all([
     supabase.from('players').select('*').eq('is_active', true).order('nickname'),
     supabase.from('creators').select('*').eq('is_active', true).order('nickname'),
     supabase.from('tiers').select('*').order('sort_order'),
     supabase.from('addons').select('*').eq('is_active', true).order('sort_order'),
     getPageLayout(supabase, 'quote/new', QUOTE_NEW_DEFAULT_ORDER),
+    // List of the user's most recent drafts — used by the "Load draft" picker on
+    // the New Quote page so they can resume work on a previously-saved draft.
+    supabase
+      .from('quotes')
+      .select('id, quote_number, client_name, campaign, currency, total, updated_at, owner_email, owner_id')
+      .eq('status', 'draft')
+      .or(`owner_id.eq.${profile.id},owner_email.eq.${profile.email}`)
+      .order('updated_at', { ascending: false })
+      .limit(25),
   ]);
+
+  const drafts = (draftsRaw ?? []).map(d => ({
+    id: d.id as string,
+    quote_number: (d.quote_number as string) ?? '',
+    client_name: (d.client_name as string) ?? '',
+    campaign: (d.campaign as string | null) ?? null,
+    currency: (d.currency as string) ?? 'SAR',
+    total: Number(d.total ?? 0),
+    updated_at: (d.updated_at as string) ?? '',
+  }));
 
   return (
     <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
@@ -37,6 +57,7 @@ export default async function NewQuotePage() {
         creators={creators ?? []}
         tiers={tiers ?? []}
         addons={addons ?? []}
+        drafts={drafts}
         ownerEmail={profile.email}
         ownerName={profile.full_name || profile.email.split('@')[0]}
         initialSectionOrder={sectionOrder}
