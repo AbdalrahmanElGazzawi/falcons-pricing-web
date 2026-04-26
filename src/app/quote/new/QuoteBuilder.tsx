@@ -58,7 +58,10 @@ export function QuoteBuilder({
   const [error, setError] = useState<string | null>(null);
 
   // ── Build/Preview tab
-  const [view, setView] = useState<'campaign' | 'build' | 'summary'>('build');
+  // Land on Campaign tab for fresh quotes — sales should set client + the
+  // campaign-level axes BEFORE picking deliverables. Loading a saved draft
+  // explicitly switches to Build (see loadDraft below).
+  const [view, setView] = useState<'campaign' | 'build' | 'summary'>('campaign');
   const [referenceOpen, setReferenceOpen] = useState(false);
 
   // ── Draft picker (load a saved status='draft' quote into the builder)
