@@ -30,7 +30,7 @@ type RowSel = { qty: number; manualRate?: number };
 
 export function QuoteConfigurator({
   players, creators, tiers, addons, globals, currency, usdRate, addonsUpliftPct, scrollHook,
-  initialEdit, onCommit, onCancelEdit,
+  initialEdit, onCommit, onCancelEdit, onCurrencyChange,
 }: {
   players: Player[];
   creators: Creator[];
@@ -44,6 +44,7 @@ export function QuoteConfigurator({
   initialEdit?: LineDraft | null;
   onCommit: (drafts: LineDraft[]) => void;
   onCancelEdit?: () => void;
+  onCurrencyChange?: (next: string) => void;
 }) {
   const { t } = useLocale();
   const isEditing = !!initialEdit;
@@ -208,11 +209,11 @@ export function QuoteConfigurator({
           lang: overrides.o_lang  ?? globals.lang,
           auth: overrides.o_auth  ?? globals.auth,
           obj: globals.obj, conf: globals.conf,
-          floorShare, rightsPct: addonsUpliftPct, qty: sel.qty,
+          floorShare, rightsPct: lineAddonsUpliftPct, qty: sel.qty,
         });
         return { key: k, label: d.label, qty: sel.qty, rate: baseFee, ...r };
       });
-  }, [picks, deliverables, selectedTalent, selectedPlayer, selectedCreator, tierMap, overrides, globals, addonsUpliftPct]);
+  }, [picks, deliverables, selectedTalent, selectedPlayer, selectedCreator, tierMap, overrides, globals, addonsUpliftPct, lineAddonsUpliftPct]);
 
   const previewTotal = previewLines.reduce((s, l) => s + l.finalAmount, 0);
   const selectedCount = previewLines.length;
@@ -621,7 +622,28 @@ export function QuoteConfigurator({
               {/* Live total + commit */}
               <div className="rounded-lg bg-greenSoft/40 border border-green/30 p-4 flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-label">Selection total</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-[10px] uppercase tracking-wider text-label">Selection total</div>
+                    {onCurrencyChange && (
+                      <div className="inline-flex rounded-md border border-line bg-white overflow-hidden text-[10px] font-semibold">
+                        {(['SAR', 'USD'] as const).map(c => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => onCurrencyChange(c)}
+                            className={
+                              'px-2 py-0.5 transition-colors ' +
+                              (currency === c
+                                ? 'bg-green text-white'
+                                : 'text-label hover:bg-greenSoft/40')
+                            }
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="text-2xl font-bold text-ink">{fmtCurrency(previewTotal, currency, usdRate ?? 3.75)}</div>
                   <div className="text-xs text-label mt-0.5">{selectedCount === 0 ? 'No deliverables ticked yet' : `${selectedCount} line${selectedCount === 1 ? '' : 's'} ready`}</div>
                 </div>

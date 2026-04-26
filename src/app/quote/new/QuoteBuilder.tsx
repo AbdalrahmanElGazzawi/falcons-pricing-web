@@ -826,6 +826,7 @@ export function QuoteBuilder({
         currency={currency}
         usdRate={usdRate}
         addonsUpliftPct={addonsUpliftPct}
+        onCurrencyChange={setCurrency}
         initialEdit={wizard?.mode === 'edit' ? wizard.initial : null}
         onCommit={(drafts) => {
           if (wizard?.mode === 'edit' && drafts.length > 0) {
