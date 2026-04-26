@@ -38,6 +38,31 @@ export type DraftSummary = {
   updated_at: string;
 };
 
+
+/**
+ * Inline FALCONS / CLIENT chip — surfaces the ambiguity in the
+ * old "TikTok Our-side" / "TikTok Client Vids" labels at a glance.
+ * Mirrors the chip used on the quote-detail page.
+ */
+function PlatformChip({ label }: { label: string }) {
+  const isOurs   = /falcons account|our[\s-]?side/i.test(label);
+  const isClient = /client (account|vids)/i.test(label);
+  if (!isOurs && !isClient) return null;
+  return (
+    <span
+      className={
+        'ml-1.5 px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold ' +
+        (isOurs ? 'bg-red-600 text-white' : 'bg-blue-600 text-white')
+      }
+      title={isOurs
+        ? "Posted on the FALCONS-owned TikTok account."
+        : "Posted on the CLIENT brand's TikTok account."}
+    >
+      {isOurs ? 'Falcons' : 'Client'}
+    </span>
+  );
+}
+
 export function QuoteBuilder({
   players, creators, tiers, addons, ownerEmail, ownerName,
   initialSectionOrder, canEditLayout, drafts, ownerTitle,
@@ -1458,7 +1483,7 @@ function QuotePreview({
                     <div className="font-medium text-ink">{r.talent_name}</div>
                     <div className="text-xs text-mute capitalize">{r.talent_type}</div>
                   </td>
-                  <td className="px-4 py-3 text-label">{r.platform_label}</td>
+                  <td className="px-4 py-3 text-label"><span>{r.platform_label}</span><PlatformChip label={r.platform_label} /></td>
                   <td className="px-4 py-3 text-right">{r.qty}</td>
                   <td className="px-4 py-3 text-right">{fmtCurrency(r.finalUnit, currency, usdRate)}</td>
                   <td className="px-6 py-3 text-right font-semibold text-ink">{fmtCurrency(r.finalAmount, currency, usdRate)}</td>

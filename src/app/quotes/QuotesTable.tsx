@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/Toast';
-import { fmtMoney, statusLabel } from '@/lib/utils';
+import { fmtCurrency, statusLabel } from '@/lib/utils';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { StatusPill } from '@/components/Status';
 import { EmptyState } from '@/components/EmptyState';
 import { FileX, Rows3, Rows2, Rows4, Trash2 } from 'lucide-react';
@@ -18,6 +19,7 @@ type Row = {
   status: string;
   total: number;
   currency: string;
+  usd_rate?: number | null;
   owner_email?: string | null;
   created_at: string;
 };
@@ -28,6 +30,8 @@ export function QuotesTable({ quotes, canDelete }: { quotes: Row[]; canDelete?: 
   const router = useRouter();
   const toast = useToast();
   const [deleting, setDeleting] = useState<string | null>(null);
+  // Cross-page persistent display currency (toggle anywhere → sticks everywhere).
+  const [ccy, setCcy] = useDisplayCurrency();
 
   async function deleteQuote(id: string, qNumber: string) {
     if (!confirm(`Delete ${qNumber}? This cannot be undone (audit log keeps a record).`)) return;
@@ -76,6 +80,22 @@ export function QuotesTable({ quotes, canDelete }: { quotes: Row[]; canDelete?: 
           {statuses.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
         </select>
         <DensityToggle value={density} onChange={setDensity} />
+        <div className="inline-flex items-center rounded-lg border border-line overflow-hidden bg-white" title="Display currency. Persists across pages.">
+          {(['SAR', 'USD'] as const).map((c, i) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCcy(c)}
+              className={[
+                'px-2.5 py-2 text-xs font-medium transition',
+                i > 0 ? 'border-l border-line' : '',
+                ccy === c ? 'bg-green text-white' : 'text-label hover:text-ink',
+              ].join(' ')}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
         <div className="text-sm text-label ml-auto whitespace-nowrap">{filtered.length} of {quotes.length}</div>
       </div>
 
@@ -117,7 +137,7 @@ export function QuotesTable({ quotes, canDelete }: { quotes: Row[]; canDelete?: 
                     <td className="text-label text-xs whitespace-nowrap">
                       {new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="text-right font-medium">{fmtMoney(r.total, r.currency)}</td>
+                    <td className="text-right font-medium">{fmtCurrency(Number(r.total) || 0, ccy, Number(r.usd_rate) > 0 ? Number(r.usd_rate) : 3.75)}</td>
                     {canDelete && (
                       <td className="text-right">
                         <button

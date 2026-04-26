@@ -229,8 +229,8 @@ export const CREATOR_PLATFORMS = [
   { key: 'rate_yt_preroll',        label: 'YT 1–2min Pre-roll',  group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_yt_shorts',         label: 'YT Shorts',           group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_snapchat',          label: 'Snapchat',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
-  { key: 'rate_tiktok_ours',       label: 'TikTok Our-side',     group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
-  { key: 'rate_tiktok_client',     label: 'TikTok Client Vids',  group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_tiktok_ours',       label: 'TikTok – Falcons Account (Ours)', group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_tiktok_client',     label: 'TikTok – Client Account (Theirs)', group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   // Live & On-Ground
   { key: 'rate_twitch_kick_live',  label: 'Twitch / Kick Live',  group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_kick_irl',          label: 'Kick IRL',            group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
