@@ -1,6 +1,9 @@
 'use client';
 import { useLocale } from '@/lib/i18n/Locale';
 import { useMemo, useState } from 'react';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
+import { CurrencyPill } from '@/components/CurrencyPill';
+import { fmtCurrency } from '@/lib/utils';
 import { Plus, Pencil, Trash2, X, Check, Search } from 'lucide-react';
 import type { SalesEntry, SalesStatus } from '@/lib/types';
 
@@ -23,6 +26,11 @@ function fmtUSD(n: number) { return '$' + Math.round(n).toLocaleString('en-US');
 
 export function SalesLogTable({ initial }: { initial: SalesEntry[] }) {
   const { t } = useLocale();
+  const [ccy] = useDisplayCurrency();
+  // Helper: convert canonical SAR amount through the shared currency pill.
+  // Sales log totals are stored as SAR (with VAT baked in) — fmtCurrency
+  // handles the SAR→USD division at the Saudi peg.
+  const fmtMoney = (sarAmount: number) => fmtCurrency(Number(sarAmount) || 0, ccy, 3.75);
   const [rows, setRows] = useState(initial);
   const [editing, setEditing] = useState<SalesEntry | null>(null);
   const [creating, setCreating] = useState(false);
@@ -89,6 +97,7 @@ export function SalesLogTable({ initial }: { initial: SalesEntry[] }) {
           <option value="in_progress">In progress</option>
           <option value="cancelled">Cancelled</option>
         </select>
+        <CurrencyPill />
         <button onClick={() => setCreating(true)} className="btn btn-primary">
           <Plus size={14} /> {t('sales.new')}
         </button>
@@ -97,8 +106,8 @@ export function SalesLogTable({ initial }: { initial: SalesEntry[] }) {
       {/* Summary strip */}
       <div className="grid grid-cols-3 gap-3">
         <Kpi label="Entries" value={totals.count.toString()} />
-        <Kpi label="Collected" value={fmtSAR(totals.collectedSar)} accent="green" />
-        <Kpi label="Open pipeline" value={fmtSAR(totals.pipelineSar)} accent="blue" />
+        <Kpi label="Collected" value={fmtMoney(totals.collectedSar)} accent="green" />
+        <Kpi label="Open pipeline" value={fmtMoney(totals.pipelineSar)} accent="blue" />
       </div>
 
       {/* Table */}
@@ -113,7 +122,7 @@ export function SalesLogTable({ initial }: { initial: SalesEntry[] }) {
                 <th>Description</th>
                 <th>Platform</th>
                 <th className="text-right">USD</th>
-                <th className="text-right">SAR + VAT</th>
+                <th className="text-right">{ccy === 'USD' ? 'USD + VAT' : 'SAR + VAT'}</th>
                 <th>Status</th>
                 <th>Inv</th>
                 <th>Paid</th>
@@ -129,7 +138,7 @@ export function SalesLogTable({ initial }: { initial: SalesEntry[] }) {
                   <td className="text-mute text-xs" dir="auto">{r.description || '—'}</td>
                   <td className="text-xs">{r.platform || '—'}</td>
                   <td className="text-right text-label tabular-nums">{fmtUSD(Number(r.amount_usd))}</td>
-                  <td className="text-right font-medium text-ink tabular-nums">{fmtSAR(Number(r.total_with_vat_sar))}</td>
+                  <td className="text-right font-medium text-ink tabular-nums">{fmtMoney(Number(r.total_with_vat_sar))}</td>
                   <td>
                     <span className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded ${STATUS_CHIP[r.status]}`}>
                       {STATUS_LABEL[r.status]}
@@ -226,7 +235,7 @@ function SalesLogModal({
             </select>
           </Field>
           <Field label="Talent" wide>
-            <input dir="auto" value={form.talent_name ?? ''} onChange={e => update('talent_name', e.target.value)} className="input" placeholder="ابو نجد / Spyerfrog" />
+            <input dir="auto" value={form.talent_name ?? ''} onChange={e => update('talent_name', e.target.value)} className="input" placeholder="e.g. Spyerfrog (Arabic name supported)" />
           </Field>
           <Field label="Brand">
             <input dir="auto" value={form.brand_name ?? ''} onChange={e => update('brand_name', e.target.value)} className="input" placeholder="Logitech, Samsung…" />

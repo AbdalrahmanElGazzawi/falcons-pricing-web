@@ -2,7 +2,9 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { Creator } from '@/lib/types';
-import { fmtMoney, tierClass } from '@/lib/utils';
+import { fmtCurrency, tierClass } from '@/lib/utils';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
+import { CurrencyPill } from '@/components/CurrencyPill';
 import { SearchInput } from '@/components/SearchInput';
 
 const KEY_PLATFORMS = [
@@ -16,6 +18,7 @@ const KEY_PLATFORMS = [
 ] as const;
 
 export function CreatorsTable({ creators, isAdmin }: { creators: Creator[]; isAdmin: boolean }) {
+  const [ccy] = useDisplayCurrency();
   const [q, setQ] = useState('');
   const [tier, setTier] = useState('');
 
@@ -42,7 +45,8 @@ export function CreatorsTable({ creators, isAdmin }: { creators: Creator[]; isAd
           <option value="">All tiers</option>
           {tiers.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
-        <div className="text-sm text-label ml-auto">{filtered.length} of {creators.length}</div>
+        <CurrencyPill className="ml-auto" />
+        <div className="text-sm text-label">{filtered.length} of {creators.length}</div>
       </div>
 
       <div className="card overflow-hidden">
@@ -81,7 +85,7 @@ export function CreatorsTable({ creators, isAdmin }: { creators: Creator[]; isAd
                     const v = (c as any)[p.key] as number | null;
                     return (
                       <td key={p.key} className="px-4 py-3 text-right">
-                        {v ? fmtMoney(v) : '—'}
+                        {v ? fmtCurrency(v, ccy, 3.75) : '—'}
                       </td>
                     );
                   })}

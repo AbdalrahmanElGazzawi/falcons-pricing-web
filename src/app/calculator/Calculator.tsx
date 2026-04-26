@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { computeLine, computeQuoteTotals, AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
 import { fmtMoney, fmtPct, fmtCurrency } from '@/lib/utils';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { type Player, type Creator, type Tier, type Addon } from '@/lib/types';
 import { QuoteConfigurator } from '@/app/quote/new/QuoteConfigurator';
 import { type LineDraft } from '@/app/quote/new/line-draft';
@@ -24,8 +25,9 @@ export function Calculator({
 
   // Campaign defaults — pre-populate with the most-common values so the
   // calculator answers a DM in seconds without configuring axes.
-  // Currency + FX
-  const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
+  // Currency + FX — the pill shares state with quote detail / log / roster
+  // so flipping anywhere persists everywhere via localStorage.
+  const [currency, setCurrency] = useDisplayCurrency();
   const [usdRate, setUsdRate] = useState(3.75);
 
   const [eng, setEng]   = useState(AXIS_OPTIONS.engagement[1].factor);

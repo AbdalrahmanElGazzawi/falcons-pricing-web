@@ -3,6 +3,7 @@ import { requireSuperAdmin } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { fmtMoney } from '@/lib/utils';
+import { RevenueMoney } from './RevenueMoney';
 import { PlusCircle, TrendingUp, Trophy, Users, Sparkles, DollarSign, ArrowUpRight, FileBarChart } from 'lucide-react';
 import { RevenueCharts } from './RevenueCharts';
 import { cookies } from 'next/headers';
@@ -35,7 +36,7 @@ export default async function DashboardPage() {
     supabase.from('creators').select('id', { count: 'exact', head: true }).eq('is_active', true),
     supabase.from('sales_log').select('*'),
     supabase.from('quotes').select('id, status, total, currency, created_at, viewed_at, accepted_at'),
-    supabase.from('quotes').select('id,quote_number,client_name,campaign,status,total,currency,created_at')
+    supabase.from('quotes').select('id,quote_number,client_name,campaign,status,total,currency,usd_rate,created_at')
       .order('created_at', { ascending: false }).limit(6),
   ]);
 
@@ -236,7 +237,7 @@ export default async function DashboardPage() {
                     {q.campaign && <div className="text-xs text-mute truncate">{q.campaign}</div>}
                   </div>
                   <div className="text-sm font-medium text-ink tabular-nums whitespace-nowrap">
-                    {fmtMoney(q.total ?? 0, q.currency)}
+                    <RevenueMoney sar={Number(q.total) || 0} usdRate={q.usd_rate} />
                   </div>
                 </li>
               ))}

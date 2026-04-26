@@ -3,7 +3,9 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Player } from '@/lib/types';
-import { fmtMoney, tierClass } from '@/lib/utils';
+import { fmtCurrency, tierClass } from '@/lib/utils';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
+import { CurrencyPill } from '@/components/CurrencyPill';
 import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
@@ -71,6 +73,7 @@ export function RosterOverview({
   }, [players]);
 
   const tabMatch = ROLE_GROUPS.find(g => g.key === tab) ?? ROLE_GROUPS[0];
+  const [ccy] = useDisplayCurrency();
   const games = useMemo(() => Array.from(new Set(players.map(p => p.game).filter(Boolean))).sort() as string[], [players]);
   const teams = useMemo(() => {
     const set = new Set(players.filter(p => !game || p.game === game).map(p => p.team).filter(Boolean));
@@ -162,6 +165,7 @@ export function RosterOverview({
           {tiers.map(t => <option key={t.code} value={t.code}>{t.code} · {t.label}</option>)}
         </select>
         <DensityToggle value={density} onChange={setDensity} />
+          <CurrencyPill />
         <div className="text-sm text-label ml-auto whitespace-nowrap">
           {filtered.length} of {players.length}
         </div>
@@ -201,6 +205,7 @@ export function RosterOverview({
                   <RosterRow
                     key={p.id}
                     p={p}
+                    ccy={ccy}
                     isAdmin={isAdmin}
                     onPatch={patchPlayer}
                   />
@@ -219,9 +224,10 @@ export function RosterOverview({
 // in-game role / DOB. Falls back to read-only for non-admins.
 // ───────────────────────────────────────────────────────────────────────────
 function RosterRow({
-  p, isAdmin, onPatch,
+  p, ccy, isAdmin, onPatch,
 }: {
   p: Player;
+  ccy: 'SAR' | 'USD';
   isAdmin: boolean;
   onPatch: (id: number, body: Record<string, any>) => Promise<boolean>;
 }) {
@@ -339,8 +345,8 @@ function RosterRow({
       <td className="text-label whitespace-nowrap">{p.team || '—'}</td>
       <td className="text-label whitespace-nowrap">{age ?? '—'}</td>
       <td className="text-label whitespace-nowrap">{p.nationality || '—'}</td>
-      <td className="text-right">{p.rate_ig_reel ? fmtMoney(p.rate_ig_reel) : '—'}</td>
-      <td className="text-right">{p.rate_irl ? fmtMoney(p.rate_irl) : '—'}</td>
+      <td className="text-right">{p.rate_ig_reel ? fmtCurrency(p.rate_ig_reel, ccy, 3.75) : '—'}</td>
+      <td className="text-right">{p.rate_irl ? fmtCurrency(p.rate_irl, ccy, 3.75) : '—'}</td>
       {isAdmin && (
         <td>
           <Link
