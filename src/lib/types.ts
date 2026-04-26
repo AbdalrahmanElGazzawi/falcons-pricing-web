@@ -52,6 +52,8 @@ export interface Player {
   authority_factor: number;
   default_seasonality: number;
   default_language: number;
+  default_audience?: number;
+  default_engagement?: number;
   measurement_confidence: 'pending' | 'estimated' | 'rounded' | 'exact';
   notes?: string;
   x_handle?: string;
@@ -96,6 +98,11 @@ export interface Creator {
   rate_twitch_kick_live: number;
   rate_kick_irl: number;
   rate_telegram: number;
+  default_audience?: number;
+  default_engagement?: number;
+  default_authority?: number;
+  default_language?: number;
+  default_seasonality?: number;
   notes?: string;
   link?: string;
 }

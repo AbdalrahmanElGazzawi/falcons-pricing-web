@@ -10,7 +10,7 @@ const ALLOWED = new Set([
   'rate_yt_short', 'rate_x_post', 'rate_fb_post', 'rate_twitch_stream',
   'rate_twitch_integ', 'rate_irl',
   'commission', 'markup', 'floor_share', 'authority_factor',
-  'default_seasonality', 'default_language', 'measurement_confidence',
+  'default_seasonality', 'default_language', 'default_audience', 'default_engagement', 'measurement_confidence',
   'notes', 'x_handle', 'instagram', 'twitch', 'youtube', 'tiktok', 'kick',
   'facebook', 'snapchat', 'link_in_bio',
   'followers_ig', 'followers_twitch', 'followers_yt', 'followers_tiktok',

@@ -128,6 +128,22 @@ export function QuoteBuilder({
   // Track which axes have been auto-suggested by the Brand Brief — so we can show
   // the small 'auto' badge and let the rep override at any time.
   const [autoAxes, setAutoAxes] = useState<Set<'lang'|'obj'>>(new Set());
+  // Tracks campaign axes the rep has touched manually. Once a rep types
+  // their own value, the Brand-Brief auto-fill effects below stop
+  // overwriting it — even if region/KPI changes later.
+  const [manualAxes, setManualAxes] = useState<Set<'lang'|'obj'>>(new Set());
+
+  // Wrap setLang/setObj so any manual change locks the axis from auto-fill.
+  const setLangManual = (v: number) => {
+    setLang(v);
+    setManualAxes(s => { const n = new Set(s); n.add('lang'); return n; });
+    setAutoAxes(s => { if (!s.has('lang')) return s; const n = new Set(s); n.delete('lang'); return n; });
+  };
+  const setObjManual = (v: number) => {
+    setObj(v);
+    setManualAxes(s => { const n = new Set(s); n.add('obj'); return n; });
+    setAutoAxes(s => { if (!s.has('obj')) return s; const n = new Set(s); n.delete('obj'); return n; });
+  };
   const [preparedByEmail, setPreparedByEmail] = useState(ownerEmail ?? '');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -235,6 +251,7 @@ export function QuoteBuilder({
   // marked with an 'auto' badge so reps can override.
   useEffect(() => {
     if (!kpiFocus) return;
+    if (manualAxes.has('obj')) return;  // rep has typed their own value — respect it
     const map: Record<string, number> = {
       awareness:     0.20,
       consideration: 0.50,
@@ -247,9 +264,11 @@ export function QuoteBuilder({
       setObj(w);
       setAutoAxes(prev => new Set(prev).add('obj'));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kpiFocus]);
 
   useEffect(() => {
+    if (manualAxes.has('lang')) return;  // rep has typed their own value — respect it
     // Region → language axis suggestion. KSA = Arabic; GCC/MENA = Bilingual;
     // EU/Global = English.
     let f = 1.00;
@@ -259,6 +278,7 @@ export function QuoteBuilder({
     else if (region === 'MENA+SEA') f = 1.20;
     setLang(f);
     setAutoAxes(prev => new Set(prev).add('lang'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [region]);
 
   // Persist draft on every meaningful change (after initial hydration)
@@ -650,11 +670,11 @@ export function QuoteBuilder({
             options={AXIS_OPTIONS.audience.map(o => ({ label: o.label, val: o.factor }))} />
           <AxisSelect label="Seasonality" hint="Campaign window. Ramadan + Worlds = peak demand." value={seas} setValue={setSeas}
             options={AXIS_OPTIONS.seasonality.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Language" hint="Bilingual reaches both audiences in one activation." value={lang} setValue={setLang} auto={autoAxes.has('lang')} onClearAuto={() => setAutoAxes(s => { const n = new Set(s); n.delete('lang'); return n; })}
+          <AxisSelect label="Language" hint="Bilingual reaches both audiences in one activation." value={lang} setValue={setLangManual} auto={autoAxes.has('lang')} onClearAuto={() => setAutoAxes(s => { const n = new Set(s); n.delete('lang'); return n; })}
             options={AXIS_OPTIONS.language.map(o => ({ label: o.label, val: o.factor }))} />
           <AxisSelect label="Authority" hint="Championship credentials. Pro status sets a price floor." value={auth} setValue={setAuth}
             options={AXIS_OPTIONS.authority.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Objective weight" hint="How much Authority counts. Conversion → 0.7. Awareness → 0.2." value={obj} setValue={setObj} auto={autoAxes.has('obj')} onClearAuto={() => setAutoAxes(s => { const n = new Set(s); n.delete('obj'); return n; })}
+          <AxisSelect label="Objective weight" hint="How much Authority counts. Conversion → 0.7. Awareness → 0.2." value={obj} setValue={setObjManual} auto={autoAxes.has('obj')} onClearAuto={() => setAutoAxes(s => { const n = new Set(s); n.delete('obj'); return n; })}
             options={AXIS_OPTIONS.objective.map(o => ({ label: o.label, val: o.weight }))} />
           <div>
             <label className="label">Measurement confidence</label>

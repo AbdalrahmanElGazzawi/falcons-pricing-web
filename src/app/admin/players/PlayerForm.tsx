@@ -15,6 +15,7 @@ const blank: Partial<Player> = {
   rate_twitch_integ: 0, rate_irl: 0,
   commission: 0.2, markup: 0.15, floor_share: 0.5,
   authority_factor: 1.0, default_seasonality: 1.0, default_language: 1.0,
+  default_audience: 1.0, default_engagement: 1.0,
   measurement_confidence: 'estimated',
 };
 
@@ -128,6 +129,8 @@ export function PlayerForm({
           <Num label="Authority factor" v={v.authority_factor} on={x => set('authority_factor', x)} step={0.05} />
           <Num label="Default seasonality" v={v.default_seasonality} on={x => set('default_seasonality', x)} step={0.05} />
           <Num label="Default language" v={v.default_language} on={x => set('default_language', x)} step={0.05} />
+          <Num label="Default audience" v={v.default_audience ?? 1.0} on={x => set('default_audience' as any, x)} step={0.05} />
+          <Num label="Default engagement" v={v.default_engagement ?? 1.0} on={x => set('default_engagement' as any, x)} step={0.05} />
         </div>
       </div>
 

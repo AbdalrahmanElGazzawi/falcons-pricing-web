@@ -28,6 +28,36 @@ type Globals = {
 
 type RowSel = { qty: number; manualRate?: number };
 
+/**
+ * Resolve a talent's intrinsic axis values. Players carry these on their
+ * record (default_*, authority_factor); creators got equivalents in
+ * migration 019. Anything missing falls back to 1.0 (neutral).
+ *
+ * Returned shape mirrors the per-line override keys so we can spread it
+ * straight into setOverrides.
+ */
+function readTalentDefaults(talent: Player | Creator | null): {
+  o_eng: number | null; o_aud: number | null; o_seas: number | null;
+  o_lang: number | null; o_auth: number | null;
+} {
+  if (!talent) {
+    return { o_eng: null, o_aud: null, o_seas: null, o_lang: null, o_auth: null };
+  }
+  const t = talent as any;
+  // Treat 1.0 (neutral) as "no opinion" so we don't fight the campaign default
+  // unless the talent record actually has a non-neutral intrinsic value.
+  const nonNeutral = (n: any): number | null =>
+    typeof n === 'number' && Math.abs(n - 1) > 0.001 ? n : null;
+  return {
+    o_eng:  nonNeutral(t.default_engagement),
+    o_aud:  nonNeutral(t.default_audience),
+    o_seas: nonNeutral(t.default_seasonality),
+    o_lang: nonNeutral(t.default_language),
+    o_auth: nonNeutral(t.authority_factor) ?? nonNeutral(t.default_authority),
+  };
+}
+
+
 export function QuoteConfigurator({
   players, creators, tiers, addons, globals, currency, usdRate, addonsUpliftPct, scrollHook,
   initialEdit, onCommit, onCancelEdit, onCurrencyChange,
@@ -80,6 +110,22 @@ export function QuoteConfigurator({
     o_auth:  initialEdit?.o_auth  ?? null,
   });
 
+  // Tracks which override values were auto-seeded from the talent record (vs
+  // typed manually). Drives the "from <talent>" badge in the override panel
+  // and prevents the auto-seed effect from clobbering manual edits.
+  type OverrideKey = 'o_eng' | 'o_aud' | 'o_seas' | 'o_lang' | 'o_auth';
+  const [autoOverrides, setAutoOverrides] = useState<Set<OverrideKey>>(new Set());
+
+  // Wrap setOverrides for the AxisRow callbacks so a manual change clears
+  // the auto badge for that axis.
+  const setOverrideManual = (key: OverrideKey, v: number | null) => {
+    setOverrides(o => ({ ...o, [key]: v }));
+    setAutoOverrides(s => {
+      if (!s.has(key)) return s;
+      const n = new Set(s); n.delete(key); return n;
+    });
+  };
+
   // Per-line addon snapshot — each line carries its own rights package.
   const [lineAddonMonths, setLineAddonMonths] = useState<Record<number, number>>(
     initialEdit?.addon_months ?? {}
@@ -103,6 +149,34 @@ export function QuoteConfigurator({
   // ── Reset picks when changing talent (unless we're editing)
   useEffect(() => {
     if (!isEditing) setPicks({});
+  }, [selectedId, talentKind, isEditing]);
+
+  // ── Auto-seed per-line overrides from the talent's intrinsic data when a
+  //    new line is being assembled. Skipped when editing an existing line so
+  //    we don't blow away saved overrides. Resolves the multi-region
+  //    conflict where the campaign-level "MENA → Arabic 1.10×" was silently
+  //    applied to non-Arabic talents.
+  useEffect(() => {
+    if (isEditing) return;
+    if (!selectedTalent) {
+      setAutoOverrides(new Set());
+      return;
+    }
+    const defaults = readTalentDefaults(selectedTalent);
+    const autos = new Set<OverrideKey>();
+    setOverrides(prev => {
+      const next = { ...prev };
+      (Object.keys(defaults) as OverrideKey[]).forEach(k => {
+        const v = defaults[k];
+        if (v !== null && prev[k] === null) {
+          next[k] = v;
+          autos.add(k);
+        }
+      });
+      return next;
+    });
+    setAutoOverrides(autos);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, talentKind, isEditing]);
 
   // ── Scroll into view when external code (edit-line pencil) signals
@@ -568,50 +642,68 @@ export function QuoteConfigurator({
                               ? "Creator's avg engagement rate. >10% means cult-following levels of community heat."
                               : "Talent's last-90-day engagement rate. Best predictor of campaign ROI."}
                             value={overrides.o_eng} globalVal={globals.eng}
-                            onChange={v => setOverrides(o => ({ ...o, o_eng: v }))}
+                            onChange={v => setOverrideManual('o_eng', v)}
                             options={opts.engagement.map(e => e.factor)}
-                            labels={opts.engagement.map(e => e.label.replace(/ —.*$/, ''))} />
+                            labels={opts.engagement.map(e => e.label.replace(/ —.*$/, ''))}
+                            auto={autoOverrides.has('o_eng')}
+                            intrinsic={readTalentDefaults(selectedTalent).o_eng}
+                            talentName={(selectedTalent as any)?.nickname || ''} />
 
                           <AxisRow label={isCreator ? "Audience fit" : "Audience"}
                             hint={isCreator
                               ? "Sector-based: how well the creator's audience matches the BRAND vertical."
                               : "How well the audience matches the brand. MENA/Saudi unlocks +30% premium."}
                             value={overrides.o_aud} globalVal={globals.aud}
-                            onChange={v => setOverrides(o => ({ ...o, o_aud: v }))}
+                            onChange={v => setOverrideManual('o_aud', v)}
                             options={opts.audience.map(e => e.factor)}
-                            labels={opts.audience.map(e => isCreator ? e.label.replace(/ \/.*/g, '').slice(0, 14) : e.label)} />
+                            labels={opts.audience.map(e => isCreator ? e.label.replace(/ \/.*/g, '').slice(0, 14) : e.label)}
+                            auto={autoOverrides.has('o_aud')}
+                            intrinsic={readTalentDefaults(selectedTalent).o_aud}
+                            talentName={(selectedTalent as any)?.nickname || ''} />
 
                           {isCreator ? (
                             <AxisRow label="Production"
                               hint="How heavy is the creative effort? Scripted/on-ground = more revisions and cost."
                               value={overrides.o_seas} globalVal={globals.seas}
-                              onChange={v => setOverrides(o => ({ ...o, o_seas: v }))}
+                              onChange={v => setOverrideManual('o_seas', v)}
                               options={(opts as any).production.map((e: any) => e.factor)}
-                              labels={(opts as any).production.map((e: any) => e.label.split(' / ')[0])} />
+                              labels={(opts as any).production.map((e: any) => e.label.split(' / ')[0])}
+                              auto={autoOverrides.has('o_seas')}
+                              intrinsic={readTalentDefaults(selectedTalent).o_seas}
+                              talentName={(selectedTalent as any)?.nickname || ''} />
                           ) : (
                             <AxisRow label="Seasonality"
                               hint="Campaign window. Ramadan + Worlds = peak demand."
                               value={overrides.o_seas} globalVal={globals.seas}
-                              onChange={v => setOverrides(o => ({ ...o, o_seas: v }))}
+                              onChange={v => setOverrideManual('o_seas', v)}
                               options={[0.80,1.00,1.20,1.25,1.30,1.35,1.40,1.50]}
-                              labels={['Off','Reg','Q4','Major','Launch','Ramadan','Worlds','Mega']} />
+                              labels={['Off','Reg','Q4','Major','Launch','Ramadan','Worlds','Mega']}
+                              auto={autoOverrides.has('o_seas')}
+                              intrinsic={readTalentDefaults(selectedTalent).o_seas}
+                              talentName={(selectedTalent as any)?.nickname || ''} />
                           )}
 
                           <AxisRow label="Language"
                             hint="Bilingual reaches both audiences in one activation — highest leverage."
                             value={overrides.o_lang} globalVal={globals.lang}
-                            onChange={v => setOverrides(o => ({ ...o, o_lang: v }))}
+                            onChange={v => setOverrideManual('o_lang', v)}
                             options={opts.language.map(e => e.factor)}
-                            labels={opts.language.map(e => e.label.split(' ')[0])} />
+                            labels={opts.language.map(e => e.label.split(' ')[0])}
+                            auto={autoOverrides.has('o_lang')}
+                            intrinsic={readTalentDefaults(selectedTalent).o_lang}
+                            talentName={(selectedTalent as any)?.nickname || ''} />
 
                           <AxisRow label="Authority"
                             hint={isCreator
                               ? "Creator-side authority: 'Hero' = category-defining cultural force; converts at premium."
                               : "Championship credentials. Pro status = price floor protection."}
                             value={overrides.o_auth} globalVal={globals.auth}
-                            onChange={v => setOverrides(o => ({ ...o, o_auth: v }))}
+                            onChange={v => setOverrideManual('o_auth', v)}
                             options={opts.authority.map(e => e.factor)}
-                            labels={opts.authority.map(e => e.label.split(' / ')[0])} />
+                            labels={opts.authority.map(e => e.label.split(' / ')[0])}
+                            auto={autoOverrides.has('o_auth')}
+                            intrinsic={readTalentDefaults(selectedTalent).o_auth}
+                            talentName={(selectedTalent as any)?.nickname || ''} />
                         </>
                       );
                     })()}
@@ -741,16 +833,50 @@ function DeliverableGroups({
 }
 
 // ── Per-axis quick-row override ────────────────────────────────────────────
-function AxisRow({ label, hint, value, globalVal, onChange, options, labels }: {
+//
+// Phase 1: when `auto={true}` the row badges "from <talent>" so reps know
+//          the value was seeded from the talent's intrinsic data, not the
+//          campaign axis.
+//
+// Phase 3: when the row is currently inheriting the campaign axis but the
+//          talent has a non-neutral intrinsic value that disagrees with the
+//          campaign, surface a conflict chip with one-click resolve.
+function AxisRow({
+  label, hint, value, globalVal, onChange, options, labels,
+  auto, intrinsic, talentName,
+}: {
   label: string; hint?: string;
   value: number | null; globalVal: number;
   onChange: (v: number | null) => void;
   options: number[]; labels: string[];
+  auto?: boolean;
+  intrinsic?: number | null;
+  talentName?: string;
 }) {
   const sel = value === null ? 'GLOBAL' : String(value);
+  // A conflict exists when:
+  //   (a) the line is currently inheriting the campaign default (value is null),
+  //   (b) the talent has its own intrinsic value, AND
+  //   (c) that intrinsic value differs meaningfully from the campaign value.
+  // We don't show conflicts when the line already has the talent's value
+  // (auto=true) or when the user has explicitly typed something else.
+  const hasConflict =
+    value === null &&
+    typeof intrinsic === 'number' &&
+    Math.abs(intrinsic - globalVal) > 0.005;
   return (
     <div>
-      <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">{label}</label>
+      <div className="flex items-center gap-1.5 mb-1">
+        <label className="text-[10px] uppercase tracking-wider text-label font-semibold">{label}</label>
+        {auto && (
+          <span
+            className="px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold bg-green/15 text-greenDark"
+            title={talentName ? `Auto-seeded from ${talentName}'s record. Edit to override.` : 'Auto-seeded from the talent record.'}
+          >
+            from {talentName || 'talent'}
+          </span>
+        )}
+      </div>
       <select
         value={sel}
         onChange={e => onChange(e.target.value === 'GLOBAL' ? null : parseFloat(e.target.value))}
@@ -761,6 +887,21 @@ function AxisRow({ label, hint, value, globalVal, onChange, options, labels }: {
           <option key={o} value={o}>{labels[i]} ({o.toFixed(2)}×)</option>
         ))}
       </select>
+      {hasConflict && (
+        <div className="mt-1 flex items-start gap-1.5 p-1.5 rounded bg-amber-50 border border-amber-200">
+          <span className="text-[10px] leading-snug text-amber-900 flex-1">
+            Campaign says {globalVal.toFixed(2)}× — {talentName || 'this talent'}’s record says {(intrinsic as number).toFixed(2)}×.
+          </span>
+          <button
+            type="button"
+            onClick={() => onChange(intrinsic as number)}
+            className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-200 hover:bg-amber-300 text-amber-900 whitespace-nowrap"
+            title="Pin this line to the talent's intrinsic value"
+          >
+            Use {(intrinsic as number).toFixed(2)}×
+          </button>
+        </div>
+      )}
       {hint && <p className="text-[10px] text-mute mt-1 leading-snug">{hint}</p>}
     </div>
   );
