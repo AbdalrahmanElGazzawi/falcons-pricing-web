@@ -46,7 +46,10 @@ export function QuoteBuilder({
   const [error, setError] = useState<string | null>(null);
 
   // ── Build/Preview tab
-  const [view, setView] = useState<'campaign' | 'build' | 'summary'>('build');
+  // Land on Campaign tab — sales should set client/campaign + the campaign-level
+  // axes BEFORE picking deliverables. The line-level overrides on Build then
+  // inherit those defaults instead of the engine's neutral 1.0× factors.
+  const [view, setView] = useState<'campaign' | 'build' | 'summary'>('campaign');
   const [referenceOpen, setReferenceOpen] = useState(false);
 
   // ── Layout edit mode (super-admin only)
