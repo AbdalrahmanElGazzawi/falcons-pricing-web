@@ -931,6 +931,9 @@ function AxisRow({ label, sourceHint, options, globalVal, value, onChange }: {
   onChange: (v: number | null) => void;
 }) {
   const isInherited = value === null;
+  // Surface the matched campaign-default label so sales sees the actual choice
+  // (e.g. "Below average 2-4%") instead of an opaque multiplier number.
+  const matched = options.find(o => Math.abs(o.factor - globalVal) < 0.0001);
   return (
     <div className="border-t border-line pt-4 first:border-t-0 first:pt-0">
       <div className="flex items-baseline justify-between gap-3 mb-2 flex-wrap">
@@ -939,8 +942,16 @@ function AxisRow({ label, sourceHint, options, globalVal, value, onChange }: {
       </div>
       <div className="flex flex-wrap gap-2">
         <FilterChip active={isInherited} onClick={() => onChange(null)}>
-          <span className="opacity-80">Campaign default</span>{' '}
-          <span className="opacity-60">({globalVal.toFixed(2)}x)</span>
+          <span className="opacity-80">Campaign default</span>
+          {matched ? (
+            <>
+              {' · '}
+              <span>{matched.label}</span>{' '}
+              <span className="opacity-60">({globalVal.toFixed(2)}x)</span>
+            </>
+          ) : (
+            <span className="opacity-60">{' '}({globalVal.toFixed(2)}x)</span>
+          )}
         </FilterChip>
         {options.map(o => {
           const active = !isInherited && Math.abs((value ?? -999) - o.factor) < 0.0001;

@@ -434,6 +434,19 @@ export function QuoteBuilder({
   const activeOverrides = (l: LineDraft) =>
     [l.o_ctype, l.o_eng, l.o_aud, l.o_seas, l.o_lang, l.o_auth].filter(v => v !== null).length;
 
+  // Names of axes that have been explicitly overridden on this line — used as
+  // the tooltip on the "N overrides" chip so sales knows exactly which axes
+  // diverge from the campaign defaults.
+  const overrideAxisNames = (l: LineDraft) => {
+    const names: string[] = [];
+    if (l.o_ctype !== null) names.push('Content type');
+    if (l.o_eng   !== null) names.push('Engagement');
+    if (l.o_aud   !== null) names.push('Audience');
+    if (l.o_seas  !== null) names.push(l.talent_type === 'creator' ? 'Production' : 'Seasonality');
+    if (l.o_lang  !== null) names.push('Language');
+    if (l.o_auth  !== null) names.push('Authority');
+    return names;
+  };
   /**
    * Load an existing draft (status='draft' quote) into the builder.
    * Pulls header + lines + addons from the API, then rehydrates every state slot.
@@ -859,7 +872,12 @@ export function QuoteBuilder({
                           <div className="text-xs text-mute capitalize flex items-center gap-2">
                             <span>{r.talent_type}</span>
                             {overrideCount > 0 && (
-                              <span className="chip chip-peach text-[10px]">{overrideCount} override{overrideCount > 1 ? 's' : ''}</span>
+                              <span
+                                className="chip chip-peach text-[10px]"
+                                title={`Overridden axes:\n${overrideAxisNames(r).join(', ')}\n\nClick the row to edit overrides in the wizard.`}
+                              >
+                                {overrideCount} override{overrideCount > 1 ? 's' : ''}
+                              </span>
                             )}
                           </div>
                         </button>
