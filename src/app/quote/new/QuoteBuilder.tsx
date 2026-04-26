@@ -114,6 +114,7 @@ export function QuoteBuilder({
 
   // ── Quote header
   const [preparedByName, setPreparedByName] = useState(ownerName ?? '');
+  const [preparedByTitle, setPreparedByTitle] = useState('');
 
   // Brand brief — descriptive context, not pricing-influencing
   const [demoTarget, setDemoTarget] = useState<string[]>([]);
@@ -196,6 +197,7 @@ export function QuoteBuilder({
         if (typeof d.usdRate === 'number') setUsdRate(d.usdRate);
         if (d.notes) setNotes(d.notes);
         if (d.preparedByName) setPreparedByName(d.preparedByName);
+        if (d.preparedByTitle) setPreparedByTitle(d.preparedByTitle);
         if (Array.isArray(d.demoTarget)) setDemoTarget(d.demoTarget);
         if (d.genderSkew) setGenderSkew(d.genderSkew);
         if (d.region) setRegion(d.region);
@@ -264,7 +266,7 @@ export function QuoteBuilder({
     try {
       const draft = {
         clientName, clientEmail, campaign, currency, vatRate, usdRate, notes,
-        preparedByName, preparedByEmail,
+        preparedByName, preparedByTitle, preparedByEmail,
         demoTarget, genderSkew, region, exclusivity, exclusivityMonths, kpiFocus,
         eng, aud, seas, ctype, lang, auth, obj, conf,
         addonMonths,
@@ -272,7 +274,7 @@ export function QuoteBuilder({
       };
       window.localStorage.setItem(LS_KEY, JSON.stringify(draft));
     } catch {}
-  }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, usdRate, notes, preparedByName, preparedByEmail, demoTarget, genderSkew, region, exclusivity, exclusivityMonths, kpiFocus,
+  }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, usdRate, notes, preparedByName, preparedByTitle, preparedByEmail, demoTarget, genderSkew, region, exclusivity, exclusivityMonths, kpiFocus,
       eng, aud, seas, ctype, lang, auth, obj, conf, addonMonths, lines]);
 
   function openAddWizard() { setWizard({ mode: 'add' }); }
@@ -367,6 +369,7 @@ export function QuoteBuilder({
             campaign: campaign.trim() || null,
             owner_email: ownerEmail,
             prepared_by_name: preparedByName.trim() || null,
+            prepared_by_title: preparedByTitle.trim() || null,
             demo_target: demoTarget,
             gender_skew: genderSkew,
             region: region,
@@ -477,6 +480,7 @@ export function QuoteBuilder({
       setUsdRate(typeof h.usd_rate === 'number' ? h.usd_rate : 3.75);
       setNotes(h.notes ?? '');
       setPreparedByName(h.prepared_by_name ?? ownerName ?? '');
+      setPreparedByTitle(h.prepared_by_title ?? '');
       setPreparedByEmail(h.prepared_by_email ?? ownerEmail ?? '');
       setDemoTarget(Array.isArray(h.demo_target) ? h.demo_target : []);
       setGenderSkew(h.gender_skew === 'male' || h.gender_skew === 'female' ? h.gender_skew : 'mixed');
@@ -595,6 +599,11 @@ export function QuoteBuilder({
             <label className="label">Prepared by — your name</label>
             <input value={preparedByName} onChange={e => setPreparedByName(e.target.value)} className="input" placeholder="e.g. Abdalrahman ElGazzawi" />
             <p className="text-[10px] text-mute mt-1">Shown on the quotation PDF.</p>
+          </div>
+          <div>
+            <label className="label">Prepared by — your title</label>
+            <input value={preparedByTitle} onChange={e => setPreparedByTitle(e.target.value)} className="input" placeholder="e.g. Director of Esports Marketing" />
+            <p className="text-[10px] text-mute mt-1">Optional — appears under your name on the PDF.</p>
           </div>
           <div>
             <label className="label">Prepared by — official email</label>

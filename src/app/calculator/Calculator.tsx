@@ -125,6 +125,7 @@ export function Calculator({
       addonMonths,
       lines,
       preparedByName: '',
+      preparedByTitle: '',
       preparedByEmail: '',
     };
     try {

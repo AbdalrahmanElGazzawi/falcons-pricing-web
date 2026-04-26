@@ -88,6 +88,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const total = Number(quote.total || subtotal + vatAmount);
 
   const preparedName = quote.prepared_by_name || '';
+  const preparedTitle = quote.prepared_by_title || '';
   const preparedEmail = quote.prepared_by_email || quote.owner_email || '';
   const approvedName = quote.approved_by_name || '';
   const approvedEmail = quote.approved_by_email || '';
@@ -242,7 +243,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     doc.fillColor(INK).font('Helvetica-Bold').text(value || '—', vx, y);
   };
 
-  drawKV('Prepared by:', preparedName || '—', labelCol, valueCol);
+  drawKV('Prepared by:', (preparedName + (preparedTitle ? `, ${preparedTitle}` : '')) || '—', labelCol, valueCol);
   drawKV('Client:', quote.client_name || '—', rightLabelCol, rightValueCol);
   y += 16;
   drawKV('Email:', preparedEmail || '—', labelCol, valueCol);
@@ -407,8 +408,14 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   doc.fillColor(MUTE).font('Helvetica').fontSize(7.5).text('PREPARED BY', sigLeftX, y);
   doc.moveTo(sigLeftX, y + 38).lineTo(sigLeftX + sigW, y + 38).strokeColor(INK).lineWidth(0.7).stroke();
   doc.fillColor(INK).font('Helvetica-Bold').fontSize(9.5).text(preparedName || '—', sigLeftX, y + 44);
-  doc.fillColor(LABEL).font('Helvetica').fontSize(8).text(preparedEmail || '—', sigLeftX, y + 56);
-  doc.fillColor(MUTE).fontSize(7.5).text(`Date: ${dateStr(quote.created_at)}`, sigLeftX, y + 70);
+  if (preparedTitle) {
+    doc.fillColor(LABEL).font('Helvetica-Oblique').fontSize(8).text(preparedTitle, sigLeftX, y + 56);
+    doc.fillColor(LABEL).font('Helvetica').fontSize(8).text(preparedEmail || '—', sigLeftX, y + 68);
+    doc.fillColor(MUTE).fontSize(7.5).text(`Date: ${dateStr(quote.created_at)}`, sigLeftX, y + 80);
+  } else {
+    doc.fillColor(LABEL).font('Helvetica').fontSize(8).text(preparedEmail || '—', sigLeftX, y + 56);
+    doc.fillColor(MUTE).fontSize(7.5).text(`Date: ${dateStr(quote.created_at)}`, sigLeftX, y + 70);
+  }
 
   // Approved by
   doc.fillColor(MUTE).font('Helvetica').fontSize(7.5).text('APPROVED BY', sigRightX, y);
