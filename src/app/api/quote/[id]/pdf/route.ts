@@ -231,31 +231,60 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   doc.fillColor('#94A3B8').font('Helvetica').fontSize(8).text('DATE', trX, 58);
   doc.fillColor('white').font('Helvetica').fontSize(10).text(dateStr(quote.sent_at || quote.created_at), trX, 70);
 
-  // ═══ INFO BLOCK ═══
+  // ═══ INFO BLOCK ═══════════════════════════════════════════════════════════
+  // Two columns. CRITICAL: every value cell must have an explicit width so
+  // long names + titles wrap WITHIN their column instead of bleeding into the
+  // next one (which used to produce artefacts like 'Manag-Client:' = 'agent:').
   let y = 130;
-  const labelCol = MARGIN;
-  const valueCol = MARGIN + 110;
-  const rightLabelCol = W - 240;
-  const rightValueCol = W - 130;
+  const colGap = 30;
+  const colW = (W - MARGIN * 2 - colGap) / 2;
+  const leftLabelX = MARGIN;
+  const leftValueX = MARGIN + 80;
+  const leftValueW = colW - 80;
+  const rightLabelX = MARGIN + colW + colGap;
+  const rightValueX = rightLabelX + 80;
+  const rightValueW = colW - 80;
 
-  const drawKV = (label: string, value: string, lx: number, vx: number) => {
-    doc.fillColor(LABEL).font('Helvetica').fontSize(9).text(label, lx, y);
-    doc.fillColor(INK).font('Helvetica-Bold').text(value || '—', vx, y);
+  // Draw a label/value row. Returns the y AFTER this row, accounting for
+  // wrapped multi-line values.
+  const drawKVRow = (
+    leftLabel: string, leftValue: string,
+    rightLabel: string | null, rightValue: string | null,
+  ): number => {
+    doc.fillColor(LABEL).font('Helvetica').fontSize(9).text(leftLabel, leftLabelX, y);
+    doc.fillColor(INK).font('Helvetica-Bold').fontSize(9.5).text(
+      leftValue || '—', leftValueX, y, { width: leftValueW, lineGap: 1 }
+    );
+    const leftH = doc.heightOfString(leftValue || '—', { width: leftValueW, lineGap: 1 });
+
+    let rightH = 0;
+    if (rightLabel) {
+      doc.fillColor(LABEL).font('Helvetica').fontSize(9).text(rightLabel, rightLabelX, y);
+      doc.fillColor(INK).font('Helvetica-Bold').fontSize(9.5).text(
+        rightValue || '—', rightValueX, y, { width: rightValueW, lineGap: 1 }
+      );
+      rightH = doc.heightOfString(rightValue || '—', { width: rightValueW, lineGap: 1 });
+    }
+    return y + Math.max(leftH, rightH, 12) + 6;
   };
 
-  drawKV('Prepared by:', (preparedName + (preparedTitle ? `, ${preparedTitle}` : '')) || '—', labelCol, valueCol);
-  drawKV('Client:', quote.client_name || '—', rightLabelCol, rightValueCol);
-  y += 16;
-  drawKV('Email:', preparedEmail || '—', labelCol, valueCol);
-  if (quote.campaign) drawKV('Campaign:', quote.campaign, rightLabelCol, rightValueCol);
-  y += 16;
+  // Row 1: Prepared by (name, title) + Client
+  const preparedFull = preparedName + (preparedTitle ? `, ${preparedTitle}` : '');
+  y = drawKVRow('Prepared by:', preparedFull || '—', 'Client:', quote.client_name || '—');
+
+  // Row 2: Email + Campaign
+  y = drawKVRow(
+    'Email:', preparedEmail || '—',
+    quote.campaign ? 'Campaign:' : null,
+    quote.campaign ? quote.campaign : null,
+  );
+
+  // Row 3: Approved by + Approved on (only if approved)
   if (approvedName) {
-    drawKV('Approved by:', approvedName, labelCol, valueCol);
-    drawKV('Approved on:', dateStr(approvedAt), rightLabelCol, rightValueCol);
-    y += 16;
+    y = drawKVRow('Approved by:', approvedName, 'Approved on:', dateStr(approvedAt));
   }
 
-  y += 12;
+  y += 10;
 
   // ═══ LINE ITEMS TABLE ═══
   const tableX = MARGIN;
@@ -277,19 +306,38 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   y += 24;
 
   doc.font('Helvetica').fontSize(10).fillColor(INK);
-  const rowH = 22;
+  const rowH = 28; // taller to accommodate the kind badge below the name
+  // Reserve space at the bottom of the page for: methodology+notes (~150),
+  // totals box (~110), signature blocks (~95), green footer (50), padding (20).
+  // If the next row wouldn't leave that much, page-break BEFORE drawing it.
+  const reservedFooter = 425;
+  const drawTableHeader = () => {
+    doc.rect(tableX, y, tableW, 24).fill(GREEN_DARK);
+    doc.fillColor('white').font('Helvetica-Bold').fontSize(10);
+    doc.text('Description', col.desc, y + 8);
+    doc.text('Unit cost', col.unit, y + 8, { width: tableW * 0.16, align: 'right' });
+    doc.text('Qty',       col.qty,  y + 8, { width: tableW * 0.07, align: 'right' });
+    doc.text('Amount',    col.amt,  y + 8, { width: colEnd - col.amt, align: 'right' });
+    y += 24;
+  };
+
   (lines || []).forEach((l: any, idx: number) => {
+    if (y + rowH > H - reservedFooter) {
+      // Not enough room for this row + the footer blocks — page-break.
+      doc.addPage({ size: 'A4', margin: 0 });
+      y = MARGIN;
+      drawTableHeader();
+    }
     if (idx % 2 === 0) doc.rect(tableX, y, tableW, rowH).fill(LIGHT);
     doc.fillColor(INK).font('Helvetica').fontSize(10);
     const tKind = l.talent_type === 'creator' ? 'creator' : 'player';
     const kindBadge = tKind === 'creator' ? 'CREATOR' : 'PLAYER';
-    doc.fillColor(INK).font('Helvetica').fontSize(10);
     doc.text(`${l.talent_name} — ${l.platform}`, col.desc, y + 7, { width: tableW * 0.5 });
-    // Small uppercase kind chip below the name (subtle)
-    doc.fillColor(MUTE).font('Helvetica').fontSize(7).text(kindBadge, col.desc, y + 19, { width: tableW * 0.5 });
-    doc.text(fmtMoney(Number(l.final_unit || 0), currency), col.unit, y + 7, { width: tableW * 0.16, align: 'right' });
-    doc.text(`${Number(l.qty || 1)}`, col.qty, y + 7, { width: tableW * 0.07, align: 'right' });
-    doc.text(fmtMoney(Number(l.final_amount || 0), currency), col.amt, y + 7, { width: colEnd - col.amt, align: 'right' });
+    doc.fillColor(MUTE).font('Helvetica').fontSize(7).text(kindBadge, col.desc, y + 21, { width: tableW * 0.5 });
+    doc.fillColor(INK).font('Helvetica').fontSize(10);
+    doc.text(fmtMoney(Number(l.final_unit || 0), currency), col.unit, y + 9, { width: tableW * 0.16, align: 'right' });
+    doc.text(`${Number(l.qty || 1)}`, col.qty, y + 9, { width: tableW * 0.07, align: 'right' });
+    doc.text(fmtMoney(Number(l.final_amount || 0), currency), col.amt, y + 9, { width: colEnd - col.amt, align: 'right' });
     y += rowH;
   });
   if (!lines || lines.length === 0) {
