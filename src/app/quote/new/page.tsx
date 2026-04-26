@@ -60,6 +60,7 @@ export default async function NewQuotePage() {
         drafts={drafts}
         ownerEmail={profile.email}
         ownerName={profile.full_name || profile.email.split('@')[0]}
+        ownerTitle={(profile as any).title || ''}
         initialSectionOrder={sectionOrder}
         canEditLayout={isSuperAdminEmail(profile.email)}
       />

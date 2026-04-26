@@ -40,7 +40,7 @@ export type DraftSummary = {
 
 export function QuoteBuilder({
   players, creators, tiers, addons, ownerEmail, ownerName,
-  initialSectionOrder, canEditLayout, drafts,
+  initialSectionOrder, canEditLayout, drafts, ownerTitle,
 }: {
   players: Player[];
   creators: Creator[];
@@ -48,6 +48,7 @@ export function QuoteBuilder({
   addons: Addon[];
   ownerEmail: string;
   ownerName?: string;
+  ownerTitle?: string;
   initialSectionOrder: string[];
   canEditLayout: boolean;
   drafts?: DraftSummary[];
@@ -114,7 +115,7 @@ export function QuoteBuilder({
 
   // ── Quote header
   const [preparedByName, setPreparedByName] = useState(ownerName ?? '');
-  const [preparedByTitle, setPreparedByTitle] = useState('');
+  const [preparedByTitle, setPreparedByTitle] = useState(ownerTitle ?? '');
 
   // Brand brief — descriptive context, not pricing-influencing
   const [demoTarget, setDemoTarget] = useState<string[]>([]);
@@ -599,11 +600,6 @@ export function QuoteBuilder({
             <label className="label">Prepared by — your name</label>
             <input value={preparedByName} onChange={e => setPreparedByName(e.target.value)} className="input" placeholder="e.g. Abdalrahman ElGazzawi" />
             <p className="text-[10px] text-mute mt-1">Shown on the quotation PDF.</p>
-          </div>
-          <div>
-            <label className="label">Prepared by — your title</label>
-            <input value={preparedByTitle} onChange={e => setPreparedByTitle(e.target.value)} className="input" placeholder="e.g. Director of Esports Marketing" />
-            <p className="text-[10px] text-mute mt-1">Optional — appears under your name on the PDF.</p>
           </div>
           <div>
             <label className="label">Prepared by — official email</label>
