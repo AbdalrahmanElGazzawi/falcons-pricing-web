@@ -696,7 +696,7 @@ export function QuoteConfigurator({
                           <AxisRow label="Authority"
                             hint={isCreator
                               ? "Creator-side authority: 'Hero' = category-defining cultural force; converts at premium."
-                              : "Championship credentials. Pro status = price floor protection."}
+                              : "Normal = standard. Proven = regional champ / 2yr+ pro. Elite = top-10 world rank or major finalist. Global Star = EWC / Worlds champion. Floor protects pros from being underpriced on social briefs."}
                             value={overrides.o_auth} globalVal={globals.auth}
                             onChange={v => setOverrideManual('o_auth', v)}
                             options={opts.authority.map(e => e.factor)}

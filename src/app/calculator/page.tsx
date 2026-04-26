@@ -24,8 +24,8 @@ export default async function CalculatorPage() {
   return (
     <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
-        title="Calculator"
-        subtitle="Quick price checks for inbound DMs and casual asks. Build a basket, copy the number, send to a real quote when the deal moves forward."
+        title="Quick Estimate"
+        subtitle="Step 0 — answer a DM, scope a brief, sanity-check a number. No client info, no save, no PDF. When the deal is real, click \"Send to quote\" and the basket carries straight into /quote/new with all the multipliers preserved."
       />
       <CalcView
         players={players ?? []}

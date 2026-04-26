@@ -135,9 +135,10 @@ export const AXIS_OPTIONS = {
     { label: 'Bilingual (EN + AR)', factor: 1.20 },
   ],
   authority: [
-    { label: 'Normal', factor: 1.00 },
-    { label: 'Proven / Established', factor: 1.15 },
-    { label: 'Anchor / Benchmark', factor: 1.35 },
+    { label: 'Normal',                       factor: 1.00 },
+    { label: 'Proven / Established',         factor: 1.15 },
+    { label: 'Elite Contender',              factor: 1.30 },
+    { label: 'Global Star / Major Winner',   factor: 1.50 },
   ],
   objective: [
     { label: 'Awareness (Wt 0.2)', weight: 0.2 },

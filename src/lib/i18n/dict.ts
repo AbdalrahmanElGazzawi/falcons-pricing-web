@@ -15,7 +15,7 @@ export const dict = {
   // Sidebar / nav
   'nav.dashboard':    { en: 'Dashboard',    ar: 'لوحة التحكم' },
   'nav.new_quote':    { en: 'New Quote',    ar: 'عرض سعر جديد' },
-  'nav.calculator':   { en: 'Calculator',   ar: 'الحاسبة' },
+  'nav.calculator':   { en: 'Quick Estimate', ar: 'تقدير سريع' },
   'nav.quote_log':    { en: 'Quote Log',    ar: 'سجل العروض' },
   'nav.inquiries':    { en: 'Inquiries',    ar: 'الاستفسارات' },
   'nav.roster':       { en: 'Roster',       ar: 'اللاعبون' },

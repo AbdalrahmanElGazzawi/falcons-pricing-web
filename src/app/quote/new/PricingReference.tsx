@@ -17,6 +17,7 @@ export function PricingReference() {
     <div className="space-y-5 max-w-3xl">
       <CurrentPhaseCard />
       <PlatformAnchorCard />
+      <AuthorityCard />
       <QuickGuideCard />
       <DeeperLinks />
     </div>
@@ -38,6 +39,9 @@ function CurrentPhaseCard() {
         <Bullet ok>Add-on rights packages (uplift %) baked into line totals.</Bullet>
         <Bullet ok>Audit log on every quote, every layout edit, every roster change.</Bullet>
         <Bullet ok>PDF quotation export — Falcons-branded, VAT inclusive.</Bullet>
+        <Bullet ok>Saudi-players filter on the picker — toggle to narrow the roster to Saudi nationals in one click.</Bullet>
+        <Bullet ok>Draft loader on /quote/new — pick from your last 25 saved drafts and resume right where you left off.</Bullet>
+        <Bullet ok>Prepared-by title pulled from your profile (no per-quote typing) — appears next to your name on the PDF.</Bullet>
 
         <div className="border-t border-line pt-3 mt-3">
           <div className="text-xs uppercase tracking-wider text-label font-semibold mb-2">Awaiting next</div>
@@ -85,6 +89,51 @@ function PlatformAnchorCard() {
       </div>
       <div className="text-xs text-mute mt-3">
         After base × ratio, the wizard applies the 6 multiplier axes (engagement, audience, seasonality, content type, language, authority) and rights uplift.
+      </div>
+    </div>
+  );
+}
+
+function AuthorityCard() {
+  const levels: Array<{ label: string; mult: string; signal: string }> = [
+    { label: 'Normal',                       mult: '1.00×', signal: 'Standard player or content creator. No major podiums.' },
+    { label: 'Proven / Established',         mult: '1.15×', signal: 'Regional champion · Top-10 in their game/vertical · 2+ years pro.' },
+    { label: 'Elite Contender',              mult: '1.30×', signal: 'Top-10 world ranking · Major finalist · IEM / EWC qualifier.' },
+    { label: 'Global Star / Major Winner',   mult: '1.50×', signal: 'World champion · EWC / Worlds winner · Iconic pro name (NiKo / m0NESY tier).' },
+  ];
+  return (
+    <div className="card card-p">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-9 h-9 rounded-lg bg-navy/10 text-navy grid place-items-center"><Anchor size={18} /></div>
+        <div>
+          <div className="text-base font-semibold text-ink leading-tight">Authority — pro credentials premium</div>
+          <div className="text-xs text-mute">What counts as &ldquo;Elite&rdquo; vs &ldquo;Global Star&rdquo;, and how it sets a price floor.</div>
+        </div>
+      </div>
+      <div className="text-sm text-label leading-relaxed mb-3">
+        Authority is the only multiplier with a <strong className="text-ink">floor</strong>: a pro player&apos;s social rate is never
+        priced below their IRL appearance value times their tier&apos;s floor share.
+        Pick the level by their best tournament result in the last 12 months — when in doubt, default to <em>Proven</em> for active pros.
+      </div>
+      <div className="rounded-lg border border-line divide-y divide-line overflow-hidden mb-3">
+        {levels.map(l => (
+          <div key={l.label} className="flex items-start gap-3 px-3 py-2.5">
+            <div className="w-12 text-xs font-mono font-bold text-greenDark tabular-nums shrink-0 pt-0.5">{l.mult}</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold text-ink">{l.label}</div>
+              <div className="text-xs text-mute">{l.signal}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg bg-bg/50 border border-line px-3 py-2 text-[11px] font-mono text-label leading-relaxed">
+        <div><strong className="text-ink">SocialPrice</strong>  = base × eng × aud × seas × ctype × lang × <em>authFactor</em></div>
+        <div><strong className="text-ink">AuthorityFloor</strong> = IRL × floorShare × seas × lang × <em>authFactor</em></div>
+        <div><strong className="text-ink">FinalPrice</strong>   = MAX(Social, Floor) × (1 + addOnPct)</div>
+        <div className="mt-1"><em>authFactor = 1 + objectiveWeight × (authority − 1)</em></div>
+      </div>
+      <div className="text-[11px] text-mute mt-2">
+        Tournament examples come from the v8 Adjustment Matrix (sheet of record). Calibration revisits each quarter as Shikenso data lands.
       </div>
     </div>
   );

@@ -697,9 +697,9 @@ export function QuoteBuilder({
             options={AXIS_OPTIONS.seasonality.map(o => ({ label: o.label, val: o.factor }))} />
           <AxisSelect label="Language" hint="Bilingual reaches both audiences in one activation." value={lang} setValue={setLangManual} auto={autoAxes.has('lang')} onClearAuto={() => setAutoAxes(s => { const n = new Set(s); n.delete('lang'); return n; })}
             options={AXIS_OPTIONS.language.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Authority" hint="Championship credentials. Pro status sets a price floor." value={auth} setValue={setAuth}
+          <AxisSelect label="Authority" hint="Championship credentials. Normal = standard player · Proven = regional champ or 2yr+ pro · Elite Contender = top-10 world rank or major finalist · Global Star = world champ / EWC winner / iconic name. Sets the IRL price floor so pros are never priced below appearance value." value={auth} setValue={setAuth}
             options={AXIS_OPTIONS.authority.map(o => ({ label: o.label, val: o.factor }))} />
-          <AxisSelect label="Objective weight" hint="How much Authority counts. Conversion → 0.7. Awareness → 0.2." value={obj} setValue={setObjManual} auto={autoAxes.has('obj')} onClearAuto={() => setAutoAxes(s => { const n = new Set(s); n.delete('obj'); return n; })}
+          <AxisSelect label="Objective weight" hint="How much the Authority bump matters in this campaign. Awareness 0.2× (logo placement) → Conversion 0.7× (pro endorsement = the product) → Authority 1.0× (credibility is the entire pitch)." value={obj} setValue={setObjManual} auto={autoAxes.has('obj')} onClearAuto={() => setAutoAxes(s => { const n = new Set(s); n.delete('obj'); return n; })}
             options={AXIS_OPTIONS.objective.map(o => ({ label: o.label, val: o.weight }))} />
           <div>
             <label className="label">Measurement confidence</label>
