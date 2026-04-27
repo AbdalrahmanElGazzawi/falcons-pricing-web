@@ -786,7 +786,7 @@ export function QuoteConfigurator({
 }
 
 // ── Deliverable groups (multi-select) ─────────────────────────────────────
-const GROUP_ORDER = ['Social Media', 'Live & Stream', 'On-Ground & Events', 'Other'];
+const GROUP_ORDER = ['Social Media', 'Live & Stream', 'Continuity & Rights', 'On-Ground & Events', 'Other'];
 
 function DeliverableGroups({
   deliverables, picks, currency, onToggle, onQty, onRate,

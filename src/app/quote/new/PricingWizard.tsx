@@ -324,11 +324,11 @@ export function PricingWizard({
         .map(p => ({
           key: p.key,
           label: p.label,
-          rate: ((selectedCreator as any)[p.key] as number) || 0,
-          group: 'Social Media' as const,
-          manual: false,
+          rate: p.manual ? 0 : ((selectedCreator as any)[p.key] as number) || 0,
+          group: p.group,
+          manual: p.manual,
         }))
-        .filter(d => d.rate > 0);
+        .filter(d => d.manual || d.rate > 0);
     }
     return [];
   }, [state.talent_type, selectedPlayer, selectedCreator]);
@@ -703,7 +703,7 @@ function FilterChip({ active, disabled, onClick, children }: {
 // ───────────────────────────────────────────────────────────────────────────
 // Step 3 — Deliverable (grouped + manual-rate aware + clickable socials)
 // ───────────────────────────────────────────────────────────────────────────
-const GROUP_ORDER: PlatformGroup[] = ['Social Media', 'Live & Stream', 'On-Ground & Events', 'Other'];
+const GROUP_ORDER: PlatformGroup[] = ['Social Media', 'Live & Stream', 'Continuity & Rights', 'On-Ground & Events', 'Other'];
 
 function StepDeliverable({
   talentName, tierCode, game, team, talent, deliverables, selectedKey, selectedManual,
