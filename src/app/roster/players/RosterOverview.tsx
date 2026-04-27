@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Player } from '@/lib/types';
-import { fmtCurrency, tierClass } from '@/lib/utils';
+import { fmtCurrency, tierClass, fmtFollowers, totalReach, maxPlatformReach, tierReviewFlag, expectedTierFromMax } from '@/lib/utils';
 import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { CurrencyPill } from '@/components/CurrencyPill';
 import { Avatar } from '@/components/Avatar';
@@ -12,6 +12,7 @@ import { useToast } from '@/components/Toast';
 import {
   Users, Rows2, Rows3, Rows4, Pencil, Check, X as XIcon,
   Trophy, Clipboard, Briefcase, ScanSearch, Megaphone, Layers,
+  Twitch, Youtube, Instagram, Music2, AlertTriangle,
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
 
@@ -63,6 +64,7 @@ export function RosterOverview({
   const [game, setGame] = useState('');
   const [team, setTeam] = useState('');
   const [density, setDensity] = useState<Density>('comfortable');
+  const [reviewOnly, setReviewOnly] = useState(false);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -82,15 +84,27 @@ export function RosterOverview({
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    return players.filter(p =>
-      tabMatch.match(p.role) &&
-      (!tier || p.tier_code === tier) &&
-      (!game || p.game === game) &&
-      (!team || p.team === team) &&
-      (!s || [p.nickname, p.full_name, p.team, p.game, p.nationality, p.ingame_role, p.role]
-        .filter(Boolean).some(v => v!.toLowerCase().includes(s)))
-    );
-  }, [players, q, tier, game, team, tabMatch]);
+    return players.filter(p => {
+      if (!tabMatch.match(p.role)) return false;
+      if (tier && p.tier_code !== tier) return false;
+      if (game && p.game !== game) return false;
+      if (team && p.team !== team) return false;
+      if (reviewOnly) {
+        const f = tierReviewFlag(p.tier_code, maxPlatformReach(p));
+        if (f !== 'promote' && f !== 'demote') return false;
+      }
+      if (s) {
+        const fields = [p.nickname, p.full_name, p.team, p.game, p.nationality, p.ingame_role, p.role];
+        if (!fields.filter(Boolean).some(v => v!.toLowerCase().includes(s))) return false;
+      }
+      return true;
+    });
+  }, [players, q, tier, game, team, tabMatch, reviewOnly]);
+
+  const reviewFlagCount = useMemo(() => players.filter(p => {
+    const f = tierReviewFlag(p.tier_code, maxPlatformReach(p));
+    return f === 'promote' || f === 'demote';
+  }).length, [players]);
 
   // ── Inline patch helper
   async function patchPlayer(id: number, body: Record<string, any>): Promise<boolean> {
@@ -165,6 +179,25 @@ export function RosterOverview({
           {tiers.map(t => <option key={t.code} value={t.code}>{t.code} · {t.label}</option>)}
         </select>
         <DensityToggle value={density} onChange={setDensity} />
+        <button
+          type="button"
+          onClick={() => setReviewOnly(v => !v)}
+          className={[
+            'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition whitespace-nowrap',
+            reviewOnly
+              ? 'border-orange-400 bg-orange-50 text-orange-700'
+              : reviewFlagCount > 0
+                ? 'border-orange-300 text-orange-700 hover:bg-orange-50'
+                : 'border-line text-label hover:bg-bg',
+          ].join(' ')}
+          title="Show only players whose current tier doesn't match their follower data"
+        >
+          <AlertTriangle size={14} />
+          Tier review
+          {reviewFlagCount > 0 && (
+            <span className="ml-0.5 px-1.5 py-0 rounded-full bg-orange-100 text-orange-700 text-[11px] font-bold">{reviewFlagCount}</span>
+          )}
+        </button>
           <CurrencyPill />
         <div className="text-sm text-label ml-auto whitespace-nowrap">
           {filtered.length} of {players.length}
@@ -191,10 +224,13 @@ export function RosterOverview({
                   <th>Role</th>
                   <th>In-game</th>
                   <th>Tier</th>
+                  <th>Tier check</th>
                   <th>Game</th>
                   <th>Team</th>
                   <th>Age</th>
                   <th>Nationality</th>
+                  <th>Followers</th>
+                  <th className="text-right">Reach</th>
                   <th className="text-right">IG Reel</th>
                   <th className="text-right">IRL</th>
                   {isAdmin && <th></th>}
@@ -341,10 +377,13 @@ function RosterRow({
       <td>
         <span className={`chip border whitespace-nowrap ${tierClass(p.tier_code)}`}>{p.tier_code || '—'}</span>
       </td>
+      <td><TierReviewBadge p={p} /></td>
       <td className="text-label whitespace-nowrap">{p.game || '—'}</td>
       <td className="text-label whitespace-nowrap">{p.team || '—'}</td>
       <td className="text-label whitespace-nowrap">{age ?? '—'}</td>
       <td className="text-label whitespace-nowrap">{p.nationality || '—'}</td>
+      <td><FollowerCluster p={p} /></td>
+      <td className="text-right text-ink whitespace-nowrap">{totalReach(p) > 0 ? fmtFollowers(totalReach(p)) : '—'}</td>
       <td className="text-right">{p.rate_ig_reel ? fmtCurrency(p.rate_ig_reel, ccy, 3.75) : '—'}</td>
       <td className="text-right">{p.rate_irl ? fmtCurrency(p.rate_irl, ccy, 3.75) : '—'}</td>
       {isAdmin && (
@@ -429,5 +468,48 @@ function DensityToggle({ value, onChange }: { value: Density; onChange: (d: Dens
         );
       })}
     </div>
+  );
+}
+
+function FollowerCluster({ p }: { p: Player }) {
+  const items = [
+    { key: 'x',         icon: XIcon,     n: Number(p.followers_x)      || 0, label: 'X / Twitter' },
+    { key: 'instagram', icon: Instagram, n: Number(p.followers_ig)     || 0, label: 'Instagram' },
+    { key: 'twitch',    icon: Twitch,    n: Number(p.followers_twitch) || 0, label: 'Twitch' },
+    { key: 'youtube',   icon: Youtube,   n: Number(p.followers_yt)     || 0, label: 'YouTube' },
+    { key: 'tiktok',    icon: Music2,    n: Number(p.followers_tiktok) || 0, label: 'TikTok' },
+  ].filter(i => i.n > 0).sort((a, b) => b.n - a.n);
+  if (items.length === 0) return <span className="text-mute text-xs">no data</span>;
+  return (
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs whitespace-nowrap">
+      {items.map(({ key, icon: Icon, n, label }) => (
+        <span key={key} className="inline-flex items-center gap-1 text-label" title={`${label}: ${n.toLocaleString('en-US')}`}>
+          <Icon size={12} className="text-mute" />
+          <span className="font-medium text-ink tabular-nums">{fmtFollowers(n)}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function TierReviewBadge({ p }: { p: Player }) {
+  const max = maxPlatformReach(p);
+  const flag = tierReviewFlag(p.tier_code, max);
+  if (flag === 'no-data') return <span className="text-mute text-xs">—</span>;
+  if (flag === 'ok') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green/10 text-greenDark text-[11px] font-semibold whitespace-nowrap">
+        <Check size={11} /> match
+      </span>
+    );
+  }
+  const expected = expectedTierFromMax(max);
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[11px] font-semibold whitespace-nowrap"
+      title={`Max-platform reach ${fmtFollowers(max)} → expected ${expected}. Currently ${p.tier_code}.`}
+    >
+      <AlertTriangle size={11} /> {flag === 'promote' ? '→' : '←'} {expected}
+    </span>
   );
 }

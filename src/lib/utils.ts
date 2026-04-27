@@ -65,4 +65,62 @@ export function fmtCurrency(sar: number, ccy: string = 'SAR', rate: number = 3.7
   return `SAR ${Math.round(n).toLocaleString('en-US')}`;
 }
 
-// trigger rebuild 1777286302
+
+// ─── Follower display + tier check ──────────────────────────────────────────
+export function fmtFollowers(n: number | null | undefined): string {
+  const num = Number(n);
+  if (!num || !isFinite(num)) return '—';
+  if (num >= 1_000_000) return (num / 1_000_000).toFixed(num >= 10_000_000 ? 0 : 1) + 'M';
+  if (num >= 1_000)     return (num / 1_000).toFixed(num >= 100_000 ? 0 : 1) + 'K';
+  return num.toLocaleString('en-US');
+}
+
+export function expectedTierFromMax(max: number): string | null {
+  if (!max || max <= 0) return null;
+  if (max >= 1_000_000) return 'Tier S';
+  if (max >= 250_000)   return 'Tier 1';
+  if (max >= 50_000)    return 'Tier 2';
+  if (max >= 10_000)    return 'Tier 3';
+  return 'Tier 4';
+}
+
+export function tierReviewFlag(currentTier: string | null | undefined, max: number):
+  'ok' | 'promote' | 'demote' | 'no-data' {
+  const expected = expectedTierFromMax(max);
+  if (!expected || !currentTier) return 'no-data';
+  const order = ['Tier S','Tier 1','Tier 2','Tier 3','Tier 4'];
+  const ci = order.indexOf(String(currentTier).trim());
+  const ei = order.indexOf(expected);
+  if (ci < 0 || ei < 0) return 'no-data';
+  if (ci === ei) return 'ok';
+  return ei < ci ? 'promote' : 'demote';
+}
+
+type FollowerLike = {
+  followers_x?: number | null;
+  followers_ig?: number | null;
+  followers_twitch?: number | null;
+  followers_yt?: number | null;
+  followers_tiktok?: number | null;
+  followers_fb?: number | null;
+};
+
+export function totalReach(p: FollowerLike): number {
+  return (Number(p.followers_x) || 0) +
+         (Number(p.followers_ig) || 0) +
+         (Number(p.followers_twitch) || 0) +
+         (Number(p.followers_yt) || 0) +
+         (Number(p.followers_tiktok) || 0) +
+         (Number(p.followers_fb) || 0);
+}
+
+export function maxPlatformReach(p: FollowerLike): number {
+  return Math.max(
+    Number(p.followers_x) || 0,
+    Number(p.followers_ig) || 0,
+    Number(p.followers_twitch) || 0,
+    Number(p.followers_yt) || 0,
+    Number(p.followers_tiktok) || 0,
+    Number(p.followers_fb) || 0,
+  );
+}
