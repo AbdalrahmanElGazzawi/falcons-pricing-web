@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { ToastProvider } from '@/components/Toast';
 import { LocaleProvider } from '@/lib/i18n/Locale';
 import { ThemeProvider, type Theme } from '@/lib/theme/Theme';
+import { CurrencyProvider, type DisplayCurrency } from '@/lib/currency/Currency';
 import { cookies } from 'next/headers';
 import type { Locale } from '@/lib/i18n/dict';
 
@@ -25,6 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const initialTheme: Theme =
     (cookies().get('falcons_theme')?.value as Theme) === 'dark' ? 'dark' : 'light';
 
+  // Currency cookie — read so SSR matches client choice
+  const ccyCookie = cookies().get('falcons_ccy')?.value;
+  const initialCurrency: DisplayCurrency = ccyCookie === 'USD' ? 'USD' : 'SAR';
+
   return (
     <html lang={initialLocale} dir={dir} data-theme={initialTheme}>
       <head>
@@ -38,7 +43,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-bg text-ink antialiased">
         <ThemeProvider initial={initialTheme}>
           <LocaleProvider initial={initialLocale}>
-            <ToastProvider>{children}</ToastProvider>
+            <CurrencyProvider initialCurrency={initialCurrency}>
+              <ToastProvider>{children}</ToastProvider>
+            </CurrencyProvider>
           </LocaleProvider>
         </ThemeProvider>
       </body>

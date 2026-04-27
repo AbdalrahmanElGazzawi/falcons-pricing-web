@@ -5,8 +5,24 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function fmtMoney(n: number, ccy = 'SAR') {
-  return `${ccy} ${Math.round(n).toLocaleString('en-US')}`;
+/**
+ * Format a SAR-canonical amount, optionally converting to USD using the rate.
+ *   fmtMoney(18000)               → "SAR 18,000"
+ *   fmtMoney(18000, 'USD')        → "$ 4,800"  (defaults to peg 3.75)
+ *   fmtMoney(18000, 'USD', 3.75)  → "$ 4,800"
+ * Saudi riyal is pegged at 3.75 SAR/USD. The rate is fixed; only the choice
+ * of presentation currency is user-controlled.
+ */
+export function fmtMoney(n: number, ccy: string = 'SAR', rate: number = 3.75) {
+  const v = Number(n) || 0;
+  if (ccy === 'USD') {
+    const usd = rate > 0 ? v / rate : v;
+    return `$ ${Math.round(usd).toLocaleString('en-US')}`;
+  }
+  if (ccy === 'AED') {
+    return `AED ${Math.round(v).toLocaleString('en-US')}`;
+  }
+  return `SAR ${Math.round(v).toLocaleString('en-US')}`;
 }
 
 export function fmtPct(n: number, digits = 1) {

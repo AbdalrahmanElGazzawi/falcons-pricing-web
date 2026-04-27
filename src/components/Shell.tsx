@@ -13,6 +13,7 @@ import {
 import { CommandPalette } from './CommandPalette';
 import { LocaleSwitcher } from './LocaleSwitcher';
 import { ThemeToggle } from './ThemeToggle';
+import { CurrencySwitcher } from './CurrencySwitcher';
 import { useLocale } from '@/lib/i18n/Locale';
 
 const WELCOME_KEY = 'falcons_welcome_seen_v1';
@@ -25,8 +26,8 @@ const NAV = (role: UserRole, email: string) => [
   { href: '/inquiries',         key: 'nav.inquiries'  as const, icon: Inbox },
   { href: '/roster/players',    key: 'nav.roster'     as const, icon: Users },
   { href: '/roster/creators',   key: 'nav.creators'   as const, icon: Sparkles },
-  { href: '/admin/roadmap',     key: 'nav.roadmap'    as const, icon: Map },
-  { href: '/welcome',           key: 'nav.about'      as const, icon: HelpCircle },
+  { href: '/roadmap',           key: 'nav.roadmap'    as const, icon: Map },
+  { href: '/about',             key: 'nav.about'      as const, icon: HelpCircle },
   ...(['admin','sales','finance'].includes(role) ? [
     { href: '/admin/sales-log', key: 'nav.sales_log'  as const, icon: ScrollText },
   ] : []),
@@ -207,6 +208,9 @@ export function Shell({
           </div>
           <div className="mt-2">
             <LocaleSwitcher compact />
+          </div>
+          <div className="mt-2 -mx-3">
+            <CurrencySwitcher />
           </div>
           <Link href="/account/password"
             className="mt-2 w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white">
