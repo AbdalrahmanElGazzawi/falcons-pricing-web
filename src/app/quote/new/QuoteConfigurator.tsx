@@ -109,6 +109,7 @@ export function QuoteConfigurator({
     o_lang:  initialEdit?.o_lang  ?? null,
     o_auth:  initialEdit?.o_auth  ?? null,
   });
+  const [isCompanion, setIsCompanion] = useState<boolean>(!!initialEdit?.is_companion);
 
   // Tracks which override values were auto-seeded from the talent record (vs
   // typed manually). Drives the "from <talent>" badge in the override panel
@@ -284,10 +285,11 @@ export function QuoteConfigurator({
           auth: overrides.o_auth  ?? globals.auth,
           obj: globals.obj, conf: globals.conf,
           floorShare, rightsPct: lineAddonsUpliftPct, qty: sel.qty,
+          isCompanion,
         });
         return { key: k, label: d.label, qty: sel.qty, rate: baseFee, ...r };
       });
-  }, [picks, deliverables, selectedTalent, selectedPlayer, selectedCreator, tierMap, overrides, globals, addonsUpliftPct, lineAddonsUpliftPct]);
+  }, [picks, deliverables, selectedTalent, selectedPlayer, selectedCreator, tierMap, overrides, globals, addonsUpliftPct, lineAddonsUpliftPct, isCompanion]);
 
   const previewTotal = previewLines.reduce((s, l) => s + l.finalAmount, 0);
   const selectedCount = previewLines.length;
@@ -331,6 +333,7 @@ export function QuoteConfigurator({
         o_ctype: overrides.o_ctype, o_eng: overrides.o_eng, o_aud: overrides.o_aud,
         o_seas: overrides.o_seas, o_lang: overrides.o_lang, o_auth: overrides.o_auth,
         addon_months: { ...lineAddonMonths },
+        is_companion: isCompanion,
       };
     });
     onCommit(drafts);
@@ -707,6 +710,33 @@ export function QuoteConfigurator({
                         </>
                       );
                     })()}
+                  </div>
+                  {/* Companion / Cameo role — half-rate cap across deliverables + rights */}
+                  <div className="mt-5 rounded-lg border border-line bg-white p-3.5">
+                    <div className="flex items-baseline justify-between gap-3 mb-1.5 flex-wrap">
+                      <div className="font-semibold text-sm text-ink">Companion / Cameo role</div>
+                      <div className="text-[10px] text-mute uppercase tracking-wide">Final × 0.5</div>
+                    </div>
+                    <p className="text-xs text-label leading-relaxed mb-3">
+                      Toggle on when this talent is featured as a guest in <em>another</em> creator&apos;s
+                      content (cameo in their TikTok, podcast, video). The 0.5× applies uniformly across
+                      every selected deliverable AND any usage rights on this line — capped at half because
+                      they&apos;re supporting, not the primary creator.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsCompanion(v => !v)}
+                      className={[
+                        'inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition whitespace-nowrap',
+                        isCompanion
+                          ? 'border-orange-400 bg-orange-50 text-orange-700'
+                          : 'border-line text-label hover:bg-bg',
+                      ].join(' ')}
+                      aria-pressed={isCompanion}
+                    >
+                      <span className={isCompanion ? 'inline-block w-2 h-2 rounded-full bg-orange-500' : 'inline-block w-2 h-2 rounded-full border border-mute'} />
+                      {isCompanion ? 'Companion role · 50% applied to this player' : 'Mark as companion (50%)'}
+                    </button>
                   </div>
                 </div>
               </details>

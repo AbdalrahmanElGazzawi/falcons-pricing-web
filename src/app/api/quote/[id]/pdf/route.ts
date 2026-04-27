@@ -332,8 +332,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     doc.fillColor(INK).font('Helvetica').fontSize(10);
     const tKind = l.talent_type === 'creator' ? 'creator' : 'player';
     const kindBadge = tKind === 'creator' ? 'CREATOR' : 'PLAYER';
-    doc.text(`${l.talent_name} — ${l.platform}`, col.desc, y + 7, { width: tableW * 0.5 });
-    doc.fillColor(MUTE).font('Helvetica').fontSize(7).text(kindBadge, col.desc, y + 21, { width: tableW * 0.5 });
+    doc.text(`${l.talent_name} — ${l.platform}${l.is_companion ? '  ·  COMPANION (½×)' : ''}`, col.desc, y + 7, { width: tableW * 0.5 });
+    if (l.is_companion) {
+      doc.fillColor('#C2410C').font('Helvetica-Bold').fontSize(7).text(`${kindBadge} · COMPANION ROLE — half-rate cap`, col.desc, y + 21, { width: tableW * 0.5 });
+    } else {
+      doc.fillColor(MUTE).font('Helvetica').fontSize(7).text(kindBadge, col.desc, y + 21, { width: tableW * 0.5 });
+    }
     doc.fillColor(INK).font('Helvetica').fontSize(10);
     doc.text(fmtFX(Number(l.final_unit || 0), currency, usdRate), col.unit, y + 9, { width: tableW * 0.16, align: 'right' });
     doc.text(`${Number(l.qty || 1)}`, col.qty, y + 9, { width: tableW * 0.07, align: 'right' });
@@ -354,7 +358,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10).text('PRICING METHODOLOGY', methX, y);
   y += 14;
   doc.fillColor(LABEL).font('Helvetica').fontSize(8.5);
-  const formulaText = 'Final = MAX(Social Price, Authority Floor) × Confidence Cap × (1 + Rights Uplift)';
+  const hasCompanion = (lines || []).some((l: any) => l.is_companion);
+  const formulaText = 'Final = MAX(Social Price, Authority Floor) × Confidence Cap × (1 + Rights Uplift)' + (hasCompanion ? ' × 0.5 (Companion lines)' : '');
   const formulaHeight = doc.heightOfString(formulaText, { width: methW, lineGap: 1 });
   doc.text(formulaText, methX, y, { width: methW, lineGap: 1 });
   y += formulaHeight + 8;
