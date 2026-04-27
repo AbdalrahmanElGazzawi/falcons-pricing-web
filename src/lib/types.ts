@@ -103,6 +103,8 @@ export interface Creator {
   rate_twitch_kick_live: number;
   rate_kick_irl: number;
   rate_telegram: number;
+  rate_usage_monthly: number;
+  rate_promo_monthly: number;
   default_audience?: number;
   default_engagement?: number;
   default_authority?: number;
@@ -247,6 +249,9 @@ export const CREATOR_PLATFORMS = [
   { key: 'rate_kick_irl',          label: 'Kick IRL',            group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_event_snap',        label: 'Event + Snap',        group: 'On-Ground & Events' as PlatformGroup,  manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_telegram',          label: 'Telegram Broadcast',  group: 'Other' as PlatformGroup,               manual: false, suggestedRange: null as null | [number, number] },
+  // Continuity & Rights — qty = number of months. Per-creator rate. Sales sets months as the quantity.
+  { key: 'rate_usage_monthly',     label: '1-Month Usage Rights',                group: 'Continuity & Rights' as PlatformGroup,  manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_promo_monthly',     label: '1-Month Promotion (channel rotation)', group: 'Continuity & Rights' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
   // Campaign archetypes — manual entries for creator-led packages.
   // SAR ranges based on Saudi market norms; refine when Shikenso data lands.
   { key: 'archetype_lifestyle',    label: 'Lifestyle Campaign',  group: 'Campaign Archetypes' as PlatformGroup, manual: true,  suggestedRange: [15000, 50000]  as [number, number] },
