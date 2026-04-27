@@ -109,8 +109,9 @@ export function computeQuoteTotals(params: {
 /** Human-friendly axis option catalogues (label + factor). */
 export const AXIS_OPTIONS = {
   contentType: [
-    { label: 'Organic / Creator-led', factor: 0.85 },
-    { label: 'Integrated (Talent-led)', factor: 1.00 },
+    { label: 'Companion / Cameo (50%)',  factor: 0.50 },  // Talent featured as a guest in someone else's content. Half-rate, capped.
+    { label: 'Organic / Creator-led',    factor: 0.85 },
+    { label: 'Integrated (Talent-led)',  factor: 1.00 },
     { label: 'Sponsored (Client script)', factor: 1.15 },
   ],
   engagement: [
