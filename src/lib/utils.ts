@@ -65,3 +65,4 @@ export function fmtCurrency(sar: number, ccy: string = 'SAR', rate: number = 3.7
   return `SAR ${Math.round(n).toLocaleString('en-US')}`;
 }
 
+// trigger rebuild 1777286302
