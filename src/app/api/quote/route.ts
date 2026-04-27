@@ -49,6 +49,7 @@ export async function POST(req: Request) {
     line_seasonality: l.line_seasonality ?? null,
     line_language: l.line_language ?? null,
     line_authority: l.line_authority ?? null,
+    is_companion: !!l.is_companion,
     // Computed snapshot
     social_price: l.social_price ?? 0,
     floor_price: l.floor_price ?? 0,

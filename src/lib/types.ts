@@ -182,6 +182,7 @@ export interface QuoteLine {
   qty: number;
   final_unit: number;
   final_amount: number;
+  is_companion?: boolean;
 }
 
 export type PlatformGroup = 'Social Media' | 'Live & Stream' | 'On-Ground & Events' | 'Other' | 'Campaign Archetypes';

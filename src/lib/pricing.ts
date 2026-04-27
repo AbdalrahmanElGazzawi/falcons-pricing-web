@@ -27,6 +27,13 @@ export interface LineInput {
   floorShare?: number;  // tier floor share
   rightsPct?: number;   // add-on uplift (cumulative)
   qty?: number;         // quantity
+  /**
+   * Companion role flag. When true, the talent is appearing as a featured guest
+   * in another creator's content (cameo, supporting role, walk-on). Final unit
+   * price is multiplied by 0.5 — half-rate, capped, applied uniformly across
+   * whatever deliverable the line represents. Composes with all other axes.
+   */
+  isCompanion?: boolean;
 }
 
 export interface LineOutput {
@@ -80,7 +87,8 @@ export function computeLine(p: LineInput): LineOutput {
 
   const preAddOn = Math.max(socialPrice, floorPrice);
   const finalUnitOrganic = Math.round(preAddOn * confCap);
-  const finalUnit = Math.round(finalUnitOrganic * (1 + (p.rightsPct ?? 0)));
+  const withRights = Math.round(finalUnitOrganic * (1 + (p.rightsPct ?? 0)));
+  const finalUnit = p.isCompanion ? Math.round(withRights * 0.5) : withRights;
   const finalAmount = Math.round(finalUnit * qty);
 
   return {
@@ -109,9 +117,8 @@ export function computeQuoteTotals(params: {
 /** Human-friendly axis option catalogues (label + factor). */
 export const AXIS_OPTIONS = {
   contentType: [
-    { label: 'Companion / Cameo (50%)',  factor: 0.50 },  // Talent featured as a guest in someone else's content. Half-rate, capped.
-    { label: 'Organic / Creator-led',    factor: 0.85 },
-    { label: 'Integrated (Talent-led)',  factor: 1.00 },
+    { label: 'Organic / Creator-led', factor: 0.85 },
+    { label: 'Integrated (Talent-led)', factor: 1.00 },
     { label: 'Sponsored (Client script)', factor: 1.15 },
   ],
   engagement: [

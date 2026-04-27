@@ -21,6 +21,9 @@ export type LineDraft = {
   o_auth: number | null;
   // Per-line rights packages (each line has its own addon snapshot)
   addon_months: Record<number, number>;
+  // True when the talent is appearing as a featured guest / supporting role in
+  // another creator's content (cameo). Engine multiplies finalUnit by 0.5.
+  is_companion?: boolean;
 };
 
 export const newUid = () => Math.random().toString(36).slice(2, 9);

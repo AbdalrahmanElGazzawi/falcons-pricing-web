@@ -90,6 +90,7 @@ type WizardState = {
   o_seas: number | null;
   o_lang: number | null;
   o_auth: number | null;
+  is_companion: boolean;
 };
 
 export function PricingWizard({
@@ -130,6 +131,7 @@ export function PricingWizard({
         o_seas: initial.o_seas,
         o_lang: initial.o_lang,
         o_auth: initial.o_auth,
+        is_companion: !!initial.is_companion,
       };
     }
     return {
@@ -137,6 +139,7 @@ export function PricingWizard({
       talent_type: null, tier_code: null, game: null, team: null,
       talent_id: null, platform_key: null, qty: 1, manual_rate: null,
       o_ctype: null, o_eng: null, o_aud: null, o_seas: null, o_lang: null, o_auth: null,
+      is_companion: false,
     };
   });
 
@@ -188,6 +191,7 @@ export function PricingWizard({
         o_ctype: state.o_ctype, o_eng: state.o_eng, o_aud: state.o_aud,
         o_seas: state.o_seas, o_lang: state.o_lang, o_auth: state.o_auth,
         addon_months: initial?.addon_months ?? {},
+        is_companion: state.is_companion,
       };
     }
     if (state.talent_type === 'creator' && selectedCreator) {
@@ -208,6 +212,7 @@ export function PricingWizard({
         o_ctype: state.o_ctype, o_eng: state.o_eng, o_aud: state.o_aud,
         o_seas: state.o_seas, o_lang: state.o_lang, o_auth: state.o_auth,
         addon_months: initial?.addon_months ?? {},
+        is_companion: state.is_companion,
       };
     }
     return null;
@@ -229,6 +234,7 @@ export function PricingWizard({
       floorShare: draft.floorShare,
       rightsPct: addonsUpliftPct,
       qty: draft.qty,
+      isCompanion: !!draft.is_companion,
     });
   }, [draft, globals, addonsUpliftPct]);
 
@@ -888,6 +894,32 @@ function StepAxes({
           onChange={v => patch({ o_auth: v })}
         />
 
+        <div className="border-t border-line pt-4">
+          <div className="flex items-baseline justify-between gap-3 mb-2 flex-wrap">
+            <div className="font-medium text-sm text-ink">Companion / Cameo role</div>
+            <div className="text-[10px] text-mute uppercase tracking-wide">Final unit × 0.5</div>
+          </div>
+          <p className="text-xs text-label leading-relaxed mb-3">
+            Toggle this on when the talent is featured as a guest in <em>another</em> creator&apos;s content
+            (cameo in someone else&apos;s TikTok / podcast / video). Half-rate cap applies uniformly across whatever
+            deliverable this line carries — they&apos;re not the primary creator, just supporting.
+          </p>
+          <button
+            type="button"
+            onClick={() => patch({ is_companion: !state.is_companion })}
+            className={[
+              'inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition whitespace-nowrap',
+              state.is_companion
+                ? 'border-orange-400 bg-orange-50 text-orange-700'
+                : 'border-line text-label hover:bg-bg',
+            ].join(' ')}
+            aria-pressed={state.is_companion}
+          >
+            <span className={state.is_companion ? 'inline-block w-2 h-2 rounded-full bg-orange-500' : 'inline-block w-2 h-2 rounded-full border border-mute'} />
+            {state.is_companion ? 'Companion role · 50% applied' : 'Mark as companion (50%)'}
+          </button>
+        </div>
+
         <div className="flex items-center justify-between pt-2">
           <button onClick={onBack} className="btn btn-ghost text-sm">
             <ArrowLeft size={14} /> Back
@@ -1000,6 +1032,7 @@ function StepReview({
             <SumRow label="Content type" value={overrideLabel(state.o_ctype)} />
             <SumRow label="Language"     value={overrideLabel(state.o_lang)} />
             <SumRow label="Authority"    value={overrideLabel(state.o_auth)} />
+            <SumRow label="Companion role" value={state.is_companion ? '✓ Yes — 50% applied' : 'No'} />
           </div>
         ) : (
           <div className="rounded-lg border border-line bg-bg p-4 text-sm text-mute">

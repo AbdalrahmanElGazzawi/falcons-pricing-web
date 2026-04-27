@@ -388,6 +388,7 @@ export function QuoteBuilder({
           }, 0);
         })(),
         qty: l.qty,
+        isCompanion: !!l.is_companion,
       });
       return { ...l, ...r };
     });
@@ -452,6 +453,7 @@ export function QuoteBuilder({
             line_seasonality: r.o_seas,
             line_language: r.o_lang,
             line_authority: r.o_auth,
+            is_companion: !!r.is_companion,
             addon_months: (r as any).addon_months || {},
             rights_pct: (() => {
               const am = (r as any).addon_months || {};
@@ -923,7 +925,7 @@ export function QuoteBuilder({
                           title="Edit line in wizard"
                         >
                           <div className="font-medium text-ink group-hover:underline">{r.talent_name}</div>
-                          <div className="text-xs text-mute capitalize flex items-center gap-2">
+                          <div className="text-xs text-mute capitalize flex items-center gap-2 flex-wrap">
                             <span>{r.talent_type}</span>
                             {overrideCount > 0 && (
                               <span
@@ -931,6 +933,14 @@ export function QuoteBuilder({
                                 title={`Overridden axes:\n${overrideAxisNames(r).join(', ')}\n\nClick the row to edit overrides in the wizard.`}
                               >
                                 {overrideCount} override{overrideCount > 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {r.is_companion && (
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[10px] font-semibold whitespace-nowrap"
+                                title="Companion / Cameo role — final unit price multiplied by 0.5 (talent featured as guest in another creator's content)"
+                              >
+                                ½× Companion
                               </span>
                             )}
                           </div>
