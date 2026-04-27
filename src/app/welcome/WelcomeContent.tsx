@@ -125,6 +125,52 @@ export function WelcomeContent({
         </div>
       </section>
 
+      {/* ─── The logic in 30 seconds (entry brief) ─── */}
+      <section className="px-4 sm:px-6">
+        <h2 className="text-xs uppercase tracking-wider text-label font-semibold mb-3">
+          The logic, in 30 seconds
+        </h2>
+        <div className="card overflow-hidden border-l-4 border-l-green">
+          <div className="p-5 sm:p-6 border-b border-line bg-greenSoft/30">
+            <div className="text-base sm:text-lg font-semibold text-ink leading-snug">
+              How a price gets made — and why it can be trusted.
+            </div>
+            <p className="text-sm text-label mt-1.5 max-w-2xl">
+              Four rules carry the whole system. If you understand these, you understand
+              every number that leaves this building.
+            </p>
+          </div>
+          <div className="divide-y divide-line">
+            <LogicRow
+              n={1}
+              label="Data, not gut."
+              body="Every price starts from real follower counts, real engagement, and tier floors set by leadership. The wizard adds nothing a spreadsheet couldn't justify."
+            />
+            <LogicRow
+              n={2}
+              label="Nine axes, one number."
+              body="Content type · audience · engagement · seasonality · language · authority · objective weight · confidence · rights — multiplied together — produce one auditable price per line."
+            />
+            <LogicRow
+              n={3}
+              label="Floors protect us."
+              body="A tier floor stops the engine from underpricing anchor talent. A confidence cap stops it from overpricing on shaky measurement. Either way, the price stays defensible."
+            />
+            <LogicRow
+              n={4}
+              label="Every quote is auditable."
+              body="Approvals, edits, sends, brand decisions — all logged with who, what, when. Finance and legal stop chasing screenshots."
+            />
+          </div>
+          <div className="px-5 sm:px-6 py-3.5 bg-bg/60 text-xs text-label flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-ink">In one line:</span>
+            <span>
+              Final = MAX(SocialPrice, AuthorityFloor) × ConfidenceCap × (1 + RightsUplift) — and every number above is sourced.
+            </span>
+          </div>
+        </div>
+      </section>
+
       {/* ─── What this is ─── */}
       <section className="px-4 sm:px-6">
         <h2 className="text-xs uppercase tracking-wider text-label font-semibold mb-3">What is Pricing OS?</h2>
@@ -299,6 +345,20 @@ function ConceptCard({ title, body }: { title: string; body: string }) {
     <div className="card card-p border-l-4 border-l-green">
       <div className="font-semibold text-ink mb-1">{title}</div>
       <p className="text-sm text-label leading-relaxed">{body}</p>
+    </div>
+  );
+}
+
+function LogicRow({ n, label, body }: { n: number; label: string; body: string }) {
+  return (
+    <div className="px-5 sm:px-6 py-4 sm:py-5 flex items-start gap-4 sm:gap-5">
+      <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-navy text-white grid place-items-center font-extrabold text-base sm:text-lg shadow-card tabular-nums">
+        {n}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm sm:text-base font-semibold text-ink leading-tight">{label}</div>
+        <p className="text-sm text-label leading-relaxed mt-1">{body}</p>
+      </div>
     </div>
   );
 }
