@@ -20,8 +20,8 @@ export default async function RoadmapPage() {
   return (
     <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
-        title="Product Roadmap"
-        subtitle="Where the Pricing OS is today, what's building next, and what's on the horizon — at a glance."
+        title="Pricing OS Roadmap"
+        subtitle="Where the methodology is today, what Shikenso unlocks next, and the steady-state cadence — anchored to SOT v1.0."
         action={isSuperAdminEmail(profile.email) ? (
           <Link href="/admin/pricing#roadmap" className="btn btn-ghost text-sm">Edit in Pricing OS →</Link>
         ) : undefined}

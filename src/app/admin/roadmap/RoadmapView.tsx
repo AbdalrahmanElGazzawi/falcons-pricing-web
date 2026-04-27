@@ -4,7 +4,7 @@ import {
   CheckCircle2, TrendingUp, Calculator, Crown, Trophy, Zap, Layers, Image as ImageIcon,
   Send, Bell, Users, GitBranch, Map, Sparkles, Anchor, Lightbulb, AlertCircle,
   Clock, Heart, Globe, Calendar, FileText, Languages, Award, Eye, Target,
-  Activity, Compass, Filter, ChevronDown, type LucideIcon,
+  Activity, Compass, Filter, ChevronDown, Database, ShieldCheck, type LucideIcon,
 } from 'lucide-react';
 
 // ─── icon registry ─────────────────────────────────────────────────────────
@@ -12,7 +12,7 @@ const ICONS: Record<string, LucideIcon> = {
   CheckCircle2, TrendingUp, Calculator, Crown, Trophy, Zap, Layers, Image: ImageIcon,
   Send, Bell, Users, GitBranch, Map, Sparkles, Anchor, Lightbulb, AlertCircle,
   Clock, Heart, Globe, Calendar, FileText, Languages, Award, Eye, Target,
-  Activity, Compass,
+  Activity, Compass, Database, ShieldCheck,
 };
 
 // ─── status taxonomy (derived from `tone`) ─────────────────────────────────
@@ -67,8 +67,10 @@ export function RoadmapView({ entries }: { entries: Entry[] }) {
   return (
     <div className="space-y-10">
       <Brief />
+      <ConfidenceSnapshot />
       <PhasesSection phases={phases} />
       <EvolutionSection items={evolution} />
+      <SourceFooter />
     </div>
   );
 }
@@ -82,13 +84,19 @@ function Brief() {
           <Compass size={18} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-base font-semibold text-ink">How to read this roadmap</div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="text-base font-semibold text-ink">How to read this roadmap</div>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-navy/10 text-navy border-navy/30">
+              SOT v1.0 · 27 Apr 2026
+            </span>
+          </div>
           <p className="text-sm text-label mt-1.5 leading-relaxed max-w-3xl">
-            The Pricing OS rolls out in <strong className="text-ink">phases</strong> — strategic
-            gates that unlock new pricing inputs (data sources, automations, market expansions).
-            Between phases we ship <strong className="text-ink">evolution components</strong> —
-            cross-cutting upgrades that remove friction without changing the model. Phases drive
-            <em> what we can price</em>; evolution components drive <em>how easily we price it</em>.
+            The Pricing OS rolls out in three <strong className="text-ink">states</strong> — Today
+            (methodology engine live, ~22 talents data-driven), <em>With Shikenso</em> (live data
+            for ~70% of roster, this Thursday onward), and <em>Steady State</em> (operational
+            cadence, ≈ July 2026). Between states we ship <strong className="text-ink">evolution
+            components</strong> — cross-cutting upgrades that don&rsquo;t change the formula, only the
+            data quality feeding it.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-[11px] uppercase tracking-wider text-label font-semibold mr-1">Status key</span>
@@ -105,17 +113,54 @@ function Brief() {
   );
 }
 
+// ─── 1b. Confidence snapshot — SOT receipts in numbers ─────────────────────
+function ConfidenceSnapshot() {
+  const cards: { label: string; value: string; sub: string; tone: 'green'|'amber'|'navy'|'mute' }[] = [
+    { label: 'Talents repriced',   value: '202',     sub: '185 players + 17 creators · Migration 019', tone: 'green' },
+    { label: 'Lines audited',      value: '2,879',   sub: '196 talents × 16 deliverables', tone: 'navy' },
+    { label: 'Under-priced fixed', value: '2,342',   sub: '>25% under methodology', tone: 'amber' },
+    { label: 'Tier upgrades',      value: '16',      sub: 'All upward · data-driven', tone: 'green' },
+  ];
+  const toneCls = (t: typeof cards[number]['tone']) =>
+    t === 'green' ? 'border-l-green' : t === 'amber' ? 'border-l-amber' : t === 'navy' ? 'border-l-navy' : 'border-l-mute';
+
+  return (
+    <section>
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-9 h-9 rounded-lg bg-greenSoft text-greenDark grid place-items-center mt-0.5">
+          <ShieldCheck size={18} />
+        </div>
+        <div>
+          <div className="text-base font-semibold text-ink leading-tight">Audit snapshot</div>
+          <div className="text-xs text-label mt-1 max-w-2xl">
+            One-glance proof the system is grounded. Source: SOT v1.0 Section 12 · April 27 2026 audit.
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {cards.map(c => (
+          <div key={c.label} className={`card p-4 border-l-4 ${toneCls(c.tone)}`}>
+            <div className="text-[11px] uppercase tracking-wider text-label font-semibold">{c.label}</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-ink leading-none mt-1 tabular-nums">{c.value}</div>
+            <div className="text-[11px] text-mute mt-1">{c.sub}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ─── 2. Phases — stepper + accordion cards ─────────────────────────────────
 function PhasesSection({ phases }: { phases: Entry[] }) {
   if (phases.length === 0) {
     return (
       <SectionFrame
         icon={Map}
-        title="Phases"
-        subtitle="The big strategic moves. Each phase ships as one strategic unlock."
+        title="States"
+        subtitle="The big strategic moves. Each state ships as one strategic unlock."
       >
         <div className="card card-p text-sm text-mute text-center">
-          No phases yet — super admin can add them in the Pricing OS console.
+          No states yet — super admin can add them in the Pricing OS console.
         </div>
       </SectionFrame>
     );
@@ -124,8 +169,8 @@ function PhasesSection({ phases }: { phases: Entry[] }) {
   return (
     <SectionFrame
       icon={Map}
-      title="Phases"
-      subtitle="One phase = one strategic unlock. Click a step on the map to jump to its detail."
+      title="States"
+      subtitle="One state = one strategic unlock. Click a step on the map to jump to its detail."
     >
       <PhaseStepper phases={phases} />
       <div className="mt-5 space-y-3">
@@ -202,7 +247,7 @@ function PhaseAccordion({ entry, index, total }: { entry: Entry; index: number; 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] uppercase tracking-wider text-label font-semibold">
-              Phase {index + 1}
+              State {index + 1}
             </span>
             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${meta.pill}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
@@ -246,7 +291,7 @@ function EvolutionSection({ items }: { items: Entry[] }) {
       <SectionFrame
         icon={Compass}
         title="Evolution components"
-        subtitle="Cross-cutting upgrades that ship between phases."
+        subtitle="Cross-cutting upgrades that ship between states."
       >
         <div className="card card-p text-sm text-mute text-center">
           No evolution components yet.
@@ -259,7 +304,7 @@ function EvolutionSection({ items }: { items: Entry[] }) {
     <SectionFrame
       icon={Compass}
       title="Evolution components"
-      subtitle="Cross-cutting upgrades that remove friction or expand what the engine can express."
+      subtitle="Cross-cutting upgrades. The methodology engine doesn't change — only the data quality and rights bands feeding it."
     >
       <div className="card p-3 sm:p-4 mb-4 flex items-center gap-2 flex-wrap">
         <Filter size={14} className="text-label ml-1" />
@@ -354,6 +399,35 @@ function EvolutionCard({ entry }: { entry: Entry }) {
         {entry.body}
       </div>
     </details>
+  );
+}
+
+// ─── 4. Source footer — anchor every claim ────────────────────────────────
+function SourceFooter() {
+  return (
+    <section className="rounded-2xl border border-line bg-bg/40 p-5 text-xs text-label leading-relaxed">
+      <div className="flex items-start gap-3">
+        <div className="w-7 h-7 rounded-md bg-navy/10 text-navy grid place-items-center shrink-0">
+          <FileText size={14} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-ink font-semibold mb-1">Sources backing every number on this page</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+            <span>· Falcons-Pricing-SOT-v1_0.docx (27 Apr 2026)</span>
+            <span>· Newzoo Global Esports Report 2025</span>
+            <span>· Nielsen Esports Audience Report 2025</span>
+            <span>· Influencity 2026 Rate Card Benchmarks</span>
+            <span>· StreamElements State of Streaming 2025</span>
+            <span>· Porter Wills Esports Marketing Guide 2025</span>
+            <span>· Shikenso Sponsorship ROI Guide 2025</span>
+            <span>· WME / CAA / Wasserman agency practice</span>
+          </div>
+          <div className="mt-2 text-mute">
+            Methodology engine: locked. Tier baselines, platform ratios, multiplier ranges, Authority Floor logic — all calibrated against industry benchmarks and held constant across states.
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
