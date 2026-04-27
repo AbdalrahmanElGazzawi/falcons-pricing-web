@@ -12,7 +12,7 @@ import { useToast } from '@/components/Toast';
 import {
   Users, Rows2, Rows3, Rows4, Pencil, Check, X as XIcon,
   Trophy, Clipboard, Briefcase, ScanSearch, Megaphone, Layers,
-  Twitch, Youtube, Instagram, Music2, AlertTriangle,
+  Twitch, Youtube, Instagram, Music2, AlertTriangle, Radio,
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
 
@@ -478,6 +478,7 @@ function FollowerCluster({ p }: { p: Player }) {
     { key: 'twitch',    icon: Twitch,    n: Number(p.followers_twitch) || 0, label: 'Twitch' },
     { key: 'youtube',   icon: Youtube,   n: Number(p.followers_yt)     || 0, label: 'YouTube' },
     { key: 'tiktok',    icon: Music2,    n: Number(p.followers_tiktok) || 0, label: 'TikTok' },
+    { key: 'kick',      icon: Radio,     n: Number(p.followers_kick)   || 0, label: 'Kick' },
   ].filter(i => i.n > 0).sort((a, b) => b.n - a.n);
   if (items.length === 0) return <span className="text-mute text-xs">no data</span>;
   return (

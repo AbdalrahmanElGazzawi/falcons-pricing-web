@@ -45,6 +45,8 @@ export interface Player {
   rate_fb_post: number;
   rate_twitch_stream: number;
   rate_twitch_integ: number;
+  rate_kick_stream: number;
+  rate_kick_integ: number;
   rate_irl: number;
   commission: number;
   markup: number;
@@ -72,6 +74,7 @@ export interface Player {
   followers_x?: number;
   followers_fb?: number;
   followers_snap?: number;
+  followers_kick?: number;
   // Agency representation
   agency_status?: 'direct' | 'agency' | 'unknown';
   agency_name?: string | null;
@@ -206,6 +209,8 @@ export const PLAYER_PLATFORMS = [
   // Live & Stream
   { key: 'rate_twitch_stream', label: 'Twitch Stream 2h',   group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_twitch_integ', label: 'Twitch Integration',  group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_kick_stream',  label: 'Kick Stream 2h',      group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_kick_integ',   label: 'Kick Integration',    group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
   // On-Ground & Events
   { key: 'rate_irl',           label: 'IRL Appearance',     group: 'On-Ground & Events' as PlatformGroup,  manual: false, suggestedRange: null as null | [number, number] },
   // Manual entries — suggestedRange is the SAR range to anchor sales when typing.

@@ -102,6 +102,7 @@ type FollowerLike = {
   followers_twitch?: number | null;
   followers_yt?: number | null;
   followers_tiktok?: number | null;
+  followers_kick?: number | null;
   followers_fb?: number | null;
 };
 
@@ -111,6 +112,7 @@ export function totalReach(p: FollowerLike): number {
          (Number(p.followers_twitch) || 0) +
          (Number(p.followers_yt) || 0) +
          (Number(p.followers_tiktok) || 0) +
+         (Number(p.followers_kick) || 0) +
          (Number(p.followers_fb) || 0);
 }
 
@@ -121,6 +123,7 @@ export function maxPlatformReach(p: FollowerLike): number {
     Number(p.followers_twitch) || 0,
     Number(p.followers_yt) || 0,
     Number(p.followers_tiktok) || 0,
+    Number(p.followers_kick) || 0,
     Number(p.followers_fb) || 0,
   );
 }
