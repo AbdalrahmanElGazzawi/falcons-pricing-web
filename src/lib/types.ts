@@ -47,6 +47,8 @@ export interface Player {
   rate_twitch_integ: number;
   rate_kick_stream: number;
   rate_kick_integ: number;
+  rate_usage_monthly: number;
+  rate_promo_monthly: number;
   rate_irl: number;
   commission: number;
   markup: number;
@@ -185,7 +187,7 @@ export interface QuoteLine {
   is_companion?: boolean;
 }
 
-export type PlatformGroup = 'Social Media' | 'Live & Stream' | 'On-Ground & Events' | 'Other' | 'Campaign Archetypes';
+export type PlatformGroup = 'Social Media' | 'Live & Stream' | 'On-Ground & Events' | 'Continuity & Rights' | 'Other' | 'Campaign Archetypes';
 
 /**
  * Player deliverables. `manual: true` means there's no fixed per-player rate
@@ -214,6 +216,9 @@ export const PLAYER_PLATFORMS = [
   { key: 'rate_kick_integ',   label: 'Kick Integration',    group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
   // On-Ground & Events
   { key: 'rate_irl',           label: 'IRL Appearance',     group: 'On-Ground & Events' as PlatformGroup,  manual: false, suggestedRange: null as null | [number, number] },
+  // Continuity & Rights — qty = number of months. Per-talent rate. Sales sets months as the quantity.
+  { key: 'rate_usage_monthly', label: '1-Month Usage Rights', group: 'Continuity & Rights' as PlatformGroup,  manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_promo_monthly', label: '1-Month Promotion (channel rotation)', group: 'Continuity & Rights' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
   // Manual entries — suggestedRange is the SAR range to anchor sales when typing.
   // Sourced from v7 methodology hourly-cost tables + the Falcons Rate Cards.
   { key: 'manual_podcast',     label: 'Podcast Guesting',    group: 'On-Ground & Events' as PlatformGroup, manual: true, suggestedRange: [2000, 8000]   as [number, number] },
