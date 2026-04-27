@@ -335,9 +335,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     doc.text(`${l.talent_name} — ${l.platform}`, col.desc, y + 7, { width: tableW * 0.5 });
     doc.fillColor(MUTE).font('Helvetica').fontSize(7).text(kindBadge, col.desc, y + 21, { width: tableW * 0.5 });
     doc.fillColor(INK).font('Helvetica').fontSize(10);
-    doc.text(fmtMoney(Number(l.final_unit || 0), currency), col.unit, y + 9, { width: tableW * 0.16, align: 'right' });
+    doc.text(fmtFX(Number(l.final_unit || 0), currency, usdRate), col.unit, y + 9, { width: tableW * 0.16, align: 'right' });
     doc.text(`${Number(l.qty || 1)}`, col.qty, y + 9, { width: tableW * 0.07, align: 'right' });
-    doc.text(fmtMoney(Number(l.final_amount || 0), currency), col.amt, y + 9, { width: colEnd - col.amt, align: 'right' });
+    doc.text(fmtFX(Number(l.final_amount || 0), currency, usdRate), col.amt, y + 9, { width: colEnd - col.amt, align: 'right' });
     y += rowH;
   });
   if (!lines || lines.length === 0) {
