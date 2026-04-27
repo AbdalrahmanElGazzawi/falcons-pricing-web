@@ -25,7 +25,7 @@ export default async function CalculatorPage() {
     <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title="Quick Estimate"
-        subtitle="Step 0 — answer a DM, scope a brief, sanity-check a number. No client info, no save, no PDF. When the deal is real, click \"Send to quote\" and the basket carries straight into /quote/new with all the multipliers preserved."
+        subtitle={`Step 0 — answer a DM, scope a brief, sanity-check a number. No client info, no save, no PDF. When the deal is real, click "Send to quote" and the basket carries straight into /quote/new with all the multipliers preserved.`}
       />
       <CalcView
         players={players ?? []}
