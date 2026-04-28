@@ -63,6 +63,7 @@ export function RosterOverview({
   const [tier, setTier] = useState('');
   const [game, setGame] = useState('');
   const [team, setTeam] = useState('');
+  const [country, setCountry] = useState('');
   const [density, setDensity] = useState<Density>('comfortable');
   const [reviewOnly, setReviewOnly] = useState(false);
 
@@ -77,6 +78,16 @@ export function RosterOverview({
   const tabMatch = ROLE_GROUPS.find(g => g.key === tab) ?? ROLE_GROUPS[0];
   const [ccy] = useDisplayCurrency();
   const games = useMemo(() => Array.from(new Set(players.map(p => p.game).filter(Boolean))).sort() as string[], [players]);
+  const countries = useMemo(() => {
+    // Collapse 'Saudi' / 'Saudi Arabia' to a single 'Saudi Arabia' entry so the
+    // dropdown isn't doubled up. Anything else just trims and stays as-is.
+    const norm = (raw: string | null | undefined) => {
+      const v = (raw ?? '').trim();
+      if (!v) return '';
+      return v.toLowerCase() === 'saudi' ? 'Saudi Arabia' : v;
+    };
+    return Array.from(new Set(players.map(p => norm(p.nationality)).filter(Boolean))).sort() as string[];
+  }, [players]);
   const teams = useMemo(() => {
     const set = new Set(players.filter(p => !game || p.game === game).map(p => p.team).filter(Boolean));
     return Array.from(set).sort() as string[];
@@ -89,6 +100,16 @@ export function RosterOverview({
       if (tier && p.tier_code !== tier) return false;
       if (game && p.game !== game) return false;
       if (team && p.team !== team) return false;
+      if (country) {
+        const nat = (p.nationality ?? '').trim();
+        // 'Saudi Arabia' selection matches both 'Saudi' and 'Saudi Arabia'
+        const target = country.toLowerCase();
+        if (target === 'saudi arabia') {
+          if (!nat.toLowerCase().startsWith('saudi')) return false;
+        } else if (nat.toLowerCase() !== target) {
+          return false;
+        }
+      }
       if (reviewOnly) {
         const f = tierReviewFlag(p.tier_code, maxPlatformReach(p));
         if (f !== 'promote' && f !== 'demote') return false;
@@ -99,7 +120,7 @@ export function RosterOverview({
       }
       return true;
     });
-  }, [players, q, tier, game, team, tabMatch, reviewOnly]);
+  }, [players, q, tier, game, team, country, tabMatch, reviewOnly]);
 
   const reviewFlagCount = useMemo(() => players.filter(p => {
     const f = tierReviewFlag(p.tier_code, maxPlatformReach(p));
@@ -174,6 +195,10 @@ export function RosterOverview({
           <option value="">All teams</option>
           {teams.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
+        <select value={country} onChange={e => setCountry(e.target.value)} className="input max-w-[180px]">
+          <option value="">All countries</option>
+          {countries.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
         <select value={tier} onChange={e => setTier(e.target.value)} className="input max-w-[160px]">
           <option value="">All tiers</option>
           {tiers.map(t => <option key={t.code} value={t.code}>{t.code} · {t.label}</option>)}
@@ -210,8 +235,8 @@ export function RosterOverview({
           <EmptyState
             icon={Users}
             title="No matches"
-            body={q || tier || game || team || tab !== 'all' ? 'Try clearing your filters or switching tabs.' : 'No active roster members yet.'}
-            action={isAdmin && tab === 'all' && !q && !tier && !game && !team
+            body={q || tier || game || team || country || tab !== 'all' ? 'Try clearing your filters or switching tabs.' : 'No active roster members yet.'}
+            action={isAdmin && tab === 'all' && !q && !tier && !game && !team && !country
               ? { label: 'Add roster member', href: '/admin/players/new' }
               : undefined}
           />
