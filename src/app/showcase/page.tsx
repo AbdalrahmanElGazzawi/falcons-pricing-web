@@ -32,7 +32,12 @@ export default async function ShowcasePage() {
       .eq('is_active', true),
     supabase
       .from('creators')
-      .select('id, nickname, tier_code, rate_ig_reels, rate_yt_full'),
+      .select('id, nickname, full_name, nationality, tier_code, score, ' +
+              'rate_ig_reels, rate_yt_full, rate_yt_shorts, rate_tiktok_ours, rate_twitch_kick_live, ' +
+              'handle_ig, handle_x, handle_yt, handle_tiktok, handle_twitch, ' +
+              'followers_ig, followers_x, followers_yt, followers_tiktok, followers_twitch, ' +
+              'notes, link, is_active')
+      .or('is_active.is.null,is_active.eq.true'),
   ]);
 
   return (

@@ -110,6 +110,19 @@ export interface Creator {
   default_authority?: number;
   default_language?: number;
   default_seasonality?: number;
+  full_name?: string | null;
+  nationality?: string | null;
+  handle_ig?: string | null;
+  handle_x?: string | null;
+  handle_yt?: string | null;
+  handle_tiktok?: string | null;
+  handle_twitch?: string | null;
+  followers_ig?: number | null;
+  followers_x?: number | null;
+  followers_yt?: number | null;
+  followers_tiktok?: number | null;
+  followers_twitch?: number | null;
+  is_active?: boolean | null;
   notes?: string;
   link?: string;
 }

@@ -18,7 +18,18 @@ type Player = {
   followers_tiktok: number | null; followers_x: number | null; followers_fb: number | null; followers_snap: number | null;
   instagram: string | null; twitch: string | null; youtube: string | null; tiktok: string | null; x_handle: string | null;
 };
-type Creator = { id: number; nickname: string; tier_code: string | null; rate_ig_reels: number; rate_yt_full: number };
+type Creator = {
+  id: number; nickname: string;
+  full_name: string | null; nationality: string | null;
+  tier_code: string | null; score: number | null;
+  rate_ig_reels: number; rate_yt_full: number; rate_yt_shorts: number;
+  rate_tiktok_ours: number; rate_twitch_kick_live: number;
+  handle_ig: string | null; handle_x: string | null;
+  handle_yt: string | null; handle_tiktok: string | null; handle_twitch: string | null;
+  followers_ig: number | null; followers_x: number | null;
+  followers_yt: number | null; followers_tiktok: number | null; followers_twitch: number | null;
+  notes: string | null; link: string | null;
+};
 
 // Hardcoded championship signals — until we have a proper achievements table,
 // flag the names we know from public records so cards earn a "Champion" badge.
@@ -522,20 +533,75 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {creators.map(c => {
               const tierStyle = TIER_STYLES[c.tier_code || ''] ?? TIER_STYLES['Tier 1'];
+              const reachItems = [
+                { label: 'YT',    value: c.followers_yt,     handle: c.handle_yt    },
+                { label: 'TT',    value: c.followers_tiktok, handle: c.handle_tiktok},
+                { label: 'IG',    value: c.followers_ig,     handle: c.handle_ig    },
+                { label: 'X',     value: c.followers_x,      handle: c.handle_x     },
+                { label: 'TWCH',  value: c.followers_twitch, handle: c.handle_twitch},
+              ].filter(r => r.value && r.value > 0);
+              const totalReach = reachItems.reduce((s, r) => s + (r.value || 0), 0);
+              const dataPending = totalReach === 0;
+              // Auto-generate brand-impact pitch from data
+              const impact = (() => {
+                if (dataPending) return 'Data pending — handles + follower counts being verified.';
+                if (totalReach >= 10_000_000) return 'Anchor creator. Top-tier brand association vehicle for nationwide MENA campaigns.';
+                if (totalReach >= 3_000_000) return 'Premium voice. Drives brand authority + conversion across the Saudi gaming demographic.';
+                if (totalReach >= 1_000_000) return 'Established creator. Strong fit for cultural-fit briefs + product launches.';
+                if (totalReach >= 250_000) return 'Mid-tier creator. Best for vertical/niche briefs and community-led product seeding.';
+                return 'Emerging voice. Micro-community engagement; strong CPM-to-trust ratio.';
+              })();
               return (
-                <div key={c.id} className={`rounded-xl border border-line bg-white p-5 ${tierStyle.ring}`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-bold text-ink text-lg truncate">{c.nickname}</h3>
+                <div key={c.id} className={`rounded-xl border border-line bg-white p-5 flex flex-col ${tierStyle.ring}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-ink text-lg truncate">{c.nickname}</h3>
+                      {c.full_name && <div className="text-xs text-mute truncate">{c.full_name}</div>}
+                    </div>
                     {c.tier_code && (
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${tierStyle.chip}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap ${tierStyle.chip}`}>
                         {c.tier_code}
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-label mt-1">{tierStyle.label} creator</div>
+                  <div className="flex items-center gap-2 text-xs text-label mt-1">
+                    {c.nationality && <span className="flex items-center gap-1"><MapPin size={11} /> {c.nationality}</span>}
+                    <span>· {tierStyle.label} creator</span>
+                  </div>
+
+                  {!dataPending && (
+                    <div className="mt-3 grid grid-cols-5 gap-1">
+                      {reachItems.map(r => (
+                        <a
+                          key={r.label}
+                          href={r.handle || '#'}
+                          target="_blank" rel="noreferrer"
+                          className={`px-1.5 py-1 rounded border text-center transition ${r.handle ? 'border-line hover:border-greenDark hover:bg-greenSoft' : 'border-line opacity-70 cursor-default pointer-events-none'}`}
+                        >
+                          <div className="text-[8px] uppercase tracking-wider text-mute font-bold">{r.label}</div>
+                          <div className="text-[10px] font-bold text-ink tabular-nums">{fmtCount(r.value || 0)}</div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {!dataPending && (
+                    <div className="mt-2 text-[10px] text-mute uppercase tracking-wider font-semibold">
+                      Total reach: <span className="text-greenDark text-xs ml-0.5 tabular-nums">{fmtCount(totalReach)}</span>
+                    </div>
+                  )}
+
+                  <div className={`mt-3 pt-3 border-t border-line flex-1 text-xs leading-relaxed ${dataPending ? 'text-amber-700 italic' : 'text-label'}`}>
+                    {impact}
+                  </div>
+
+                  {c.notes && (
+                    <div className="mt-2 text-[10px] text-mute leading-relaxed line-clamp-3">{c.notes}</div>
+                  )}
+
                   {showRates && c.rate_ig_reels > 0 && (
                     <div className="mt-3 pt-3 border-t border-line flex items-center justify-between">
-                      <div className="text-[10px] uppercase tracking-wider text-mute font-bold">IG Reel from</div>
+                      <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Starts at (IG Reel)</div>
                       <div className="text-sm font-bold text-greenDark tabular-nums">SAR {c.rate_ig_reels.toLocaleString('en-US')}</div>
                     </div>
                   )}
