@@ -117,7 +117,7 @@ export function RevenueCharts({
       <div className="card card-p lg:col-span-3">
         <h3 className="font-semibold text-ink mb-1">{t('dash.brand_portfolio')}</h3>
         <p className="text-xs text-mute mb-3">{t('dash.brand_portfolio_sub')}</p>
-        <BrandList brands={brands} />
+        <BrandList brands={brands} fmtMoney={fmtMoney} />
       </div>
 
       {/* Funnel */}
@@ -179,7 +179,7 @@ export function RevenueCharts({
 }
 
 // ── Brand list with auto-sourced logos ─────────────────────────────────────
-function BrandList({ brands }: { brands: Array<{ name: string; revenue: number; domain: string | null }> }) {
+function BrandList({ brands, fmtMoney }: { brands: Array<{ name: string; revenue: number; domain: string | null }>; fmtMoney: (n: number) => string }) {
   const max = Math.max(...brands.map(b => b.revenue), 1);
   return (
     <ul className="space-y-2">
