@@ -23,6 +23,7 @@ const NAV = (role: UserRole, email: string) => [
   { href: '/quote/new',         key: 'nav.new_quote'  as const, icon: PlusCircle, highlight: true },
   { href: '/calculator',        key: 'nav.calculator' as const, icon: Calculator },
   { href: '/quotes',            key: 'nav.quote_log'  as const, icon: FileText },
+  { href: '/showcase',          key: 'nav.showcase'   as const, icon: Trophy, highlight: true },
   { href: '/inquiries',         key: 'nav.inquiries'  as const, icon: Inbox },
   { href: '/roster/players',    key: 'nav.roster'     as const, icon: Users },
   { href: '/roster/creators',   key: 'nav.creators'   as const, icon: Sparkles },

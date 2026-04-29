@@ -17,6 +17,7 @@ export const dict = {
   'nav.new_quote':    { en: 'New Quote',    ar: 'عرض سعر جديد' },
   'nav.calculator':   { en: 'Quick Estimate', ar: 'تقدير سريع' },
   'nav.quote_log':    { en: 'Quote Log',    ar: 'سجل العروض' },
+  'nav.showcase':     { en: 'Showcase',     ar: 'عرض المواهب' },
   'nav.inquiries':    { en: 'Inquiries',    ar: 'الاستفسارات' },
   'nav.roster':       { en: 'Roster',       ar: 'اللاعبون' },
   'nav.creators':     { en: 'Creators',     ar: 'صناع المحتوى' },
