@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import {
   Trophy, Users, Sparkles, Search, X as XIcon, ShieldCheck,
   Crown, Flame, MapPin, Zap, Eye, EyeOff, ArrowUpRight,
+  Radio, Clock, TrendingUp,
 } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
 
@@ -28,9 +29,69 @@ const MAJOR_WINNERS = new Set([
   'Msdossary',                                 // FIFA eWorld Cup champ (KSA pride)
   'Clayster',                                  // Multi-time CDL champion
   'TGLTN',                                     // PUBG GLL Grand Slam
-  'Hikaru Nakamura',                           // World #2 Chess
-  'Alireza Firouzja',                          // World #5 Chess
 ]);
+
+// Twitch live-streaming stats (90d window, sourced from Falcons_Talent_Stream_Stats Apr 2026).
+// 51 talents tracked. Used to enrich Showcase cards with peak-viewer / hours-watched signals
+// — the single biggest credibility lever for live-stream sponsorship pitches.
+const STREAM_STATS: Record<string, { peak90: number; avg90: number; streamed: number; watched: number; active: number }> = {
+  'm0NESY': { peak90: 24821, avg90: 16577, streamed: 6.6, watched: 108857, active: 2 },
+  'Peterbot': { peak90: 21211, avg90: 7374, streamed: 80.5, watched: 593357, active: 28 },
+  'kyousuke': { peak90: 17189, avg90: 9651, streamed: 3.2, watched: 30723, active: 2 },
+  'ImperialHal': { peak90: 16789, avg90: 5325, streamed: 616.0, watched: 3281422, active: 81 },
+  'NiKo': { peak90: 8076, avg90: 6229, streamed: 5.4, watched: 33636, active: 2 },
+  'TGLTN': { peak90: 4047, avg90: 1893, streamed: 203.0, watched: 384785, active: 60 },
+  'Abo Najd': { peak90: 2869, avg90: 616, streamed: 388.0, watched: 239173, active: 78 },
+  'Wxltzy': { peak90: 2806, avg90: 282, streamed: 378.0, watched: 106583, active: 63 },
+  'Kiileerrz': { peak90: 2725, avg90: 2244, streamed: 1.3, watched: 2805, active: 1 },
+  'Spammiej': { peak90: 2615, avg90: 801, streamed: 370.0, watched: 296904, active: 72 },
+  'Hikaru Nakamura': { peak90: 2584, avg90: 1277, streamed: 9.1, watched: 11624, active: 3 },
+  'Soka': { peak90: 2489, avg90: 889, streamed: 620.0, watched: 551822, active: 78 },
+  'Malr1ne': { peak90: 2196, avg90: 1835, streamed: 4.2, watched: 7676, active: 1 },
+  'Pollo': { peak90: 2122, avg90: 1026, streamed: 43.0, watched: 44062, active: 16 },
+  'Draugr': { peak90: 1954, avg90: 98, streamed: 84.6, watched: 8259, active: 21 },
+  'Pred': { peak90: 1913, avg90: 851, streamed: 72.4, watched: 61588, active: 22 },
+  'dralii': { peak90: 1712, avg90: 707, streamed: 19.2, watched: 13572, active: 7 },
+  'CarlJr': { peak90: 1327, avg90: 832, streamed: 96.0, watched: 79911, active: 20 },
+  'Swooty': { peak90: 1281, avg90: 221, streamed: 203.0, watched: 44966, active: 44 },
+  'Dongy': { peak90: 1242, avg90: 257, streamed: 571.0, watched: 146683, active: 81 },
+  'Kickstart': { peak90: 1234, avg90: 267, streamed: 122.0, watched: 32718, active: 37 },
+  'Exnid': { peak90: 1143, avg90: 584, streamed: 140.0, watched: 81936, active: 39 },
+  'Privacy': { peak90: 1033, avg90: 343, streamed: 81.0, watched: 27823, active: 19 },
+  'ChiYo': { peak90: 868, avg90: 486, streamed: 1.7, watched: 834, active: 1 },
+  'madv': { peak90: 825, avg90: 458, streamed: 16.1, watched: 7355, active: 7 },
+  'Gild': { peak90: 787, avg90: 148, streamed: 384.0, watched: 56945, active: 78 },
+  'Cellium': { peak90: 681, avg90: 570, streamed: 2.1, watched: 1226, active: 1 },
+  'KiSMET': { peak90: 648, avg90: 239, streamed: 137.0, watched: 32755, active: 27 },
+  'Bijw': { peak90: 596, avg90: 187, streamed: 84.8, watched: 15834, active: 28 },
+  'Paulehx': { peak90: 589, avg90: 42, streamed: 221.0, watched: 9324, active: 58 },
+  'Abo Ghazi': { peak90: 427, avg90: 104, streamed: 67.2, watched: 6986, active: 23 },
+  'Gntl': { peak90: 406, avg90: 188, streamed: 10.7, watched: 2015, active: 3 },
+  'Newbz': { peak90: 369, avg90: 93, streamed: 546.0, watched: 50714, active: 85 },
+  'Shrimzy': { peak90: 318, avg90: 98, streamed: 53.4, watched: 5231, active: 19 },
+  'Arcitys': { peak90: 263, avg90: 47, streamed: 103.0, watched: 4796, active: 45 },
+  'Clayster': { peak90: 257, avg90: 102, streamed: 15.3, watched: 1566, active: 4 },
+  'jume': { peak90: 241, avg90: 133, streamed: 7.2, watched: 958, active: 2 },
+  'Jose Serrano': { peak90: 221, avg90: 102, streamed: 107.0, watched: 10949, active: 40 },
+  'Kusanagi': { peak90: 183, avg90: 120, streamed: 8.0, watched: 964, active: 3 },
+  'hmoodx': { peak90: 177, avg90: 81, streamed: 138.0, watched: 11240, active: 38 },
+  'Spy': { peak90: 174, avg90: 72, streamed: 5.0, watched: 359, active: 3 },
+  'xizx7': { peak90: 126, avg90: 46, streamed: 77.3, watched: 3562, active: 15 },
+  'Frenchi': { peak90: 112, avg90: 41, streamed: 25.4, watched: 1033, active: 9 },
+  'FMG': { peak90: 109, avg90: 60, streamed: 8.9, watched: 532, active: 4 },
+  'Tapewaare': { peak90: 72, avg90: 18, streamed: 41.6, watched: 729, active: 12 },
+  'Xyzzy': { peak90: 62, avg90: 16, streamed: 129.0, watched: 2064, active: 27 },
+  'Kindevu': { peak90: 56, avg90: 38, streamed: 4.0, watched: 150, active: 1 },
+  'Aqeel9': { peak90: 54, avg90: 25, streamed: 54.5, watched: 1360, active: 18 },
+  'Gunner': { peak90: 35, avg90: 14, streamed: 26.7, watched: 383, active: 10 },
+  'VENO': { peak90: 14, avg90: 8, streamed: 12.8, watched: 103, active: 7 },
+};
+
+function fmtCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+  return n.toString();
+}
 
 function maxReach(p: Player): number {
   return Math.max(
@@ -88,6 +149,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
   const [game, setGame] = useState('');
   const [region, setRegion] = useState('');
   const [championOnly, setChampionOnly] = useState(false);
+  const [streamerOnly, setStreamerOnly] = useState(false);
   const [showRates, setShowRates] = useState(false);
   const [sort, setSort] = useState<'reach' | 'tier'>('reach');
 
@@ -114,6 +176,10 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
         const isChamp = M5_CHAMPIONS.has(p.nickname) || MAJOR_WINNERS.has(p.nickname) || p.tier_code === 'Tier S';
         if (!isChamp) return false;
       }
+      if (streamerOnly) {
+        const s = STREAM_STATS[p.nickname];
+        if (!s || s.active < 20) return false;  // active = streamed >=20 of last 90 days
+      }
       if (s) {
         const fields = [p.nickname, p.full_name, p.team, p.game, p.nationality, p.role];
         if (!fields.filter(Boolean).some(v => v!.toLowerCase().includes(s))) return false;
@@ -128,7 +194,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
       list = list.sort((a, b) => (order[a.tier_code || ''] ?? 9) - (order[b.tier_code || ''] ?? 9) || maxReach(b) - maxReach(a));
     }
     return list;
-  }, [players, q, tier, game, region, championOnly, sort]);
+  }, [players, q, tier, game, region, championOnly, streamerOnly, sort]);
 
   // Org-level stats for the hero
   const stats = useMemo(() => {
@@ -178,6 +244,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
             { label: 'Combined reach',        value: fmtReach(stats.totalCombined),                                       sub: 'Across IG · TikTok · YT · Twitch · X · FB' },
             { label: 'Global anchors',        value: stats.tierS.toString(),                                              sub: 'Tier S · 1M+ reach' },
             { label: 'Championship-decorated',value: stats.champions.toString(),                                          sub: 'M5 · EWC · CS Major · CDL · World #2' },
+            // Twitch live coverage gives non-endemic brands a measurable exposure number
           ].map(s => (
             <div key={s.label} className="rounded-xl bg-white/10 backdrop-blur border border-white/20 px-4 py-4">
               <div className="text-[10px] uppercase tracking-wider font-bold text-white/70">{s.label}</div>
@@ -255,6 +322,19 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                 title="Show only championship-decorated talent"
               >
                 <Crown size={12} /> Champions only
+              </button>
+              <button
+                onClick={() => setStreamerOnly(v => !v)}
+                aria-pressed={streamerOnly}
+                className={[
+                  'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-bold transition',
+                  streamerOnly
+                    ? 'bg-purple-600 text-white border-purple-600'
+                    : 'bg-white text-label border-line hover:border-purple-500 hover:text-purple-600',
+                ].join(' ')}
+                title="Show only active live-streamers (20+ active days last 90)"
+              >
+                <Radio size={12} /> Active streamers
               </button>
               <select value={sort} onChange={e => setSort(e.target.value as any)} className="input text-sm max-w-[140px]">
                 <option value="reach">Sort: Reach</option>
@@ -374,6 +454,36 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                           <div>
                             <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Tier baseline</div>
                             <div className="text-base font-bold text-label">{tierStyle.label}</div>
+                          </div>
+                        )}
+
+                        {STREAM_STATS[p.nickname] && (
+                          <div className="pt-3 border-t border-dashed border-line">
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[9px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
+                                <Radio size={9} /> Live · 90d
+                              </span>
+                              <span className="text-[10px] text-mute">Twitch · last 90 days</span>
+                            </div>
+                            {(() => { const s = STREAM_STATS[p.nickname]; return (
+                              <div className="grid grid-cols-3 gap-1.5">
+                                <div className="rounded bg-bg/60 px-2 py-1.5">
+                                  <div className="text-[9px] uppercase tracking-wider text-mute font-bold">Peak</div>
+                                  <div className="text-sm font-bold text-ink tabular-nums">{fmtCount(s.peak90)}</div>
+                                  <div className="text-[9px] text-mute">live viewers</div>
+                                </div>
+                                <div className="rounded bg-bg/60 px-2 py-1.5">
+                                  <div className="text-[9px] uppercase tracking-wider text-mute font-bold">Watched</div>
+                                  <div className="text-sm font-bold text-ink tabular-nums">{fmtCount(s.watched)}h</div>
+                                  <div className="text-[9px] text-mute">brand exposure</div>
+                                </div>
+                                <div className="rounded bg-bg/60 px-2 py-1.5">
+                                  <div className="text-[9px] uppercase tracking-wider text-mute font-bold">Active</div>
+                                  <div className="text-sm font-bold text-ink tabular-nums">{s.active}/90</div>
+                                  <div className="text-[9px] text-mute">days streamed</div>
+                                </div>
+                              </div>
+                            ); })()}
                           </div>
                         )}
 
