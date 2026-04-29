@@ -2,13 +2,13 @@
 import { useLocale } from '@/lib/i18n/Locale';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { computeLine, computeQuoteTotals, AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
+import { computeLine, computeQuoteTotals, AXIS_OPTIONS, CREATOR_AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
 import { fmtMoney, fmtPct, fmtCurrency } from '@/lib/utils';
 import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
   type Player, type Creator, type Tier, type Addon,
 } from '@/lib/types';
-import { Trash2, Plus, Save, ArrowLeft, ArrowRight, Pencil, Settings, Check, X as XIcon, HelpCircle, Send, FolderOpen } from 'lucide-react';
+import { Trash2, Plus, Save, ArrowLeft, ArrowRight, Pencil, Settings, Check, X as XIcon, HelpCircle, Send, FolderOpen, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { QuoteConfigurator } from './QuoteConfigurator';
 import { newUid, type LineDraft } from './line-draft';
@@ -88,6 +88,15 @@ export function QuoteBuilder({
   // campaign-level axes BEFORE picking deliverables. Loading a saved draft
   // explicitly switches to Build (see loadDraft below).
   const [view, setView] = useState<'campaign' | 'build' | 'summary'>('campaign');
+
+  // Track which lines are expanded inline for editing. Replaces the old
+  // pencil→opens-configurator flow — rates, axes, addons all editable in place.
+  const [expandedLines, setExpandedLines] = useState<Set<string>>(new Set());
+  const toggleExpand = (uid: string) => setExpandedLines(s => {
+    const n = new Set(s);
+    if (n.has(uid)) n.delete(uid); else n.add(uid);
+    return n;
+  });
   const [referenceOpen, setReferenceOpen] = useState(false);
 
   // ── Draft picker (load a saved status='draft' quote into the builder)
@@ -888,10 +897,27 @@ export function QuoteBuilder({
       />
     ),
     lines: (
-      <div className="card">
-        <div className="px-5 py-4 border-b border-line flex items-center justify-between">
-          <h2 className="font-semibold">Quote lines</h2>
-          <div className="text-xs text-mute">{computed.rows.length} added</div>
+      <div className="card overflow-hidden">
+        {/* Sticky live total at the top of the lines card */}
+        <div className="px-5 py-3 border-b border-line bg-bg/30 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold">Quote lines</h2>
+            <span className="text-xs text-mute">{computed.rows.length} line{computed.rows.length === 1 ? '' : 's'}</span>
+          </div>
+          <div className="flex items-center gap-5">
+            <div className="text-right">
+              <div className="text-[9px] uppercase tracking-wider text-mute font-bold">Subtotal</div>
+              <div className="text-sm font-semibold text-label tabular-nums">{fmtCurrency(computed.totals.subtotal, currency, usdRate)}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[9px] uppercase tracking-wider text-mute font-bold">+ VAT</div>
+              <div className="text-sm font-semibold text-label tabular-nums">{fmtCurrency(computed.totals.vatAmount, currency, usdRate)}</div>
+            </div>
+            <div className="text-right pl-4 border-l border-line">
+              <div className="text-[9px] uppercase tracking-wider text-mute font-bold">Total</div>
+              <div className="text-2xl font-extrabold text-greenDark tabular-nums leading-none mt-0.5">{fmtCurrency(computed.totals.total, currency, usdRate)}</div>
+            </div>
+          </div>
         </div>
 
         {computed.rows.length === 0 ? (
@@ -899,91 +925,160 @@ export function QuoteBuilder({
             No lines yet. Use the <strong>Add deliverables</strong> section above.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-label uppercase tracking-wide bg-bg">
-                  <th className="px-4 py-3">Talent</th>
-                  <th className="px-4 py-3">Platform</th>
-                  <th className="px-4 py-3 text-right">Base rate</th>
-                  <th className="px-4 py-3 text-right w-20">Qty</th>
-                  <th className="px-4 py-3 text-right">Unit price</th>
-                  <th className="px-4 py-3 text-right">Line total</th>
-                  <th className="px-4 py-3 w-24"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {computed.rows.map(r => {
-                  const platforms = r.talent_type === 'player' ? PLAYER_PLATFORMS : CREATOR_PLATFORMS;
-                  const overrideCount = activeOverrides(r);
-                  return (
-                    <tr key={r.uid} className="border-t border-line hover:bg-bg/60">
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => openEditWizard(r.uid)}
-                          className="text-left group"
-                          title="Edit line in wizard"
-                        >
-                          <div className="font-medium text-ink group-hover:underline">{r.talent_name}</div>
-                          <div className="text-xs text-mute capitalize flex items-center gap-2 flex-wrap">
+          <div className="divide-y divide-line">
+            {computed.rows.map(r => {
+              const platforms = r.talent_type === 'player' ? PLAYER_PLATFORMS : CREATOR_PLATFORMS;
+              const overrideCount = activeOverrides(r);
+              const isExpanded = expandedLines.has(r.uid);
+              const axisOpts = r.talent_type === 'creator' ? CREATOR_AXIS_OPTIONS : AXIS_OPTIONS;
+              return (
+                <div key={r.uid} className={['transition', isExpanded ? 'bg-greenSoft/30' : 'hover:bg-bg/40'].join(' ')}>
+                  {/* Compact row */}
+                  <div className="grid grid-cols-12 gap-2 items-center px-4 py-3">
+                    <div className="col-span-12 sm:col-span-3">
+                      <button onClick={() => toggleExpand(r.uid)} className="flex items-center gap-2 text-left group w-full">
+                        <ChevronDown size={14} className={['text-mute transition-transform shrink-0', isExpanded ? 'rotate-180 text-greenDark' : ''].join(' ')} />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-ink group-hover:text-greenDark truncate text-sm">{r.talent_name}</div>
+                          <div className="text-xs text-mute capitalize flex items-center gap-1.5 flex-wrap">
                             <span>{r.talent_type}</span>
                             {overrideCount > 0 && (
-                              <span
-                                className="chip chip-peach text-[10px]"
-                                title={`Overridden axes:\n${overrideAxisNames(r).join(', ')}\n\nClick the row to edit overrides in the wizard.`}
-                              >
-                                {overrideCount} override{overrideCount > 1 ? 's' : ''}
-                              </span>
+                              <span className="chip chip-peach !px-1.5 !py-0 text-[10px]">{overrideCount} override{overrideCount > 1 ? 's' : ''}</span>
                             )}
                             {r.is_companion && (
-                              <span
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[10px] font-semibold whitespace-nowrap"
-                                title="Companion / Cameo role — final unit price multiplied by 0.5 (talent featured as guest in another creator's content)"
-                              >
-                                ½× Companion
-                              </span>
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full bg-orange-100 text-orange-700 text-[10px] font-semibold">½×</span>
                             )}
                           </div>
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={r.platform}
-                          onChange={e => inlineChangePlatform(r, e.target.value)}
-                          className="input py-1 px-2 text-sm w-44"
-                        >
-                          {platforms.map(p => (
-                            <option key={p.key} value={p.key}>{p.label}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3 text-right text-label">
-                        {r.base_rate ? fmtMoney(r.base_rate, currency) : <span className="text-orange-500">no rate set</span>}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <input
-                          type="number" min={1} value={r.qty}
-                          onChange={e => inlineUpdateLine(r.uid, { qty: Math.max(1, parseInt(e.target.value) || 1) })}
-                          className="input py-1 px-2 text-right w-16"
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-right text-ink">{fmtMoney(r.finalUnit, currency)}</td>
-                      <td className="px-4 py-3 text-right font-medium text-ink">{fmtMoney(r.finalAmount, currency)}</td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => openEditWizard(r.uid)} className="p-1 text-mute hover:text-ink" title="Edit in wizard">
-                            <Pencil size={14} />
+                        </div>
+                      </button>
+                    </div>
+                    <div className="col-span-6 sm:col-span-3">
+                      <select
+                        value={r.platform}
+                        onChange={e => inlineChangePlatform(r, e.target.value)}
+                        className="input py-1 px-2 text-xs w-full"
+                        title="Platform / deliverable"
+                      >
+                        {platforms.map(p => (
+                          <option key={p.key} value={p.key}>{p.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-3 sm:col-span-2 text-right">
+                      <input
+                        type="number" min={0} step={100} value={r.base_rate}
+                        onChange={e => inlineUpdateLine(r.uid, { base_rate: Math.max(0, parseFloat(e.target.value) || 0) })}
+                        className="input py-1 px-2 text-right text-xs w-full tabular-nums"
+                        title="Base rate (override)"
+                      />
+                    </div>
+                    <div className="col-span-3 sm:col-span-1 text-right">
+                      <input
+                        type="number" min={1} value={r.qty}
+                        onChange={e => inlineUpdateLine(r.uid, { qty: Math.max(1, parseInt(e.target.value) || 1) })}
+                        className="input py-1 px-2 text-right text-xs w-full"
+                        title="Quantity"
+                      />
+                    </div>
+                    <div className="col-span-9 sm:col-span-2 text-right">
+                      <div className="text-[9px] uppercase tracking-wider text-mute font-bold">Line total</div>
+                      <div className="font-bold text-ink tabular-nums text-sm">{fmtCurrency(r.finalAmount, currency, usdRate)}</div>
+                    </div>
+                    <div className="col-span-3 sm:col-span-1 text-right">
+                      <button onClick={() => removeLine(r.uid)} className="p-1.5 text-mute hover:text-red-600 hover:bg-red-50 rounded transition" title="Remove line">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded edit panel — every per-line knob inline, no configurator round-trip */}
+                  {isExpanded && (
+                    <div className="px-4 pb-4 pt-1 border-t border-green/20 bg-white/60">
+                      <div className="text-[10px] uppercase tracking-wider text-label font-bold mt-3 mb-2">
+                        Per-line axis overrides <span className="text-mute font-normal normal-case ml-1">— blank = inherit campaign default</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <LineAxisSelect label="Engagement" value={r.o_eng}   campaign={eng}   onChange={v => inlineUpdateLine(r.uid, { o_eng:   v })} options={axisOpts.engagement.map(e => ({ label: e.label, val: e.factor }))} />
+                        <LineAxisSelect label="Audience"   value={r.o_aud}   campaign={aud}   onChange={v => inlineUpdateLine(r.uid, { o_aud:   v })} options={axisOpts.audience.map(e => ({ label: e.label, val: e.factor }))} />
+                        <LineAxisSelect label={r.talent_type === 'creator' ? 'Production' : 'Seasonality'} value={r.o_seas}  campaign={seas}  onChange={v => inlineUpdateLine(r.uid, { o_seas:  v })} options={(r.talent_type === 'creator' ? (axisOpts as any).production : (axisOpts as any).seasonality).map((e: any) => ({ label: e.label, val: e.factor }))} />
+                        <LineAxisSelect label="Content type" value={r.o_ctype} campaign={ctype} onChange={v => inlineUpdateLine(r.uid, { o_ctype: v })} options={AXIS_OPTIONS.contentType.map(e => ({ label: e.label, val: e.factor }))} />
+                        <LineAxisSelect label="Language"   value={r.o_lang}  campaign={lang}  onChange={v => inlineUpdateLine(r.uid, { o_lang:  v })} options={axisOpts.language.map(e => ({ label: e.label, val: e.factor }))} />
+                        <LineAxisSelect label="Authority"  value={r.o_auth}  campaign={auth}  onChange={v => inlineUpdateLine(r.uid, { o_auth:  v })} options={axisOpts.authority.map(e => ({ label: e.label, val: e.factor }))} />
+                      </div>
+
+                      {addons.length > 0 && (
+                        <>
+                          <div className="text-[10px] uppercase tracking-wider text-label font-bold mt-4 mb-2">
+                            Per-line add-on rights <span className="text-mute font-normal normal-case ml-1">— rights packages just for this deliverable</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {addons.map(a => {
+                              const am = (((r as any).addon_months) || {}) as Record<number, number>;
+                              const checked = a.id in am;
+                              const months = am[a.id] ?? 1;
+                              return (
+                                <div key={a.id} className={['p-2 rounded-lg border transition', checked ? 'border-green bg-green/5' : 'border-line bg-white'].join(' ')}>
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={checked}
+                                      onChange={() => {
+                                        const next = { ...am };
+                                        if (checked) delete next[a.id]; else next[a.id] = 1;
+                                        inlineUpdateLine(r.uid, { addon_months: next as any });
+                                      }}
+                                      className="accent-green" />
+                                    <div className="text-xs flex-1 min-w-0">
+                                      <div className="font-medium text-ink truncate">{a.label}</div>
+                                      <div className="text-[10px] text-green">+{Math.round((a.uplift_pct ?? 0) * 100)}%/mo</div>
+                                    </div>
+                                  </label>
+                                  {checked && (
+                                    <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-green/20">
+                                      <span className="text-[10px] text-mute uppercase tracking-wider font-bold">Months</span>
+                                      <input type="number" min={1} max={60} value={months}
+                                        onChange={e => {
+                                          const n = Math.max(1, Math.min(60, parseInt(e.target.value, 10) || 1));
+                                          const next = { ...am, [a.id]: n };
+                                          inlineUpdateLine(r.uid, { addon_months: next as any });
+                                        }}
+                                        className="input !py-0.5 !px-1 text-xs w-12 text-center" />
+                                      <span className="text-[10px] text-greenDark font-semibold ml-auto">+{Math.round((a.uplift_pct ?? 0) * months * 100)}%</span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+
+                      <div className="mt-4 pt-3 border-t border-line flex items-center justify-between gap-2 flex-wrap">
+                        <label className="flex items-center gap-2 text-xs text-label cursor-pointer">
+                          <input type="checkbox" checked={!!r.is_companion}
+                            onChange={e => inlineUpdateLine(r.uid, { is_companion: e.target.checked })}
+                            className="accent-orange-500" />
+                          <span>Companion role <span className="text-mute">(cameo / featured guest — applies 0.5× to final unit price)</span></span>
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openEditWizard(r.uid)}
+                            className="text-xs text-mute hover:text-ink underline"
+                            title="Open the full configurator (talent picker, deliverables, etc.)"
+                          >
+                            Open in configurator
                           </button>
-                          <button onClick={() => removeLine(r.uid)} className="p-1 text-mute hover:text-red-600" title="Remove line">
-                            <Trash2 size={14} />
+                          <button
+                            onClick={() => toggleExpand(r.uid)}
+                            className="btn btn-ghost text-xs !py-1.5"
+                          >
+                            <Check size={12} /> Done
                           </button>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -1317,6 +1412,43 @@ export function QuoteBuilder({
 }
 
 // ─── helpers ───────────────────────────────────────────────────────────────
+/**
+ * LineAxisSelect — per-line axis override picker. Renders a small select
+ * showing the campaign-default value as the first option (null = inherit).
+ * Used inline inside expanded line rows so reps can re-tune any axis on
+ * a specific line without leaving the table.
+ */
+function LineAxisSelect({ label, value, campaign, onChange, options }: {
+  label: string; value: number | null; campaign: number;
+  onChange: (v: number | null) => void;
+  options: { label: string; val: number }[];
+}) {
+  const isOverridden = value !== null;
+  return (
+    <div className={[
+      'rounded-lg border p-2 transition',
+      isOverridden ? 'border-orange-300 bg-orange-50/60' : 'border-line bg-white',
+    ].join(' ')}>
+      <div className="text-[10px] uppercase tracking-wider text-label font-bold mb-1 flex items-center justify-between gap-1">
+        <span className="truncate">{label}</span>
+        {isOverridden && (
+          <button onClick={() => onChange(null)} className="text-mute hover:text-orange-600 text-[9px] underline">reset</button>
+        )}
+      </div>
+      <select
+        value={value === null ? 'GLOBAL' : String(value)}
+        onChange={e => onChange(e.target.value === 'GLOBAL' ? null : parseFloat(e.target.value))}
+        className="input !py-1 !px-1.5 text-xs w-full"
+      >
+        <option value="GLOBAL">Campaign ({campaign.toFixed(2)}×)</option>
+        {options.map(o => (
+          <option key={o.label} value={o.val}>{o.label} ({o.val.toFixed(2)}×)</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function AxisSelect({ label, hint, value, setValue, options, auto, onClearAuto }: {
   label: string; hint?: string;
   value: number; setValue: (v: number) => void;
