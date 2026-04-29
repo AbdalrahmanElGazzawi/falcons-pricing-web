@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus, X as XIcon, ChevronDown, ChevronUp, Check,
   Twitter, Instagram, Youtube, Twitch, Facebook, ExternalLink,
+  Lock, Hourglass,
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
 import { computeLine, AXIS_OPTIONS, CREATOR_AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
@@ -497,6 +498,21 @@ export function QuoteConfigurator({
                     {(selectedTalent as any).tier_code && (
                       <span className={`chip border ${tierClass((selectedTalent as any).tier_code)} !px-1.5 !py-0 text-[10px]`}>
                         {(selectedTalent as any).tier_code}
+                      </span>
+                    )}
+                    {(selectedTalent as any).measurement_confidence === 'exact' ? (
+                      <span
+                        title="Verified — Shikenso confirmed"
+                        className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[9px] font-bold uppercase tracking-wider bg-green/15 text-greenDark border border-green/30"
+                      >
+                        <Lock size={9} /> Locked
+                      </span>
+                    ) : (
+                      <span
+                        title="TBD — rates use tier baseline (within-tier average) until Shikenso lands. Bump Authority for verified championship credentials."
+                        className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gold/10 text-gold border border-gold/30"
+                      >
+                        <Hourglass size={9} /> TBD
                       </span>
                     )}
                     {(selectedTalent as any).role && <span>{(selectedTalent as any).role}</span>}

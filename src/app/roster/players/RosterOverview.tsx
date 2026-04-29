@@ -12,7 +12,7 @@ import { useToast } from '@/components/Toast';
 import {
   Users, Rows2, Rows3, Rows4, Pencil, Check, X as XIcon,
   Trophy, Clipboard, Briefcase, ScanSearch, Megaphone, Layers,
-  Twitch, Youtube, Instagram, Music2, AlertTriangle, Radio,
+  Twitch, Youtube, Instagram, Music2, AlertTriangle, Radio, Lock, Hourglass,
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
 
@@ -400,7 +400,10 @@ function RosterRow({
       </td>
 
       <td>
-        <span className={`chip border whitespace-nowrap ${tierClass(p.tier_code)}`}>{p.tier_code || '—'}</span>
+        <div className="inline-flex items-center gap-1">
+          <span className={`chip border whitespace-nowrap ${tierClass(p.tier_code)}`}>{p.tier_code || '—'}</span>
+          <DataLockChip confidence={p.measurement_confidence} />
+        </div>
       </td>
       <td><TierReviewBadge p={p} /></td>
       <td className="text-label whitespace-nowrap">{p.game || '—'}</td>
@@ -515,6 +518,31 @@ function FollowerCluster({ p }: { p: Player }) {
         </span>
       ))}
     </div>
+  );
+}
+
+// DataLockChip — surfaces 'Locked' (Shikenso-verified) vs 'TBD' (manually
+// rounded to tier baseline) next to each player's tier chip. Until Shikenso
+// fills in real data, every rate is a tier-baseline (= within-tier average)
+// refined only by championship Authority. Sales reads this at a glance.
+function DataLockChip({ confidence }: { confidence?: string | null }) {
+  if (confidence === 'exact') {
+    return (
+      <span
+        title="Verified — Shikenso confirmed. Premiums fully active."
+        className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[9px] font-bold uppercase tracking-wider bg-green/15 text-greenDark border border-green/30"
+      >
+        <Lock size={9} /> Locked
+      </span>
+    );
+  }
+  return (
+    <span
+      title="TBD — uses tier baseline (within-tier average) until Shikenso lands. Premiums active via championship Authority."
+      className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gold/10 text-gold border border-gold/30"
+    >
+      <Hourglass size={9} /> TBD
+    </span>
   );
 }
 

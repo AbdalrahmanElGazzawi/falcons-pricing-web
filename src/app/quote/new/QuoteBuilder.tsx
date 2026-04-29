@@ -8,7 +8,7 @@ import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
   type Player, type Creator, type Tier, type Addon,
 } from '@/lib/types';
-import { Trash2, Plus, Save, ArrowLeft, Pencil, Settings, Check, X as XIcon, HelpCircle, Send, FolderOpen } from 'lucide-react';
+import { Trash2, Plus, Save, ArrowLeft, ArrowRight, Pencil, Settings, Check, X as XIcon, HelpCircle, Send, FolderOpen } from 'lucide-react';
 import Link from 'next/link';
 import { QuoteConfigurator } from './QuoteConfigurator';
 import { newUid, type LineDraft } from './line-draft';
@@ -1108,8 +1108,18 @@ export function QuoteBuilder({
                     {sectionNodes[id]}
                   </Section>
                 ))}
-                <div className="text-xs text-mute text-center pt-2">
-                  Done with campaign settings? Switch to <button onClick={() => setView('build')} className="text-greenDark hover:underline font-medium">② Build →</button>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-line">
+                  <div className="text-xs text-mute">
+                    Step 1 of 3 — Campaign settings done? Pick deliverables next.
+                  </div>
+                  <button
+                    onClick={() => setView('build')}
+                    disabled={!clientName.trim()}
+                    className="btn btn-primary !py-2.5 !px-5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={clientName.trim() ? 'Continue to the Build tab' : 'Add a client name first'}
+                  >
+                    Next: Build deliverables <ArrowRight size={16} />
+                  </button>
                 </div>
               </div>
             );
