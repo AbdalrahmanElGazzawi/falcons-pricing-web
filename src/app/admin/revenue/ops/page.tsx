@@ -8,7 +8,6 @@ import { CurrencyPill } from '@/components/CurrencyPill';
 
 export const dynamic = 'force-dynamic';
 
-function fmtSar(n: number) { return Math.round(Number(n)).toLocaleString('en-US') + ' SAR'; }
 function daysBetween(d: string) {
   return Math.floor((Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24));
 }

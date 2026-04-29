@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
-import { fmtMoney } from '@/lib/utils';
 import { RevenueMoney } from './RevenueMoney';
 import { CurrencyPill } from '@/components/CurrencyPill';
 import { PlusCircle, TrendingUp, Trophy, Users, Sparkles, DollarSign, ArrowUpRight, FileBarChart } from 'lucide-react';
@@ -238,7 +237,7 @@ export default async function DashboardPage() {
                     {q.campaign && <div className="text-xs text-mute truncate">{q.campaign}</div>}
                   </div>
                   <div className="text-sm font-medium text-ink tabular-nums whitespace-nowrap">
-                    <RevenueMoney sar={Number(q.total) || 0} usdRate={q.usd_rate} />
+                    <RevenueMoney sar={Number(q.total) || 0} usdRate={Number(q.usd_rate) || null} />
                   </div>
                 </li>
               ))}
