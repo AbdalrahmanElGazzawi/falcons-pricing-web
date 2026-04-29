@@ -64,6 +64,7 @@ export function RosterOverview({
   const [game, setGame] = useState('');
   const [team, setTeam] = useState('');
   const [country, setCountry] = useState('');
+  const [dataFilter, setDataFilter] = useState<'' | 'locked' | 'tbd' | 'pending'>('');
   const [density, setDensity] = useState<Density>('comfortable');
   const [reviewOnly, setReviewOnly] = useState(false);
 
@@ -100,6 +101,12 @@ export function RosterOverview({
       if (tier && p.tier_code !== tier) return false;
       if (game && p.game !== game) return false;
       if (team && p.team !== team) return false;
+      if (dataFilter) {
+        const c = (p.measurement_confidence ?? 'pending').toLowerCase();
+        if (dataFilter === 'locked'  && c !== 'exact') return false;
+        if (dataFilter === 'tbd'     && c !== 'rounded' && c !== 'estimated') return false;
+        if (dataFilter === 'pending' && c !== 'pending') return false;
+      }
       if (country) {
         const nat = (p.nationality ?? '').trim();
         // 'Saudi Arabia' selection matches both 'Saudi' and 'Saudi Arabia'
@@ -120,7 +127,7 @@ export function RosterOverview({
       }
       return true;
     });
-  }, [players, q, tier, game, team, country, tabMatch, reviewOnly]);
+  }, [players, q, tier, game, team, country, dataFilter, tabMatch, reviewOnly]);
 
   const reviewFlagCount = useMemo(() => players.filter(p => {
     const f = tierReviewFlag(p.tier_code, maxPlatformReach(p));
@@ -199,6 +206,13 @@ export function RosterOverview({
           <option value="">All countries</option>
           {countries.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
+        <select value={dataFilter} onChange={e => setDataFilter(e.target.value as any)} className="input max-w-[170px]"
+          title="Filter by data-quality status (Locked = Shikenso-equivalent verified · TBD = manual baseline · Pending = no data)">
+          <option value="">All data states</option>
+          <option value="locked">Locked only</option>
+          <option value="tbd">TBD only</option>
+          <option value="pending">No data (pending)</option>
+        </select>
         <select value={tier} onChange={e => setTier(e.target.value)} className="input max-w-[160px]">
           <option value="">All tiers</option>
           {tiers.map(t => <option key={t.code} value={t.code}>{t.code} · {t.label}</option>)}
@@ -235,8 +249,8 @@ export function RosterOverview({
           <EmptyState
             icon={Users}
             title="No matches"
-            body={q || tier || game || team || country || tab !== 'all' ? 'Try clearing your filters or switching tabs.' : 'No active roster members yet.'}
-            action={isAdmin && tab === 'all' && !q && !tier && !game && !team && !country
+            body={q || tier || game || team || country || dataFilter || tab !== 'all' ? 'Try clearing your filters or switching tabs.' : 'No active roster members yet.'}
+            action={isAdmin && tab === 'all' && !q && !tier && !game && !team && !country && !dataFilter
               ? { label: 'Add roster member', href: '/admin/players/new' }
               : undefined}
           />
