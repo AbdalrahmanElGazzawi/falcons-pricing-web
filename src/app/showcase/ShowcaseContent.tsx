@@ -21,6 +21,7 @@ type Player = {
 type Creator = {
   id: number; nickname: string;
   full_name: string | null; nationality: string | null;
+  avatar_url: string | null;
   tier_code: string | null; score: number | null;
   rate_ig_reels: number; rate_yt_full: number; rate_yt_shorts: number;
   rate_tiktok_ours: number; rate_twitch_kick_live: number;
@@ -553,16 +554,21 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
               })();
               return (
                 <div key={c.id} className={`rounded-xl border border-line bg-white p-5 flex flex-col ${tierStyle.ring}`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-ink text-lg truncate">{c.nickname}</h3>
-                      {c.full_name && <div className="text-xs text-mute truncate">{c.full_name}</div>}
+                  <div className="flex items-start gap-3">
+                    <Avatar src={c.avatar_url} name={c.nickname} size="lg" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-ink text-lg truncate">{c.nickname}</h3>
+                          {c.full_name && <div className="text-xs text-mute truncate">{c.full_name}</div>}
+                        </div>
+                        {c.tier_code && (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap ${tierStyle.chip}`}>
+                            {c.tier_code}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    {c.tier_code && (
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap ${tierStyle.chip}`}>
-                        {c.tier_code}
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-label mt-1">
                     {c.nationality && <span className="flex items-center gap-1"><MapPin size={11} /> {c.nationality}</span>}

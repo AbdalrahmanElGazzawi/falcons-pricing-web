@@ -110,6 +110,7 @@ export interface Creator {
   default_authority?: number;
   default_language?: number;
   default_seasonality?: number;
+  avatar_url?: string | null;
   full_name?: string | null;
   nationality?: string | null;
   handle_ig?: string | null;

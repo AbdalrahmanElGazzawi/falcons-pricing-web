@@ -10,7 +10,10 @@
  */
 function isDisplayableUrl(s: string | undefined | null): boolean {
   if (!s) return false;
-  return /^https?:\/\//.test(s);
+  // Accept absolute URLs (https://...) AND root-relative paths (/avatars/...)
+  // — relative paths are served from /public by Next.js and are safe to use
+  // as <img src>.
+  return /^https?:\/\//.test(s) || s.startsWith('/');
 }
 
 function initials(name: string): string {
