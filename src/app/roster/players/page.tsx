@@ -22,9 +22,14 @@ export default async function RosterPage() {
       <PageHeader
         title="Roster"
         subtitle="Players · Coaches · Management · Analysts · Influencers — everyone in one editable view"
-        action={profile.role === 'admin' ? (
-          <Link href="/admin/players/new" className="btn btn-primary">+ Add roster member</Link>
-        ) : undefined}
+        action={
+          <div className="flex items-center gap-2">
+            <Link href="/roster/audit" className="btn btn-ghost text-xs" title="Per-player rate audit vs methodology">Audit pricing</Link>
+            {profile.role === 'admin' && (
+              <Link href="/admin/players/new" className="btn btn-primary">+ Add roster member</Link>
+            )}
+          </div>
+        }
       />
       <RosterOverview
         players={players ?? []}
