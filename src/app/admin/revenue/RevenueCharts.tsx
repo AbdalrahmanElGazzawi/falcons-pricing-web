@@ -1,5 +1,7 @@
 'use client';
 import { useLocale } from '@/lib/i18n/Locale';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
+import { fmtCurrency } from '@/lib/utils';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -40,6 +42,8 @@ export function RevenueCharts({
   aging:    Array<{ bucket: string; amount: number }>;
   statusMix:Array<{ name: string; value: number }>;
 }) {
+  const [ccy] = useDisplayCurrency();
+  const fmtMoney = (n: number) => fmtCurrency(Number(n) || 0, ccy, 3.75);
   const { t } = useLocale();
   return (
     <div className="grid grid-cols-1 lg:grid-cols-6 gap-4">
@@ -67,7 +71,7 @@ export function RevenueCharts({
             <XAxis dataKey="label" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} tickFormatter={fmtKsar} />
             <Tooltip
-              formatter={(v: any) => `${fmtSar(Number(v))} SAR`}
+              formatter={(v: any) => fmtMoney(Number(v))}
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -101,7 +105,7 @@ export function RevenueCharts({
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
             <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={fmtKsar} />
             <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11 }} />
-            <Tooltip formatter={(v: any) => `${fmtSar(Number(v))} SAR`} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+            <Tooltip formatter={(v: any) => fmtMoney(Number(v))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
             <Bar dataKey="revenue" fill={C.green} radius={[0, 4, 4, 0]}>
               {creators.map((_, i) => <Cell key={i} fill={i === 0 ? C.greenDark : C.green} />)}
             </Bar>
@@ -144,7 +148,7 @@ export function RevenueCharts({
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
             <XAxis dataKey="bucket" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} tickFormatter={fmtKsar} />
-            <Tooltip formatter={(v: any) => `${fmtSar(Number(v))} SAR`} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+            <Tooltip formatter={(v: any) => fmtMoney(Number(v))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
             <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
               {aging.map((_, i) => (
                 <Cell key={i} fill={[C.green, C.amber, C.rose, C.navy][i]} />
@@ -163,7 +167,7 @@ export function RevenueCharts({
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
             <XAxis dataKey="name" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} tickFormatter={fmtKsar} />
-            <Tooltip formatter={(v: any) => `${fmtSar(Number(v))} SAR`} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+            <Tooltip formatter={(v: any) => fmtMoney(Number(v))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
             <Bar dataKey="revenue" fill={C.green} radius={[4, 4, 0, 0]}>
               {platforms.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
             </Bar>
@@ -188,7 +192,7 @@ function BrandList({ brands }: { brands: Array<{ name: string; revenue: number; 
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium text-ink truncate">{b.name}</span>
                 <span className="text-xs font-semibold text-greenDark tabular-nums whitespace-nowrap ml-2">
-                  {fmtSar(b.revenue)} SAR
+                  {fmtMoney(b.revenue)}
                 </span>
               </div>
               <div className="h-1.5 rounded-full bg-bg overflow-hidden">

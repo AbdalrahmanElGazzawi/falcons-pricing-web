@@ -3,6 +3,8 @@ import { requireSuperAdmin } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { ArrowLeft, AlertCircle, Clock, FileText, Inbox } from 'lucide-react';
+import { RevenueMoney } from '../RevenueMoney';
+import { CurrencyPill } from '@/components/CurrencyPill';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +20,7 @@ export default async function OpsDashboard() {
   const [{ data: sales }, { data: openQuotes }, { data: openInquiries }] = await Promise.all([
     supabase.from('sales_log').select('*'),
     supabase.from('quotes')
-      .select('id, quote_number, client_name, campaign, status, total, currency, created_at, viewed_at, sent_at')
+      .select('id, quote_number, client_name, campaign, status, total, currency, usd_rate, created_at, viewed_at, sent_at')
       .in('status', ['draft','sent_to_client','client_approved','approved'])
       .order('created_at', { ascending: false })
       .limit(40),
@@ -52,6 +54,7 @@ export default async function OpsDashboard() {
       <PageHeader
         title="Operations"
         subtitle="Collections, stale follow-ups, and unhandled inquiries — what to chase today"
+              action={<CurrencyPill />}
       />
 
       {/* Open invoices KPI strip */}
@@ -60,7 +63,7 @@ export default async function OpsDashboard() {
           tint="blue"
           icon={Clock}
           label="Open invoices (issued, unpaid)"
-          value={fmtSar(openInvoicesTotal)}
+          value={<RevenueMoney sar={openInvoicesTotal} />}
           sub={`${openInvoices.length} invoice${openInvoices.length === 1 ? '' : 's'}`}
         />
         <Tile
@@ -68,14 +71,14 @@ export default async function OpsDashboard() {
           icon={AlertCircle}
           label="Overdue > 30 days"
           value={`${overdue30.length}`}
-          sub={fmtSar(overdue30.reduce((s, r) => s + Number(r.total_with_vat_sar), 0))}
+          sub={<><RevenueMoney sar={overdue30.reduce((s, r) => s + Number(r.total_with_vat_sar), 0)} /></>}
         />
         <Tile
           tint="rose"
           icon={AlertCircle}
           label="Overdue > 60 days"
           value={`${overdue60.length}`}
-          sub={fmtSar(overdue60.reduce((s, r) => s + Number(r.total_with_vat_sar), 0))}
+          sub={<><RevenueMoney sar={overdue60.reduce((s, r) => s + Number(r.total_with_vat_sar), 0)} /></>}
         />
       </div>
 
@@ -104,7 +107,7 @@ export default async function OpsDashboard() {
                     </td>
                     <td className="text-ink" dir="auto">{r.brand_name || '—'}</td>
                     <td className="text-mute" dir="auto">{r.talent_name}</td>
-                    <td className="text-right font-medium tabular-nums">{fmtSar(Number(r.total_with_vat_sar))}</td>
+                    <td className="text-right font-medium tabular-nums"><RevenueMoney sar={Number(r.total_with_vat_sar)} /></td>
                   </tr>
                 ))}
                 {openInvoices.length === 0 && <tr><td colSpan={4} className="py-6 text-center text-mute">All clear — no open invoices.</td></tr>}
@@ -136,7 +139,7 @@ export default async function OpsDashboard() {
                       <Link href={`/quote/${q.id}`} className="text-ink hover:text-greenDark font-medium">{q.quote_number}</Link>
                     </td>
                     <td className="text-mute" dir="auto">{q.client_name}</td>
-                    <td className="text-right font-medium tabular-nums">{fmtSar(Number(q.total ?? 0))}</td>
+                    <td className="text-right font-medium tabular-nums"><RevenueMoney sar={Number(q.total ?? 0)} usdRate={Number(q.usd_rate)} /></td>
                   </tr>
                 ))}
                 {stale.length === 0 && <tr><td colSpan={4} className="py-6 text-center text-mute">All sent quotes have been opened.</td></tr>}

@@ -1,9 +1,11 @@
+import type React from 'react';
 import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { fmtMoney } from '@/lib/utils';
 import { RevenueMoney } from './RevenueMoney';
+import { CurrencyPill } from '@/components/CurrencyPill';
 import { PlusCircle, TrendingUp, Trophy, Users, Sparkles, DollarSign, ArrowUpRight, FileBarChart } from 'lucide-react';
 import { RevenueCharts } from './RevenueCharts';
 import { cookies } from 'next/headers';
@@ -151,8 +153,7 @@ export default async function DashboardPage() {
       <PageHeader
         title={`${tx('dash.welcome')}, ${profile.full_name || profile.email.split('@')[0]}`}
         subtitle="Engine health — funnel, AR aging, realized revenue"
-        action={
-          <div className="flex items-center gap-2">
+        action={<div className="flex items-center gap-2"><CurrencyPill />
             <Link href="/admin/revenue/ops" className="btn btn-ghost">
               <FileBarChart size={14} /> {tx('dash.ops_view')}
             </Link>
@@ -169,21 +170,21 @@ export default async function DashboardPage() {
           icon={DollarSign}
           tint="green"
           label={tx('dash.revenue_collected')}
-          value={`${Math.round(collectedSar).toLocaleString('en-US')} SAR`}
+          value={<RevenueMoney sar={collectedSar} />}
           sub={`${collected.length} deal${collected.length === 1 ? '' : 's'} · $${Math.round(collected.reduce((s,r)=>s+Number(r.amount_usd),0)).toLocaleString('en-US')} USD`}
         />
         <HeroCard
           icon={TrendingUp}
           tint="navy"
           label={tx('dash.open_pipeline')}
-          value={`${Math.round(pipelineSar + quotePipelineSar).toLocaleString('en-US')} SAR`}
+          value={<RevenueMoney sar={pipelineSar + quotePipelineSar} />}
           sub={`${pipelineSales.length} in-flight · ${allQuotes.filter(q => liveStatuses.includes(q.status)).length} live quotes`}
         />
         <HeroCard
           icon={Trophy}
           tint="amber"
           label={tx('dash.avg_deal')}
-          value={`${Math.round(avgDealSar).toLocaleString('en-US')} SAR`}
+          value={<RevenueMoney sar={avgDealSar} />}
           sub={`across ${sales.length} ledger entries`}
         />
       </div>
@@ -251,7 +252,7 @@ export default async function DashboardPage() {
 
 function HeroCard({
   icon: Icon, tint, label, value, sub,
-}: { icon: any; tint: 'green' | 'navy' | 'amber'; label: string; value: string; sub: string }) {
+}: { icon: any; tint: 'green' | 'navy' | 'amber'; label: string; value: React.ReactNode; sub: string }) {
   const tintMap = {
     green: 'from-green/10 to-greenSoft/40 text-greenDark',
     navy:  'from-navy/10 to-navy/5 text-navy',
