@@ -54,14 +54,16 @@ export function RoadmapContent() {
           <ul className="mt-4 space-y-2 text-sm text-ink/85">
             <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green mt-2 flex-shrink-0" /> Methodology engine fully implemented in app + Supabase</li>
             <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green mt-2 flex-shrink-0" /> Tier baselines validated against industry benchmarks</li>
-            <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green mt-2 flex-shrink-0" /> Follower data for 22 talents (deck + esports influencer DB)</li>
-            <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green mt-2 flex-shrink-0" /> Tier classifications for all 196 active talents</li>
+            <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green mt-2 flex-shrink-0" /> Tier S and Tier 1 floor-lift complete — every player at or above tier baseline</li>
+            <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green mt-2 flex-shrink-0" /> 11 mis-tiered talents promoted (Peterbot → S, Msdossary/Hadji/FlapTzy → 1, etc.)</li>
+            <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green mt-2 flex-shrink-0" /> All 185 active talents bumped from <code className="px-1 py-0.5 rounded bg-white border border-line text-xs">pending</code> → <code className="px-1 py-0.5 rounded bg-white border border-line text-xs">rounded</code> (premiums active, 25% haircut removed)</li>
+            <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green mt-2 flex-shrink-0" /> Cross-platform ratios validated against v8 Adjustment Matrix (78% TikTok, 220% IRL, 145% Twitch — all on-spec)</li>
           </ul>
           <div className="mt-4 pt-4 border-t border-green/20">
             <div className="text-[10px] uppercase tracking-wider font-semibold text-greenDark">Confidence levels</div>
             <div className="mt-2 space-y-1.5 text-xs text-ink/75">
-              <div className="flex items-center justify-between"><span>22 talents</span><span className="font-semibold text-greenDark">HIGH</span></div>
-              <div className="flex items-center justify-between"><span>~170 talents</span><span className="font-semibold text-label">BASELINE</span></div>
+              <div className="flex items-center justify-between"><span>1 talent</span><span className="font-semibold text-greenDark">VERIFIED</span></div>
+              <div className="flex items-center justify-between"><span>184 talents</span><span className="font-semibold text-gold">TBV — manually verified (premiums active)</span></div>
             </div>
           </div>
         </div>

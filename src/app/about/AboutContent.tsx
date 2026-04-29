@@ -113,11 +113,11 @@ export function AboutContent() {
         </div>
         <div className="mt-5 grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { tier: 'Tier S', sar: '28,000', desc: '5M+ followers · world-class', accent: 'bg-gold/10 border-gold/40 text-gold' },
-            { tier: 'Tier 1', sar: '18,000', desc: '500K-5M · premium MENA',     accent: 'bg-greenDark/10 border-greenDark/40 text-greenDark' },
-            { tier: 'Tier 2', sar: '11,000', desc: '100K-500K · target / rising', accent: 'bg-navy/10 border-navy/30 text-navy' },
-            { tier: 'Tier 3', sar:  '6,500', desc: '10K-100K · emerging',         accent: 'bg-line border-mute text-label' },
-            { tier: 'Tier 4', sar:  '3,500', desc: '<10K · niche / staff',        accent: 'bg-line border-mute text-label' },
+            { tier: 'Tier S', sar: '40,000', desc: '>1M on any platform · global anchor',   accent: 'bg-gold/10 border-gold/40 text-gold' },
+            { tier: 'Tier 1', sar: '22,000', desc: '250K – 1M · regional top-10',           accent: 'bg-greenDark/10 border-greenDark/40 text-greenDark' },
+            { tier: 'Tier 2', sar: '11,000', desc: '50K – 250K · active pro / mid creator', accent: 'bg-navy/10 border-navy/30 text-navy' },
+            { tier: 'Tier 3', sar:  '6,500', desc: '10K – 50K · emerging / niche',           accent: 'bg-line border-mute text-label' },
+            { tier: 'Tier 4', sar:  '3,500', desc: '<10K or staff · entry / support',        accent: 'bg-line border-mute text-label' },
           ].map(t => (
             <div key={t.tier} className={`rounded-xl border ${t.accent} p-4`}>
               <div className="text-xs uppercase tracking-wider font-semibold opacity-90">{t.tier}</div>
@@ -254,7 +254,7 @@ export function AboutContent() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-ink">Where Falcons sits in the market (Tier 1 IG Reel, USD)</h2>
-            <p className="text-sm text-label mt-0.5">We sit at the low end of US Tier 1 ranges, scaled for MENA. Defensible.</p>
+            <p className="text-sm text-label mt-0.5">Today we sit at the low end of US Tier 1 ranges. As a 3-time EWC champion and the largest org in MENA, the defensible target is mid-pack — between Cloud9 and 100 Thieves territory.</p>
           </div>
         </div>
         <div className="mt-5 overflow-x-auto">
@@ -284,16 +284,16 @@ export function AboutContent() {
                 </tr>
               ))}
               <tr className="bg-greenSoft/40">
-                <td className="py-2.5 pr-4 font-bold text-greenDark">Team Falcons (current)</td>
+                <td className="py-2.5 pr-4 font-bold text-greenDark">Team Falcons (today, post-floor-lift)</td>
                 <td className="py-2.5 pr-4 text-greenDark font-medium">MENA</td>
-                <td className="py-2.5 pr-4 font-bold text-greenDark">$4.8K (SAR 18K)</td>
+                <td className="py-2.5 pr-4 font-bold text-greenDark">$5.9K (SAR 22K)</td>
                 <td className="py-2.5 pr-4 font-bold text-greenDark">$2.9K (SAR 11K)</td>
               </tr>
               <tr className="bg-gold/5">
-                <td className="py-2.5 pr-4 font-bold text-gold">Team Falcons (target 2027)</td>
+                <td className="py-2.5 pr-4 font-bold text-gold">Team Falcons (target 2027 — middle of pack)</td>
                 <td className="py-2.5 pr-4 text-gold font-medium">MENA</td>
-                <td className="py-2.5 pr-4 font-bold text-gold">$6.7K+ (SAR 25K+)</td>
-                <td className="py-2.5 pr-4 font-bold text-gold">$4K+ (SAR 15K+)</td>
+                <td className="py-2.5 pr-4 font-bold text-gold">$10–12K (SAR 38–45K)</td>
+                <td className="py-2.5 pr-4 font-bold text-gold">$4.8–6.7K (SAR 18–25K)</td>
               </tr>
             </tbody>
           </table>
