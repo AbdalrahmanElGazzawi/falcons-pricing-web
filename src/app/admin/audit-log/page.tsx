@@ -38,7 +38,7 @@ export default async function AuditLogPage({
     .select('entity_type')
     .order('entity_type')
     .limit(500);
-  const entityTypes = Array.from(
+  const entityTypes: string[] = Array.from(
     new Set((distinctTypes ?? []).map((r: any) => r.entity_type as string).filter(Boolean))
   );
 

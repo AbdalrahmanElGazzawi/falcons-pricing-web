@@ -28,7 +28,9 @@ export function AuditLogTable({
   const [openId, setOpenId] = useState<number | null>(null);
 
   function setParam(key: string, val: string) {
-    const next = new URLSearchParams(Array.from(search?.entries() ?? []));
+    const next = new URLSearchParams(
+      Array.from(search?.entries() ?? []) as [string, string][]
+    );
     if (val) next.set(key, val); else next.delete(key);
     router.push(`/admin/audit-log${next.toString() ? '?' + next.toString() : ''}`);
   }
