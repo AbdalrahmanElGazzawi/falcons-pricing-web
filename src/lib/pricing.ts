@@ -155,10 +155,13 @@ export const AXIS_OPTIONS = {
     { label: 'Authority (Wt 1.0)', weight: 1.0 },
   ],
   confidence: [
-    { label: 'Pending — no follower data', value: 'pending' as const },
-    { label: 'Estimated — partial data', value: 'estimated' as const },
-    { label: 'Rounded — manual verification', value: 'rounded' as const },
-    { label: 'Exact — Shikenso verified', value: 'exact' as const },
+    // Labels reframed around the Shikenso integration timeline (Phase 2, Q3 2026).
+    // Until that lands, almost every player sits at 'rounded' — manually-verified
+    // FMG numbers rounded to the nearest 100. 'TBV' = To Be Verified via Shikenso.
+    { label: 'Pending — no follower data (1.0× cap + haircut)',          value: 'pending'   as const },
+    { label: 'Estimated — partial data, public sources (capped premiums)', value: 'estimated' as const },
+    { label: 'TBV via Shikenso — manually verified (premiums active)',   value: 'rounded'   as const },
+    { label: 'Verified — Shikenso confirmed',                            value: 'exact'     as const },
   ],
 };
 
