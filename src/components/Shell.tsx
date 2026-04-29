@@ -8,7 +8,7 @@ import { isSuperAdminEmail } from '@/lib/super-admin';
 import {
   LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog,
   Sparkles, BookOpen, KeyRound, ScrollText, Calculator, Map, Menu, X,
-  Inbox, HelpCircle, Search, Trophy, Layers,
+  Inbox, HelpCircle, Search, Trophy, Layers, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
 import { LocaleSwitcher } from './LocaleSwitcher';
@@ -67,6 +67,20 @@ export function Shell({
   const supabase = createClient();
   const { t } = useLocale();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // ── Sidebar collapse (desktop) — persists in localStorage so user choice
+  // sticks across page navigations and reloads. Tablet+ uses icons-only mode
+  // when collapsed; mobile keeps the full-width drawer.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('falcons.sidebar_collapsed');
+      if (v === '1') setCollapsed(true);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem('falcons.sidebar_collapsed', collapsed ? '1' : '0'); } catch {}
+  }, [collapsed]);
 
   // Close drawer on route change
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
@@ -134,18 +148,33 @@ export function Shell({
       <aside
         className={[
           'bg-navy text-white flex flex-col flex-shrink-0',
-          'lg:static lg:w-60 lg:translate-x-0',
+          collapsed ? 'lg:static lg:w-16 lg:translate-x-0' : 'lg:static lg:w-60 lg:translate-x-0',
           'fixed top-0 bottom-0 left-0 z-50 w-72 max-w-[85vw]',
-          'transition-transform duration-200 ease-out',
+          'transition-all duration-200 ease-out',
           drawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         ].join(' ')}
       >
-        <div className="px-5 py-5 flex items-center gap-3 border-b border-white/10">
-          <img src="/falcon-mark.png" alt="Team Falcons" className="w-10 h-10" />
-          <div className="min-w-0 flex-1">
-            <div className="font-semibold text-sm leading-none">Team Falcons</div>
-            <div className="text-white/50 text-[11px] mt-1">{t('nav.brand_tagline')}</div>
-          </div>
+        <div className={[
+          'flex items-center gap-3 border-b border-white/10',
+          collapsed ? 'px-2 py-5 justify-center' : 'px-5 py-5',
+        ].join(' ')}>
+          <img src="/falcon-mark.png" alt="Team Falcons" className="w-10 h-10 flex-shrink-0" />
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-sm leading-none">Team Falcons</div>
+              <div className="text-white/50 text-[11px] mt-1">{t('nav.brand_tagline')}</div>
+            </div>
+          )}
+          {/* Desktop collapse toggle */}
+          <button
+            onClick={() => setCollapsed(c => !c)}
+            className="hidden lg:inline-flex p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </button>
+          {/* Mobile close drawer */}
           <button
             onClick={() => setDrawerOpen(false)}
             className="lg:hidden p-1.5 -mr-1 rounded-md text-white/70 hover:text-white hover:bg-white/10"
@@ -156,7 +185,7 @@ export function Shell({
         </div>
 
         {/* Search affordance — clicking opens the palette. The palette also responds to ⌘K. */}
-        <div className="px-3 pt-3">
+        <div className={collapsed ? 'px-2 pt-3 lg:px-2' : 'px-3 pt-3'}>
           <button
             type="button"
             onClick={() => {
@@ -164,15 +193,21 @@ export function Shell({
               const evt = new KeyboardEvent('keydown', { key: 'k', metaKey: isMac, ctrlKey: !isMac, bubbles: true });
               window.dispatchEvent(evt);
             }}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs transition"
+            className={[
+              'w-full flex items-center gap-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs transition',
+              collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2',
+            ].join(' ')}
+            title={collapsed ? t('nav.search') : undefined}
           >
             <Search size={14} />
-            <span className="flex-1 text-start">{t('nav.search')}</span>
-            <kbd className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded">⌘K</kbd>
+            {!collapsed && <><span className="flex-1 text-start">{t('nav.search')}</span><kbd className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded">⌘K</kbd></>}
           </button>
         </div>
 
-        <nav className="p-3 flex-1 space-y-0.5 overflow-y-auto">
+        <nav className={[
+          'flex-1 space-y-0.5 overflow-y-auto',
+          collapsed ? 'p-2' : 'p-3',
+        ].join(' ')}>
           {nav.map(item => {
             const active = pathname === item.href || pathname.startsWith(item.href + '/');
             const Icon = item.icon;
@@ -180,51 +215,66 @@ export function Shell({
               <Link
                 key={item.href}
                 href={item.href}
+                title={collapsed ? t(item.key) : undefined}
                 className={[
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition',
+                  'flex items-center rounded-lg text-sm transition',
+                  collapsed ? 'gap-0 px-2 py-2.5 justify-center' : 'gap-3 px-3 py-2.5',
                   active ? 'bg-white/10 text-white font-medium' : 'text-white/70 hover:bg-white/5 hover:text-white',
                   item.highlight ? 'text-green hover:text-green' : '',
                 ].join(' ')}
               >
                 <Icon size={16} />
-                {t(item.key)}
+                {!collapsed && t(item.key)}
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-3 border-t border-white/10">
-          <div className="px-3 py-2 text-xs">
-            <div className="text-white/90 font-medium truncate capitalize" title={username}>{username}</div>
-            <div className="text-white/50 capitalize flex items-center gap-1.5">
-              <span>{role}</span>
-              {superAdmin && (
-                <span className="px-1.5 py-0.5 rounded-full bg-green/20 text-green text-[9px] font-semibold uppercase tracking-wider">
-                  Super
-                </span>
-              )}
+        <div className={[
+          'border-t border-white/10',
+          collapsed ? 'p-2' : 'p-3',
+        ].join(' ')}>
+          {!collapsed && (
+            <>
+              <div className="px-3 py-2 text-xs">
+                <div className="text-white/90 font-medium truncate capitalize" title={username}>{username}</div>
+                <div className="text-white/50 capitalize flex items-center gap-1.5">
+                  <span>{role}</span>
+                  {superAdmin && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-green/20 text-green text-[9px] font-semibold uppercase tracking-wider">
+                      Super
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="mt-2"><ThemeToggle compact /></div>
+              <div className="mt-2"><LocaleSwitcher compact /></div>
+              <div className="mt-2 -mx-3"><CurrencySwitcher /></div>
+              <Link href="/account/password"
+                className="mt-2 w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white">
+                <KeyRound size={16} /> {t('nav.change_pwd')}
+              </Link>
+              <button onClick={signOut}
+                className="mt-1 w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white">
+                <LogOut size={16} /> {t('nav.sign_out')}
+              </button>
+              <div className="text-center text-white/30 text-[10px] mt-3 tracking-wide">
+                Built by Abdalrahman elGazzawi
+              </div>
+            </>
+          )}
+          {collapsed && (
+            <div className="flex flex-col items-center gap-1.5">
+              <Link href="/account/password" title={t('nav.change_pwd')}
+                className="p-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white">
+                <KeyRound size={16} />
+              </Link>
+              <button onClick={signOut} title={t('nav.sign_out')}
+                className="p-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white">
+                <LogOut size={16} />
+              </button>
             </div>
-          </div>
-          <div className="mt-2">
-            <ThemeToggle compact />
-          </div>
-          <div className="mt-2">
-            <LocaleSwitcher compact />
-          </div>
-          <div className="mt-2 -mx-3">
-            <CurrencySwitcher />
-          </div>
-          <Link href="/account/password"
-            className="mt-2 w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white">
-            <KeyRound size={16} /> {t('nav.change_pwd')}
-          </Link>
-          <button onClick={signOut}
-            className="mt-1 w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/5 hover:text-white">
-            <LogOut size={16} /> {t('nav.sign_out')}
-          </button>
-          <div className="text-center text-white/30 text-[10px] mt-3 tracking-wide">
-            Built by Abdalrahman elGazzawi
-          </div>
+          )}
         </div>
       </aside>
 
