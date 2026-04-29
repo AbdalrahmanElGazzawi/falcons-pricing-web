@@ -8,7 +8,7 @@ import { isSuperAdminEmail } from '@/lib/super-admin';
 import {
   LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog,
   Sparkles, BookOpen, KeyRound, ScrollText, Calculator, Map, Menu, X,
-  Inbox, HelpCircle, Search, Trophy, BarChart3,
+  Inbox, HelpCircle, Search, Trophy, Layers,
 } from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
 import { LocaleSwitcher } from './LocaleSwitcher';
@@ -29,7 +29,7 @@ const NAV = (role: UserRole, email: string) => [
   { href: '/roster/creators',   key: 'nav.creators'   as const, icon: Sparkles },
   { href: '/roadmap',           key: 'nav.roadmap'    as const, icon: Map },
   { href: '/about',             key: 'nav.about'      as const, icon: HelpCircle },
-  { href: '/pricing-logic',     key: 'nav.pricing_logic' as const, icon: BarChart3 },
+  { href: '/pricing-logic',     key: 'nav.pricing_logic' as const, icon: Layers },
   ...(['admin','sales','finance'].includes(role) ? [
     { href: '/admin/sales-log', key: 'nav.sales_log'  as const, icon: ScrollText },
   ] : []),
