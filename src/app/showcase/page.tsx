@@ -38,8 +38,8 @@ export default async function ShowcasePage() {
   return (
     <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <ShowcaseContent
-        players={players ?? []}
-        creators={creators ?? []}
+        players={(players ?? []) as any}
+        creators={(creators ?? []) as any}
       />
     </Shell>
   );
