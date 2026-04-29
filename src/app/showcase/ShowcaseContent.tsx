@@ -17,6 +17,9 @@ type Player = {
   followers_ig: number | null; followers_twitch: number | null; followers_yt: number | null;
   followers_tiktok: number | null; followers_x: number | null; followers_fb: number | null; followers_snap: number | null;
   instagram: string | null; twitch: string | null; youtube: string | null; tiktok: string | null; x_handle: string | null;
+  kick: string | null; facebook: string | null;
+  bio: string | null; achievements: string[] | null;
+  date_of_birth: string | null; ingame_role: string | null;
 };
 type Creator = {
   id: number; nickname: string;
@@ -178,6 +181,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
   const [streamerOnly, setStreamerOnly] = useState(false);
   const [showRates, setShowRates] = useState(false);
   const [sort, setSort] = useState<'reach' | 'tier'>('reach');
+  const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
 
   const games = useMemo(() => Array.from(new Set(players.map(p => p.game).filter(Boolean))).sort() as string[], [players]);
 
@@ -403,10 +407,12 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                 const isLocked = p.measurement_confidence === 'exact';
                 const isSaudi = (p.nationality || '').toLowerCase().startsWith('saudi');
                 return (
-                  <div
+                  <button
                     key={p.id}
+                    type="button"
+                    onClick={() => setOpenPlayerId(p.id)}
                     className={[
-                      'group relative rounded-2xl bg-white border border-line overflow-hidden transition-all hover:shadow-lift hover:-translate-y-0.5',
+                      'group relative rounded-2xl bg-white border border-line overflow-hidden transition-all hover:shadow-lift hover:-translate-y-0.5 text-left w-full cursor-pointer',
                       tierStyle.ring,
                     ].join(' ')}
                   >
@@ -523,7 +529,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                         )}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -699,7 +705,232 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
         </div>
       )}
 
-      {/* ─── Footer note ──────────────────────────────────────────────── */}
+{/* ─── Player detail modal ──────────────────────────────────────── */}
+      {openPlayerId !== null && (() => {
+        const p = players.find(pp => pp.id === openPlayerId);
+        if (!p) return null;
+        const peak = maxReach(p);
+        const total = totalReach(p);
+        const tierStyle = TIER_STYLES[p.tier_code || ''] ?? TIER_STYLES['Tier 3'];
+        const isChamp = M5_CHAMPIONS.has(p.nickname) || MAJOR_WINNERS.has(p.nickname);
+        const isLocked = p.measurement_confidence === 'exact';
+        const isSaudi = (p.nationality || '').toLowerCase().startsWith('saudi');
+        const stream = STREAM_STATS[p.nickname];
+        const dob = p.date_of_birth ? new Date(p.date_of_birth) : null;
+        const age = dob ? Math.floor((Date.now() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : null;
+
+        // Synthetic bio — generated when no manual bio is set
+        const synthBio = (() => {
+          const parts: string[] = [];
+          const opener = `${p.nickname} is ${p.role === 'Player' ? 'a player' : (p.role || 'a member')}` +
+            `${p.ingame_role ? ` (${p.ingame_role})` : ''}` +
+            `${p.team ? ` for ${p.team}` : ''}` +
+            `${p.game ? `, competing in ${p.game}` : ''}.`;
+          parts.push(opener);
+          if (p.nationality) parts.push(`Based in ${p.nationality}.`);
+          if (isChamp) parts.push(M5_CHAMPIONS.has(p.nickname) ? 'M5 World Champion.' : 'Major-tournament champion.');
+          if (peak > 0) parts.push(`Peak platform reach: ${fmtReach(peak)} followers.`);
+          if (stream && stream.active >= 20) {
+            parts.push(`Active live streamer — ${stream.active}/90 days, peak ${fmtReach(stream.peak90)} concurrent viewers, ${fmtCount(stream.watched)} hours watched.`);
+          } else if (stream && stream.peak90 > 0) {
+            parts.push(`Streams during major events — peak ${fmtReach(stream.peak90)} concurrent viewers on Twitch.`);
+          }
+          return parts.join(' ');
+        })();
+
+        const socials: { label: string; url: string }[] = [];
+        const add = (label: string, val: string | null) => {
+          if (!val) return;
+          const v = val.trim();
+          if (!v || v === '-' || v === '—') return;
+          socials.push({ label, url: /^https?:\/\//i.test(v) ? v : `https://${v.replace(/^@/, '')}` });
+        };
+        add('Instagram', p.instagram);
+        add('Twitch', p.twitch);
+        add('YouTube', p.youtube);
+        add('TikTok', p.tiktok);
+        add('X / Twitter', p.x_handle);
+        add('Kick', p.kick);
+        add('Facebook', p.facebook);
+
+        const platforms: { label: string; n: number }[] = [
+          { label: 'Instagram', n: p.followers_ig || 0 },
+          { label: 'TikTok',    n: p.followers_tiktok || 0 },
+          { label: 'YouTube',   n: p.followers_yt || 0 },
+          { label: 'Twitch',    n: p.followers_twitch || 0 },
+          { label: 'Facebook',  n: p.followers_fb || 0 },
+          { label: 'X',         n: p.followers_x || 0 },
+          { label: 'Snapchat',  n: p.followers_snap || 0 },
+        ].filter(x => x.n > 0).sort((a, b) => b.n - a.n);
+
+        return (
+          <div
+            className="fixed inset-0 z-50 bg-navy/60 backdrop-blur-sm flex items-start md:items-center justify-center p-4 overflow-y-auto"
+            onClick={() => setOpenPlayerId(null)}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-lift w-full max-w-3xl my-8 overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Hero strip */}
+              <div className={`relative h-32 bg-gradient-to-br ${tierStyle.gradient}`}>
+                <button
+                  onClick={() => setOpenPlayerId(null)}
+                  className="absolute top-3 right-3 p-2 rounded-full bg-white/80 hover:bg-white text-mute hover:text-ink shadow-sm"
+                  aria-label="Close"
+                >
+                  <XIcon size={16} />
+                </button>
+                <div className="absolute -bottom-12 left-6">
+                  <Avatar src={p.avatar_url} name={p.nickname} size="lg" />
+                </div>
+              </div>
+
+              <div className="px-6 pt-16 pb-6 space-y-5">
+                {/* Header */}
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-2xl font-extrabold text-ink">{p.nickname}</h2>
+                    {p.tier_code && (
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${tierStyle.chip}`}>
+                        {p.tier_code}
+                      </span>
+                    )}
+                    {isChamp && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gold/15 text-gold border border-gold/40">
+                        <Crown size={10} /> Champion
+                      </span>
+                    )}
+                    {isLocked && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green/15 text-greenDark border border-green/30">
+                        <ShieldCheck size={10} /> Verified
+                      </span>
+                    )}
+                    {isSaudi && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green/10 text-greenDark border border-green/30">
+                        KSA
+                      </span>
+                    )}
+                  </div>
+                  {p.full_name && <div className="text-sm text-mute mt-1">{p.full_name}</div>}
+                  <div className="text-sm text-label mt-2 flex items-center gap-2 flex-wrap">
+                    {p.role && <span className="font-medium">{p.role}</span>}
+                    {p.ingame_role && <><span className="text-mute">·</span><span>{p.ingame_role}</span></>}
+                    {p.game && <><span className="text-mute">·</span><span>{p.game}</span></>}
+                    {p.team && <><span className="text-mute">·</span><span>{p.team}</span></>}
+                    {age && <><span className="text-mute">·</span><span>Age {age}</span></>}
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider text-label font-bold mb-1.5">Bio</div>
+                  <p className="text-sm text-ink leading-relaxed">
+                    {p.bio && p.bio.trim() ? p.bio : synthBio}
+                  </p>
+                  {!p.bio && (
+                    <p className="text-[10px] text-mute italic mt-1">Auto-generated from talent record. Add a manual bio in admin to customize.</p>
+                  )}
+                </div>
+
+                {/* Achievements */}
+                {p.achievements && p.achievements.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-label font-bold mb-1.5 flex items-center gap-1.5">
+                      <Trophy size={11} /> Achievements
+                    </div>
+                    <ul className="space-y-1">
+                      {p.achievements.map((a, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-ink">
+                          <span className="w-1 h-1 rounded-full bg-gold mt-2 shrink-0" />
+                          {a}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Platform reach grid */}
+                {platforms.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-label font-bold mb-2">Platform reach</div>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                      {platforms.map(pl => (
+                        <div key={pl.label} className="rounded-lg border border-line bg-bg/40 px-3 py-2">
+                          <div className="text-[9px] uppercase tracking-wider text-mute font-bold">{pl.label}</div>
+                          <div className="text-base font-bold text-ink tabular-nums">{fmtReach(pl.n)}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-[11px] text-mute mt-2 tabular-nums">
+                      Combined reach: <strong className="text-greenDark">{fmtReach(total)}</strong>
+                      {peak > 0 && <> · Peak (single platform): <strong className="text-ink">{fmtReach(peak)}</strong></>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Stream stats — full breakdown */}
+                {stream && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-label font-bold mb-2 flex items-center gap-1.5">
+                      <Radio size={11} /> Twitch live · last 90 days
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      <div className="rounded-lg bg-purple-50 border border-purple-200 px-2 py-1.5">
+                        <div className="text-[9px] uppercase tracking-wider text-purple-700 font-bold">Peak viewers</div>
+                        <div className="text-base font-bold text-ink tabular-nums">{fmtCount(stream.peak90)}</div>
+                      </div>
+                      <div className="rounded-lg bg-purple-50 border border-purple-200 px-2 py-1.5">
+                        <div className="text-[9px] uppercase tracking-wider text-purple-700 font-bold">Avg viewers</div>
+                        <div className="text-base font-bold text-ink tabular-nums">{fmtCount(stream.avg90)}</div>
+                      </div>
+                      <div className="rounded-lg bg-purple-50 border border-purple-200 px-2 py-1.5">
+                        <div className="text-[9px] uppercase tracking-wider text-purple-700 font-bold">Hours streamed</div>
+                        <div className="text-base font-bold text-ink tabular-nums">{Math.round(stream.streamed)}</div>
+                      </div>
+                      <div className="rounded-lg bg-purple-50 border border-purple-200 px-2 py-1.5">
+                        <div className="text-[9px] uppercase tracking-wider text-purple-700 font-bold">Hours watched</div>
+                        <div className="text-base font-bold text-ink tabular-nums">{fmtCount(stream.watched)}</div>
+                      </div>
+                      <div className="rounded-lg bg-purple-50 border border-purple-200 px-2 py-1.5">
+                        <div className="text-[9px] uppercase tracking-wider text-purple-700 font-bold">Active days</div>
+                        <div className="text-base font-bold text-ink tabular-nums">{stream.active}/90</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Socials */}
+                {socials.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-label font-bold mb-2">Channels</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {socials.map(s => (
+                        <a key={s.label} href={s.url} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-bg border border-line text-label hover:text-greenDark hover:border-green hover:bg-greenSoft transition">
+                          {s.label}
+                          <ArrowUpRight size={10} className="opacity-60" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Rates (only if showRates is on) */}
+                {showRates && p.rate_ig_reel > 0 && (
+                  <div className="rounded-lg border border-greenSoft bg-greenSoft/30 px-4 py-3">
+                    <div className="text-[10px] uppercase tracking-wider text-greenDark font-bold mb-1">Internal — starting from</div>
+                    <div className="text-2xl font-extrabold text-greenDark tabular-nums">SAR {p.rate_ig_reel.toLocaleString('en-US')}</div>
+                    <div className="text-[11px] text-mute mt-1">IG Reel base rate. Other platforms scale by uniform ratios; final price depends on campaign axes + add-ons.</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+            {/* ─── Footer note ──────────────────────────────────────────────── */}
       <div className="text-center text-xs text-mute leading-relaxed px-4">
         <strong className="text-ink">Pitch mode</strong> hides rates by default — toggle <em>Rates ON</em> in the filter bar for internal review.
         Every rate is engine-locked, methodology-defensible, and refreshes live from the database.

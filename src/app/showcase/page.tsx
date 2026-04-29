@@ -28,7 +28,8 @@ export default async function ShowcasePage() {
       .select('id, nickname, full_name, role, game, team, nationality, tier_code, avatar_url, ' +
               'rate_ig_reel, rate_irl, authority_factor, measurement_confidence, ' +
               'followers_ig, followers_twitch, followers_yt, followers_tiktok, followers_x, followers_fb, followers_snap, ' +
-              'instagram, twitch, youtube, tiktok, x_handle')
+              'instagram, twitch, youtube, tiktok, x_handle, kick, facebook, ' +
+              'bio, achievements, date_of_birth, ingame_role')
       .eq('is_active', true),
     supabase
       .from('creators')
