@@ -177,7 +177,72 @@ export function PricingLogicContent({
         </div>
       </section>
 
-      {/* ─── Calibration math (the Apr 2026 lock pass) ─────────────── */}
+{/* ─── Regional pricing — market discount applied to base rates ─── */}
+      <section className="card card-p">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-lg bg-gold/15 text-gold flex items-center justify-center flex-shrink-0">
+            <Globe size={20} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-ink">Regional market discount on base rates</h2>
+            <p className="text-sm text-label mt-0.5">
+              Methodology rates are calibrated to NA/EU prices. Local-market talents work at lower CPMs,
+              so their published base rate is discounted to reflect that. Discount is applied per talent
+              based on nationality — global anchors (NA/EU) keep full methodology.
+            </p>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left border-b border-line">
+                <th className="py-2 pr-4 font-semibold text-label">Region</th>
+                <th className="py-2 pr-4 font-semibold text-label text-right">Discount</th>
+                <th className="py-2 pr-4 font-semibold text-label text-right">Tier S</th>
+                <th className="py-2 pr-4 font-semibold text-label text-right">Tier 1</th>
+                <th className="py-2 pr-4 font-semibold text-label text-right">Tier 2</th>
+                <th className="py-2 pr-4 font-semibold text-label text-right">Tier 3</th>
+                <th className="py-2 pr-4 font-semibold text-label text-right">Tier 4</th>
+                <th className="py-2 pr-4 font-semibold text-label">Why</th>
+              </tr>
+            </thead>
+            <tbody className="text-ink">
+              {[
+                { region: 'NA / EU / Global',  factor: 1.00, why: 'Methodology is calibrated here. Falcons NA/EU pros (m0NESY, ImperialHal, Vejrgang) bring global value.' },
+                { region: 'East Asia',         factor: 0.95, why: 'KR / JP / CN — premium markets but slightly under NA/EU on per-deal headline rates.' },
+                { region: 'GCC (non-KSA)',     factor: 0.85, why: 'UAE / Bahrain / Kuwait / Qatar / Oman — adjacent home market, slightly above KSA.' },
+                { region: 'KSA',               factor: 0.80, why: 'Saudi market — Falcons home base. Lower local CPMs than global, but still the premium MENA market.' },
+                { region: 'MENA broader',      factor: 0.80, why: 'Egypt / Levant / Maghreb — same band as KSA for lack of stronger pricing data.' },
+                { region: 'SEA',               factor: 0.55, why: 'Philippines / Indonesia / Vietnam / Thailand — significantly lower CPMs. PH macro influencers cap around PHP 80K (~SAR 5.4K).' },
+              ].map(r => {
+                const t = (mult: number) => fmtSar(40000 * r.factor * mult);
+                // Tier multipliers vs Tier S floor: S=1.0, 1=22000/40000=0.55, 2=11000/40000=0.275, 3=6500/40000=0.1625, 4=3000/40000=0.075
+                return (
+                  <tr key={r.region} className={`border-b border-line ${r.factor === 1.00 ? 'bg-greenSoft/30' : r.factor < 0.7 ? 'bg-amber/5' : ''}`}>
+                    <td className="py-2 pr-4 font-medium">{r.region}</td>
+                    <td className="py-2 pr-4 text-right tabular-nums font-bold">
+                      {r.factor === 1.00 ? <span className="text-greenDark">×{r.factor.toFixed(2)}</span> : <span className="text-orange-700">×{r.factor.toFixed(2)}</span>}
+                    </td>
+                    <td className="py-2 pr-4 text-right tabular-nums">{t(1.0)}</td>
+                    <td className="py-2 pr-4 text-right tabular-nums">{t(0.55)}</td>
+                    <td className="py-2 pr-4 text-right tabular-nums">{t(0.275)}</td>
+                    <td className="py-2 pr-4 text-right tabular-nums">{t(0.1625)}</td>
+                    <td className="py-2 pr-4 text-right tabular-nums">{t(0.075)}</td>
+                    <td className="py-2 pr-4 text-xs text-mute">{r.why}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-3 rounded-lg bg-bg/50 border border-line px-3 py-2 text-[11px] text-label leading-relaxed">
+          <strong className="text-ink">Note:</strong> the discount is on the talent's <em>published base rate</em>. At quote time, the audience axis can still bump prices up
+          when the brand's market is global (e.g., a US brand activating with KSA talent) — base rate × 0.80 (KSA) × 1.30 (audience: MENA→Global premium) recovers most of the methodology.
+          The two layers compose to give per-deal precision.
+        </div>
+      </section>
+
+            {/* ─── Calibration math (the Apr 2026 lock pass) ─────────────── */}
       <section className="card card-p">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-lg bg-navy/10 text-navy flex items-center justify-center flex-shrink-0">

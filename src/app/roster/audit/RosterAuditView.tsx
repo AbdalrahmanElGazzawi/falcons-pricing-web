@@ -36,15 +36,26 @@ function expectedTier(reach: number): string | null {
   for (const t of TIER_THRESHOLDS) if (reach >= t.min) return t.code;
   return null;
 }
-function expectedRate(reach: number): number | null {
+// Regional market discount applied to base rates per nationality.
+// Methodology is calibrated to NA/EU prices; local-market talents work at
+// lower CPMs so their published base rate is discounted to reflect that.
+function regionDiscount(nat: string | null | undefined): number {
+  const n = (nat ?? '').toLowerCase().trim();
+  if (n.startsWith('saudi')) return 0.80;                                              // KSA
+  if (['emirati','bahraini','kuwaiti','qatari','omani'].includes(n)) return 0.85;     // GCC
+  if (['egyptian','jordanian','lebanese','tunisian','moroccan','algerian','iraqi','syrian','palestinian'].includes(n)) return 0.80; // MENA
+  if (['filipino','indonesian','vietnamese','thai','malaysian','singaporean','myanmar'].includes(n)) return 0.55; // SEA
+  if (['korean','chinese','japanese','taiwanese'].includes(n)) return 0.95;            // East Asia
+  return 1.00;                                                                          // NA / EU / Global
+}
+
+function expectedRate(reach: number, nationality: string | null | undefined): number | null {
   const t = TIER_THRESHOLDS.find(x => reach >= x.min);
   if (!t) return null;
-  if (t.code === 'Tier S') {
-    const pos = Math.min((reach - t.min) / (t.max - t.min), 1);
-    return Math.round(t.rateMin + pos * (t.rateMax - t.rateMin));
-  }
   const pos = Math.min((reach - t.min) / (t.max - t.min), 1);
-  return Math.round(t.rateMin + pos * (t.rateMax - t.rateMin));
+  const base = t.rateMin + pos * (t.rateMax - t.rateMin);
+  // Round to nearest 100 after applying regional discount
+  return Math.round((base * regionDiscount(nationality)) / 100) * 100;
 }
 function fmtSar(n: number): string { return `SAR ${Math.round(n).toLocaleString('en-US')}`; }
 function fmtReach(n: number): string {
@@ -114,7 +125,7 @@ export function RosterAuditView({ players, tiers: _tiers, isAdmin }: { players: 
     return players.map(p => {
       const reach = maxReach(p);
       const exp_tier = expectedTier(reach);
-      const exp_rate = expectedRate(reach);
+      const exp_rate = expectedRate(reach, p.nationality);
       const c = classify(p, reach, exp_tier, exp_rate);
       return { p, reach, exp_tier, exp_rate, ...c };
     });
