@@ -37,7 +37,7 @@ export default async function ShowcasePage() {
               'rate_ig_reels, rate_yt_full, rate_yt_shorts, rate_tiktok_ours, rate_twitch_kick_live, ' +
               'handle_ig, handle_x, handle_yt, handle_tiktok, handle_twitch, ' +
               'followers_ig, followers_x, followers_yt, followers_tiktok, followers_twitch, ' +
-              'notes, link, is_active')
+              'notes, link, is_active, past_campaigns, delivered_kpis')
       .or('is_active.is.null,is_active.eq.true'),
   ]);
 

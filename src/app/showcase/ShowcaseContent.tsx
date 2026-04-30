@@ -691,6 +691,39 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                       <div className="mt-2 text-[10px] text-mute leading-relaxed line-clamp-3">{c.notes}</div>
                     )}
 
+                    {/* Past campaigns — proof of brand partnership */}
+                    {c.past_campaigns && c.past_campaigns.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-line">
+                        <div className="text-[9px] uppercase tracking-wider text-gold font-bold mb-1.5">Past brand campaigns</div>
+                        <div className="flex flex-wrap gap-1">
+                          {c.past_campaigns.slice(0, 6).map((pc, i) => (
+                            <span key={i} title={[pc.deliverable, pc.year, pc.conversion_signal].filter(Boolean).join(' · ')}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-navy/5 text-navy border border-navy/15">
+                              {pc.brand}{pc.year ? ` '${String(pc.year).slice(-2)}` : ''}
+                            </span>
+                          ))}
+                          {c.past_campaigns.length > 6 && (
+                            <span className="text-[9px] text-mute">+{c.past_campaigns.length - 6} more</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Delivered KPIs — track record */}
+                    {c.delivered_kpis && c.delivered_kpis.length > 0 && (
+                      <div className="mt-2">
+                        <div className="text-[9px] uppercase tracking-wider text-greenDark font-bold mb-1">Delivered KPIs</div>
+                        <div className="space-y-0.5">
+                          {c.delivered_kpis.slice(0, 3).map((k, i) => (
+                            <div key={i} className="text-[10px] text-label flex items-baseline justify-between">
+                              <span>{k.kpi}</span>
+                              <span className="font-bold text-ink tabular-nums">{k.value}{k.unit ? ` ${k.unit}` : ''}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {showRates && c.rate_ig_reels > 0 && (
                       <div className="mt-3 pt-3 border-t border-dashed border-line flex items-center justify-between">
                         <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Starts at (IG Reel)</div>

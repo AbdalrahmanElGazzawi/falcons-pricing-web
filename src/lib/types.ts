@@ -126,6 +126,14 @@ export interface Creator {
   followers_tiktok?: number | null;
   followers_twitch?: number | null;
   is_active?: boolean | null;
+  avatar_url?: string | null;
+  brand_loyalty_default_pct?: number;
+  exclusivity_premium_pct?: number;
+  cross_vertical_multiplier?: number;
+  engagement_quality_modifier?: number;
+  production_style_default?: 'raw' | 'standard' | 'scripted' | 'full_studio' | string;
+  past_campaigns?: Array<{ brand: string; year?: number; deliverable?: string; reach?: number; engagement_rate?: number; conversion_signal?: string; link?: string; notes?: string }>;
+  delivered_kpis?: Array<{ kpi: string; value: string; unit?: string; source?: string; captured_at?: string }>;
   notes?: string;
   link?: string;
 }
