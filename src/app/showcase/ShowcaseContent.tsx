@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   Trophy, Users, Sparkles, Search, X as XIcon, ShieldCheck,
   Crown, Flame, MapPin, Zap, Eye, EyeOff, ArrowUpRight,
@@ -182,6 +182,22 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
   const [showRates, setShowRates] = useState(false);
   const [sort, setSort] = useState<'reach' | 'tier'>('reach');
   const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
+  // Deep-link from /roster, /admin, etc.: open detail modal directly
+  // when ?focus=<playerId> is in the URL. Cleared after consumption so
+  // a manual close doesn't re-open on re-render.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const focus = url.searchParams.get('focus');
+    const fid = focus ? Number(focus) : NaN;
+    if (Number.isFinite(fid) && players.some(p => p.id === fid)) {
+      setOpenPlayerId(fid);
+      setTab('players');
+      setShowRates(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const games = useMemo(() => Array.from(new Set(players.map(p => p.game).filter(Boolean))).sort() as string[], [players]);
 

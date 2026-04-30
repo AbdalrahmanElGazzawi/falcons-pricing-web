@@ -12,7 +12,7 @@ import { useToast } from '@/components/Toast';
 import {
   Users, Rows2, Rows3, Rows4, Pencil, Check, X as XIcon,
   Trophy, Clipboard, Briefcase, ScanSearch, Megaphone, Layers,
-  Twitch, Youtube, Instagram, Music2, AlertTriangle, Radio, Lock, Hourglass,
+  Twitch, Youtube, Instagram, Music2, AlertTriangle, Radio, Lock, Hourglass, ArrowUpRight,
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
 
@@ -321,7 +321,13 @@ function RosterRow({
     <tr>
       <td>
         <div className="flex items-center gap-3 min-w-0">
-          <Avatar src={p.avatar_url} name={p.nickname} size="sm" />
+          <Link
+            href={`/showcase?focus=${p.id}`}
+            className="shrink-0 rounded-full ring-2 ring-transparent hover:ring-greenDark transition focus:outline-none focus:ring-greenDark"
+            title="View details — pricing breakdown, achievements, edit"
+          >
+            <Avatar src={p.avatar_url} name={p.nickname} size="sm" />
+          </Link>
           <div className="min-w-0">
             {editingNick && isAdmin ? (
               <InlineInput
@@ -334,12 +340,22 @@ function RosterRow({
                 }}
               />
             ) : (
-              <div
-                className={`font-medium text-ink truncate ${isAdmin ? 'cursor-text hover:underline decoration-dotted' : ''}`}
-                onClick={() => isAdmin && setEditingNick(true)}
-                title={isAdmin ? 'Click to rename' : undefined}
-              >
-                {p.nickname}
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div
+                  className={`font-medium text-ink truncate ${isAdmin ? 'cursor-text hover:underline decoration-dotted' : ''}`}
+                  onClick={() => isAdmin && setEditingNick(true)}
+                  title={isAdmin ? 'Click to rename' : undefined}
+                >
+                  {p.nickname}
+                </div>
+                <Link
+                  href={`/showcase?focus=${p.id}`}
+                  className="shrink-0 text-mute hover:text-greenDark transition"
+                  title="Open detail card — pricing formula + achievements"
+                  aria-label="View detail card"
+                >
+                  <ArrowUpRight size={14} />
+                </Link>
               </div>
             )}
             {editingName && isAdmin ? (
