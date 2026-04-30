@@ -2,7 +2,10 @@
  * Team Falcons Pricing — 9-axis matrix engine.
  * Ported from Apps Script Code.gs (computeLine).
  *
- *  Final = SocialPrice × ConfidenceCap × (1 + RightsPct)
+ *  Final = SocialPrice × ConfidenceCap
+ *          × (1 - BrandLoyaltyPct) × (1 + ExclusivityPct)
+ *          × CrossVerticalMult × EngagementQualityMult × ProductionStyleMult
+ *          × (1 + RightsPct) × (0.5 if Companion)
  *  (AuthorityFloor disabled — was inflating cheap deliverables. See computeLine.)
  *
  *  SocialPrice    = BaseFee × Eng × Aud × Seas × CType × Lang × AuthFactor
@@ -35,6 +38,15 @@ export interface LineInput {
    * whatever deliverable the line represents. Composes with all other axes.
    */
   isCompanion?: boolean;
+  // ─── Creator-specific per-quote multipliers (auto-loaded from the creator
+  //     record; per-line overridable in the Configurator). World best practice
+  //     for creator pricing — captures negotiation context that pure
+  //     CPM × reach can't model.
+  brandLoyaltyPct?: number;          // 0 / 0.10 / 0.20 / 0.30 — discount for recurring brand
+  exclusivityPremiumPct?: number;    // 0 / 0.25 / 0.50 / 1.0 — category-exclusivity premium
+  crossVerticalMultiplier?: number;  // 1.0 / 1.15 / 1.30 — non-endemic brand reach premium
+  engagementQualityModifier?: number;// 0.85 / 1.0 / 1.15 / 1.25 — based on actual ER%
+  productionStyleMultiplier?: number;// 0.9 (raw) / 1.0 / 1.20 (scripted) / 1.40 (full studio)
 }
 
 export interface LineOutput {
@@ -48,6 +60,12 @@ export interface LineOutput {
   preAddOn: number;
   finalUnit: number;
   finalAmount: number;
+  // Per-line multiplier breakdown (so Configurator can surface 'why'):
+  brandLoyaltyApplied: number;
+  exclusivityApplied: number;
+  crossVerticalApplied: number;
+  engagementQualityApplied: number;
+  productionStyleApplied: number;
 }
 
 export function computeLine(p: LineInput): LineOutput {
@@ -91,8 +109,25 @@ export function computeLine(p: LineInput): LineOutput {
   const floorPrice = 0;
 
   const preAddOn = Math.max(socialPrice, floorPrice);
+  const brandLoyaltyPct        = Math.max(0, Math.min(0.5, p.brandLoyaltyPct ?? 0));
+  const exclusivityPremiumPct  = Math.max(0, Math.min(2.0, p.exclusivityPremiumPct ?? 0));
+  const crossVerticalMult      = Math.max(0.5, Math.min(2.0, p.crossVerticalMultiplier ?? 1.0));
+  const engagementQualityMult  = Math.max(0.5, Math.min(2.0, p.engagementQualityModifier ?? 1.0));
+  const productionStyleMult    = Math.max(0.5, Math.min(2.0, p.productionStyleMultiplier ?? 1.0));
+
   const finalUnitOrganic = Math.round(preAddOn * confCap);
-  const withRights = Math.round(finalUnitOrganic * (1 + (p.rightsPct ?? 0)));
+  // Stack creator multipliers on the organic line BEFORE rights uplift, so
+  // rights add on top of the negotiated base. Brand loyalty is a discount
+  // (1 - x); exclusivity is a premium (1 + x); the others are direct mults.
+  const afterCreatorMults = Math.round(
+    finalUnitOrganic
+      * (1 - brandLoyaltyPct)
+      * (1 + exclusivityPremiumPct)
+      * crossVerticalMult
+      * engagementQualityMult
+      * productionStyleMult
+  );
+  const withRights = Math.round(afterCreatorMults * (1 + (p.rightsPct ?? 0)));
   const finalUnit = p.isCompanion ? Math.round(withRights * 0.5) : withRights;
   const finalAmount = Math.round(finalUnit * qty);
 
@@ -101,6 +136,11 @@ export function computeLine(p: LineInput): LineOutput {
     engGated, authGated, seasGated, confCap,
     socialPrice, floorPrice, preAddOn,
     finalUnit, finalAmount,
+    brandLoyaltyApplied:        brandLoyaltyPct,
+    exclusivityApplied:         exclusivityPremiumPct,
+    crossVerticalApplied:       crossVerticalMult,
+    engagementQualityApplied:   engagementQualityMult,
+    productionStyleApplied:     productionStyleMult,
   };
 }
 

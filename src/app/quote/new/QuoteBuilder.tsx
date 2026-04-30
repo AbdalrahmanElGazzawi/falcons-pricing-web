@@ -405,6 +405,10 @@ export function QuoteBuilder({
   // Live pricing per line + totals (per-line overrides fall back to globals)
   const computed = useMemo(() => {
     const out = lines.map(l => {
+      // Look up creator multiplier defaults if this line is a creator
+      const creatorRec = l.talent_type === 'creator'
+        ? creators.find(c => c.id === l.talent_id)
+        : null;
       const r = computeLine({
         baseFee: l.base_rate,
         irl: l.irl,
@@ -425,6 +429,15 @@ export function QuoteBuilder({
         })(),
         qty: l.qty,
         isCompanion: !!l.is_companion,
+        // Creator-specific multipliers — per-line override falls back to creator default
+        brandLoyaltyPct:           l.o_brand_loyalty       ?? (creatorRec as any)?.brand_loyalty_default_pct  ?? 0,
+        exclusivityPremiumPct:     l.o_exclusivity         ?? (creatorRec as any)?.exclusivity_premium_pct    ?? 0,
+        crossVerticalMultiplier:   l.o_cross_vertical      ?? (creatorRec as any)?.cross_vertical_multiplier  ?? 1.0,
+        engagementQualityModifier: l.o_engagement_quality  ?? (creatorRec as any)?.engagement_quality_modifier ?? 1.0,
+        productionStyleMultiplier: l.o_production_style    ?? (function() {
+          const ps = (creatorRec as any)?.production_style_default;
+          return ps === 'raw' ? 0.9 : ps === 'scripted' ? 1.20 : ps === 'full_studio' ? 1.40 : 1.0;
+        })(),
       });
       return { ...l, ...r };
     });
