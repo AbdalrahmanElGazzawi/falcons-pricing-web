@@ -6,6 +6,7 @@ import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { QuoteActions } from './QuoteActions';
 import { ShareLinkBox } from './ShareLinkBox';
 import { EngagementCard } from './EngagementCard';
+import { BillingDetailsCard } from './BillingDetailsCard';
 
 /**
  * Client-side body of /quote/[id]. Holds the SAR/USD pill state and routes
@@ -165,6 +166,15 @@ export function QuoteDetailBody({
               />
             </div>
           </div>
+
+          {/* Client billing details — surfaced when client has accepted with billing block */}
+          {quote.client_billing && (
+            <BillingDetailsCard
+              billing={quote.client_billing}
+              acceptedByName={quote.accepted_by_name}
+              acceptedByEmail={quote.accepted_by_email}
+            />
+          )}
 
           {/* Lines */}
           <div className="card overflow-hidden">
