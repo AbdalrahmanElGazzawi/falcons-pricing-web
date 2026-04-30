@@ -46,7 +46,25 @@ export async function POST(req: Request, { params }: { params: { token: string }
     accepted_by_name: respondentName,
     accepted_by_email: respondentEmail || null,
   };
-  if (decision === 'approved') update.accepted_at = now;
+  if (decision === 'approved') {
+    update.accepted_at = now;
+    // Persist billing details collected on the public form for finance to consume
+    if (body.billing && typeof body.billing === 'object') {
+      update.client_billing = {
+        signer_title:  body.billing.signer_title ?? null,
+        signer_phone:  body.billing.signer_phone ?? null,
+        legal_name:    body.billing.legal_name ?? null,
+        cr_number:     body.billing.cr_number ?? null,
+        vat_number:    body.billing.vat_number ?? null,
+        address:       body.billing.address ?? null,
+        city:          body.billing.city ?? null,
+        country:       body.billing.country ?? null,
+        po_number:     body.billing.po_number ?? null,
+        payment_terms: body.billing.payment_terms ?? null,
+        captured_at:   now,
+      };
+    }
+  }
   if (decision === 'rejected') {
     update.declined_at = now;
     if (body.comment) update.decline_reason = String(body.comment).slice(0, 1000);
