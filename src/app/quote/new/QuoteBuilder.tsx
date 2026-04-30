@@ -186,6 +186,12 @@ export function QuoteBuilder({
   const [vatRate, setVatRate] = useState(0.15);
   const [usdRate, setUsdRate] = useState(3.75);
   const [notes, setNotes] = useState('');
+  // Billing detail fields (added 2026-04-30) — surface on the PDF, mirror Odoo template.
+  const [clientAddress, setClientAddress] = useState('');
+  const [clientVatNumber, setClientVatNumber] = useState('');
+  const [clientCountry, setClientCountry] = useState('Saudi Arabia');
+  const [expiresAt, setExpiresAt] = useState<string>(''); // ISO yyyy-mm-dd
+  const [paymentTerms, setPaymentTerms] = useState('Immediate Payment');
 
   // ── Global axes (apply to every line unless overridden per line)
   const [eng, setEng] = useState(AXIS_OPTIONS.engagement[1].factor);
@@ -249,6 +255,11 @@ export function QuoteBuilder({
         if (d.notes) setNotes(d.notes);
         if (d.preparedByName) setPreparedByName(d.preparedByName);
         if (d.preparedByTitle) setPreparedByTitle(d.preparedByTitle);
+        if (d.clientAddress) setClientAddress(d.clientAddress);
+        if (d.clientVatNumber) setClientVatNumber(d.clientVatNumber);
+        if (d.clientCountry) setClientCountry(d.clientCountry);
+        if (d.expiresAt) setExpiresAt(d.expiresAt);
+        if (d.paymentTerms) setPaymentTerms(d.paymentTerms);
         if (Array.isArray(d.demoTarget)) setDemoTarget(d.demoTarget);
         if (d.genderSkew) setGenderSkew(d.genderSkew);
         if (d.region) setRegion(d.region);
@@ -322,6 +333,7 @@ export function QuoteBuilder({
       const draft = {
         clientName, clientEmail, campaign, currency, vatRate, usdRate, notes,
         preparedByName, preparedByTitle, preparedByEmail,
+        clientAddress, clientVatNumber, clientCountry, expiresAt, paymentTerms,
         demoTarget, genderSkew, region, exclusivity, exclusivityMonths, kpiFocus,
         eng, aud, seas, ctype, lang, auth, obj, conf,
         addonMonths,
@@ -329,7 +341,9 @@ export function QuoteBuilder({
       };
       window.localStorage.setItem(LS_KEY, JSON.stringify(draft));
     } catch {}
-  }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, usdRate, notes, preparedByName, preparedByTitle, preparedByEmail, demoTarget, genderSkew, region, exclusivity, exclusivityMonths, kpiFocus,
+  }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, usdRate, notes, preparedByName, preparedByTitle, preparedByEmail,
+      clientAddress, clientVatNumber, clientCountry, expiresAt, paymentTerms,
+      demoTarget, genderSkew, region, exclusivity, exclusivityMonths, kpiFocus,
       eng, aud, seas, ctype, lang, auth, obj, conf, addonMonths, lines]);
 
   function openAddWizard() { setWizard({ mode: 'add' }); }
@@ -426,6 +440,12 @@ export function QuoteBuilder({
             owner_email: ownerEmail,
             prepared_by_name: preparedByName.trim() || null,
             prepared_by_title: preparedByTitle.trim() || null,
+            // Billing detail fields (mirror Odoo PDF layout)
+            client_address: clientAddress.trim() || null,
+            client_vat_number: clientVatNumber.trim() || null,
+            client_country: clientCountry.trim() || null,
+            expires_at: expiresAt || null,
+            payment_terms: paymentTerms.trim() || null,
             demo_target: demoTarget,
             gender_skew: genderSkew,
             region: region,
@@ -539,6 +559,11 @@ export function QuoteBuilder({
       setPreparedByName(h.prepared_by_name ?? ownerName ?? '');
       setPreparedByTitle(h.prepared_by_title ?? '');
       setPreparedByEmail(h.prepared_by_email ?? ownerEmail ?? '');
+      setClientAddress(h.client_address ?? '');
+      setClientVatNumber(h.client_vat_number ?? '');
+      setClientCountry(h.client_country ?? 'Saudi Arabia');
+      setExpiresAt(h.expires_at ? String(h.expires_at).slice(0, 10) : '');
+      setPaymentTerms(h.payment_terms ?? 'Immediate Payment');
       setDemoTarget(Array.isArray(h.demo_target) ? h.demo_target : []);
       setGenderSkew(h.gender_skew === 'male' || h.gender_skew === 'female' ? h.gender_skew : 'mixed');
       setRegion(h.region ?? 'KSA');
@@ -651,6 +676,33 @@ export function QuoteBuilder({
           <div>
             <label className="label">Campaign</label>
             <input value={campaign} onChange={e => setCampaign(e.target.value)} className="input" placeholder="e.g. Ramadan 2026" />
+          </div>
+          <div className="sm:col-span-2 lg:col-span-3">
+            <label className="label">Client billing address</label>
+            <textarea
+              value={clientAddress}
+              onChange={e => setClientAddress(e.target.value)}
+              className="input min-h-[68px] font-mono text-xs"
+              placeholder="e.g. Khalid Bin Al Walid 208\nAl Hamra, Riyadh 13216\n7350"
+            />
+            <p className="text-[10px] text-mute mt-1">Multiline. Renders in the BILL TO block on the PDF.</p>
+          </div>
+          <div>
+            <label className="label">Client VAT number</label>
+            <input value={clientVatNumber} onChange={e => setClientVatNumber(e.target.value)} className="input" placeholder="e.g. 310482538300003" />
+          </div>
+          <div>
+            <label className="label">Client country</label>
+            <input value={clientCountry} onChange={e => setClientCountry(e.target.value)} className="input" placeholder="e.g. Saudi Arabia" />
+          </div>
+          <div>
+            <label className="label">Expiration date</label>
+            <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} className="input" />
+            <p className="text-[10px] text-mute mt-1">Defaults to issue date + 9 days on PDF if blank.</p>
+          </div>
+          <div>
+            <label className="label">Payment terms</label>
+            <input value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} className="input" placeholder="Immediate Payment" />
           </div>
           <div>
             <label className="label">Prepared by — your name</label>
