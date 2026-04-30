@@ -949,14 +949,88 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                   </div>
                 )}
 
-                {/* Rates (only if showRates is on) */}
-                {showRates && p.rate_ig_reel > 0 && (
-                  <div className="rounded-lg border border-greenSoft bg-greenSoft/30 px-4 py-3">
-                    <div className="text-[10px] uppercase tracking-wider text-greenDark font-bold mb-1">Internal — starting from</div>
-                    <div className="text-2xl font-extrabold text-greenDark tabular-nums">SAR {p.rate_ig_reel.toLocaleString('en-US')}</div>
-                    <div className="text-[11px] text-mute mt-1">IG Reel base rate. Other platforms scale by uniform ratios; final price depends on campaign axes + add-ons.</div>
+                {/* ─── Pricing breakdown — "Why this price?" ──────────────── */}
+                {showRates && (
+                  <div className="rounded-xl border-2 border-greenDark/30 bg-white overflow-hidden">
+                    <div className="bg-greenDark text-white px-4 py-2.5 flex items-center justify-between">
+                      <div className="text-xs uppercase tracking-wider font-bold">Why this price?</div>
+                      <div className="text-[10px] opacity-90">Methodology: CPM × Reach × 3.75 SAR/USD</div>
+                    </div>
+                    <div className="p-4 space-y-2 text-xs">
+                      {[
+                        { label: 'IG Reel',         cpm: 18, n: p.followers_ig||0,     rate: p.rate_ig_reel },
+                        { label: 'IG Static',       cpm: 10, n: p.followers_ig||0,     rate: (p as any).rate_ig_static },
+                        { label: 'IG Story',        cpm:  6, n: p.followers_ig||0,     rate: (p as any).rate_ig_story },
+                        { label: 'TikTok Video',    cpm: 20, n: p.followers_tiktok||0, rate: (p as any).rate_tiktok_video },
+                        { label: 'TikTok Repost',   cpm: 10, n: p.followers_tiktok||0, rate: (p as any).rate_tiktok_repost },
+                        { label: 'YT Short',        cpm: 10, n: p.followers_yt||0,     rate: (p as any).rate_yt_short },
+                        { label: 'YT Short Repost', cpm:  5, n: p.followers_yt||0,     rate: (p as any).rate_yt_short_repost },
+                        { label: 'X Post',          cpm:  8, n: p.followers_x||0,      rate: (p as any).rate_x_post },
+                        { label: 'X Repost',        cpm:  4, n: p.followers_x||0,      rate: (p as any).rate_x_repost },
+                        { label: 'Twitch Stream',   cpm: 20, n: p.followers_twitch||0, rate: (p as any).rate_twitch_stream },
+                        { label: 'Twitch Integ.',   cpm: 10, n: p.followers_twitch||0, rate: (p as any).rate_twitch_integ },
+                      ].filter(r => (r.rate || 0) > 0).map(r => (
+                        <div key={r.label} className="grid grid-cols-12 items-baseline gap-2">
+                          <div className="col-span-3 font-semibold text-ink">{r.label}</div>
+                          <div className="col-span-5 text-mute font-mono text-[10px] tabular-nums">
+                            ${r.cpm} × {fmtCount(r.n)} ÷ 1k × 3.75
+                          </div>
+                          <div className="col-span-4 text-right font-bold text-greenDark tabular-nums">
+                            SAR {Number(r.rate || 0).toLocaleString('en-US')}
+                          </div>
+                        </div>
+                      ))}
+                      <div className="grid grid-cols-12 items-baseline gap-2 pt-2 border-t border-line">
+                        <div className="col-span-3 font-semibold text-ink">IRL / Event</div>
+                        <div className="col-span-5 text-mute italic text-[10px]">
+                          Tier-flat fee ({p.tier_code || 'unknown tier'}, doesn't scale with followers)
+                        </div>
+                        <div className="col-span-4 text-right font-bold text-greenDark tabular-nums">
+                          SAR {Number((p as any).rate_irl || 0).toLocaleString('en-US')}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-greenSoft/30 border-t border-greenDark/20 px-4 py-2 text-[11px] text-greenDark leading-relaxed">
+                      Final quote price = base × engagement × audience × seasonality × content type × language × authority × confidence × (1 + rights). All multipliers default to 1.0 — flexed per-deal in the Configurator.
+                    </div>
                   </div>
                 )}
+
+                {/* ─── Action bar (Edit + Liquipedia link) ───────────────── */}
+                <div className="flex items-center gap-2 flex-wrap pt-2">
+                  <a
+                    href={`/admin/players/${p.id}`}
+                    className="btn btn-primary text-xs"
+                    title="Edit this talent (admin only — page-gated)"
+                  >
+                    Edit talent
+                  </a>
+                  {p.game && (
+                    <a
+                      href={`https://liquipedia.net/${(p.game.toLowerCase().includes('counter') ? 'counterstrike'
+                        : p.game.toLowerCase().includes('dota') ? 'dota2'
+                        : p.game.toLowerCase().includes('valorant') ? 'valorant'
+                        : p.game.toLowerCase().includes('apex') ? 'apexlegends'
+                        : p.game.toLowerCase().includes('fortnite') ? 'fortnite'
+                        : p.game.toLowerCase().includes('call of duty') ? 'callofduty'
+                        : p.game.toLowerCase().includes('mobile legends') ? 'mobilelegends'
+                        : p.game.toLowerCase().includes('overwatch') ? 'overwatch'
+                        : p.game.toLowerCase().includes('rainbow') ? 'rainbowsix'
+                        : p.game.toLowerCase().includes('rocket') ? 'rocketleague'
+                        : p.game.toLowerCase().includes('pubg') ? 'pubg'
+                        : p.game.toLowerCase().includes('chess') ? 'chess'
+                        : 'counterstrike')}/${encodeURIComponent(p.nickname)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-ghost text-xs"
+                    >
+                      <ArrowUpRight size={12} /> Liquipedia
+                    </a>
+                  )}
+                  <span className="text-[10px] text-mute ml-auto">
+                    Tier {p.tier_code?.replace('Tier ', '')} {p.measurement_confidence === 'exact' ? '· verified data' : '· estimated'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
