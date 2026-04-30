@@ -112,6 +112,16 @@ export function QuoteConfigurator({
   });
   const [isCompanion, setIsCompanion] = useState<boolean>(!!initialEdit?.is_companion);
 
+  // Per-line creator-multiplier overrides. null = use creator's stored default.
+  // Auto-loaded when a creator is selected (see effect below).
+  const [creatorMults, setCreatorMults] = useState({
+    o_brand_loyalty:      (initialEdit as any)?.o_brand_loyalty       ?? null,
+    o_exclusivity:        (initialEdit as any)?.o_exclusivity         ?? null,
+    o_cross_vertical:     (initialEdit as any)?.o_cross_vertical      ?? null,
+    o_engagement_quality: (initialEdit as any)?.o_engagement_quality  ?? null,
+    o_production_style:   (initialEdit as any)?.o_production_style    ?? null,
+  });
+
   // Tracks which override values were auto-seeded from the talent record (vs
   // typed manually). Drives the "from <talent>" badge in the override panel
   // and prevents the auto-seed effect from clobbering manual edits.
@@ -286,11 +296,24 @@ export function QuoteConfigurator({
           auth: overrides.o_auth  ?? globals.auth,
           obj: globals.obj, conf: globals.conf,
           floorShare, rightsPct: lineAddonsUpliftPct, qty: sel.qty,
+          // Creator-multiplier preview (override → creator default → neutral)
+          brandLoyaltyPct: creatorMults.o_brand_loyalty
+            ?? ((selectedCreator as any)?.brand_loyalty_default_pct ?? 0),
+          exclusivityPremiumPct: creatorMults.o_exclusivity
+            ?? ((selectedCreator as any)?.exclusivity_premium_pct ?? 0),
+          crossVerticalMultiplier: creatorMults.o_cross_vertical
+            ?? ((selectedCreator as any)?.cross_vertical_multiplier ?? 1.0),
+          engagementQualityModifier: creatorMults.o_engagement_quality
+            ?? ((selectedCreator as any)?.engagement_quality_modifier ?? 1.0),
+          productionStyleMultiplier: creatorMults.o_production_style ?? (function() {
+            const ps = (selectedCreator as any)?.production_style_default;
+            return ps === 'raw' ? 0.9 : ps === 'scripted' ? 1.20 : ps === 'full_studio' ? 1.40 : 1.0;
+          })(),
           isCompanion,
         });
         return { key: k, label: d.label, qty: sel.qty, rate: baseFee, ...r };
       });
-  }, [picks, deliverables, selectedTalent, selectedPlayer, selectedCreator, tierMap, overrides, globals, addonsUpliftPct, lineAddonsUpliftPct, isCompanion]);
+  }, [picks, deliverables, selectedTalent, selectedPlayer, selectedCreator, tierMap, overrides, globals, addonsUpliftPct, lineAddonsUpliftPct, isCompanion, creatorMults]);
 
   const previewTotal = previewLines.reduce((s, l) => s + l.finalAmount, 0);
   const selectedCount = previewLines.length;
@@ -335,6 +358,12 @@ export function QuoteConfigurator({
         o_seas: overrides.o_seas, o_lang: overrides.o_lang, o_auth: overrides.o_auth,
         addon_months: { ...lineAddonMonths },
         is_companion: isCompanion,
+        // Creator-specific multiplier overrides (saved with the draft)
+        o_brand_loyalty:       creatorMults.o_brand_loyalty,
+        o_exclusivity:         creatorMults.o_exclusivity,
+        o_cross_vertical:      creatorMults.o_cross_vertical,
+        o_engagement_quality:  creatorMults.o_engagement_quality,
+        o_production_style:    creatorMults.o_production_style,
       };
     });
     onCommit(drafts);
@@ -727,6 +756,89 @@ export function QuoteConfigurator({
                       );
                     })()}
                   </div>
+                  {/* ─── Creator multipliers (only when talent is a creator) ─── */}
+                  {selectedCreator && (
+                    <div className="mt-5 rounded-lg border border-line bg-white p-3.5">
+                      <div className="flex items-baseline justify-between gap-3 mb-1.5 flex-wrap">
+                        <div className="font-semibold text-sm text-ink">Creator multipliers</div>
+                        <div className="text-[10px] text-mute uppercase tracking-wide">Defaults from {(selectedCreator as any).nickname} · override per-deal</div>
+                      </div>
+                      <p className="text-xs text-label leading-relaxed mb-3">
+                        Auto-applied when this creator joins a quote. Override here for the specific brand/scope of THIS deal — doesn't change the creator's stored default.
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Brand Loyalty */}
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">Brand loyalty</label>
+                          <select className="input text-sm h-9"
+                            value={creatorMults.o_brand_loyalty === null ? 'DEFAULT' : String(creatorMults.o_brand_loyalty)}
+                            onChange={e => setCreatorMults(s => ({ ...s, o_brand_loyalty: e.target.value === 'DEFAULT' ? null : parseFloat(e.target.value) }))}>
+                            <option value="DEFAULT">Creator default ({Math.round(((selectedCreator as any).brand_loyalty_default_pct ?? 0) * 100)}%)</option>
+                            <option value="0">0% (new brand)</option>
+                            <option value="0.10">−10% (2nd deal)</option>
+                            <option value="0.20">−20% (3+ deals)</option>
+                            <option value="0.30">−30% (annual contract)</option>
+                          </select>
+                          <p className="text-[10px] text-mute mt-1">Discount for recurring brand</p>
+                        </div>
+                        {/* Exclusivity */}
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">Exclusivity premium</label>
+                          <select className="input text-sm h-9"
+                            value={creatorMults.o_exclusivity === null ? 'DEFAULT' : String(creatorMults.o_exclusivity)}
+                            onChange={e => setCreatorMults(s => ({ ...s, o_exclusivity: e.target.value === 'DEFAULT' ? null : parseFloat(e.target.value) }))}>
+                            <option value="DEFAULT">Creator default (+{Math.round(((selectedCreator as any).exclusivity_premium_pct ?? 0) * 100)}%)</option>
+                            <option value="0">0% (no exclusivity)</option>
+                            <option value="0.25">+25% (1 month)</option>
+                            <option value="0.50">+50% (1 quarter)</option>
+                            <option value="1.00">+100% (1 year)</option>
+                          </select>
+                          <p className="text-[10px] text-mute mt-1">Category lock window</p>
+                        </div>
+                        {/* Cross-vertical */}
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">Cross-vertical</label>
+                          <select className="input text-sm h-9"
+                            value={creatorMults.o_cross_vertical === null ? 'DEFAULT' : String(creatorMults.o_cross_vertical)}
+                            onChange={e => setCreatorMults(s => ({ ...s, o_cross_vertical: e.target.value === 'DEFAULT' ? null : parseFloat(e.target.value) }))}>
+                            <option value="DEFAULT">Creator default (×{((selectedCreator as any).cross_vertical_multiplier ?? 1.0).toFixed(2)})</option>
+                            <option value="1.0">×1.00 (gaming brand)</option>
+                            <option value="1.15">×1.15 (consumer brand)</option>
+                            <option value="1.30">×1.30 (mainstream non-endemic)</option>
+                          </select>
+                          <p className="text-[10px] text-mute mt-1">Brand vertical fit</p>
+                        </div>
+                        {/* Engagement quality */}
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">Engagement quality</label>
+                          <select className="input text-sm h-9"
+                            value={creatorMults.o_engagement_quality === null ? 'DEFAULT' : String(creatorMults.o_engagement_quality)}
+                            onChange={e => setCreatorMults(s => ({ ...s, o_engagement_quality: e.target.value === 'DEFAULT' ? null : parseFloat(e.target.value) }))}>
+                            <option value="DEFAULT">Creator default (×{((selectedCreator as any).engagement_quality_modifier ?? 1.0).toFixed(2)})</option>
+                            <option value="0.85">×0.85 (low ER)</option>
+                            <option value="1.0">×1.00 (avg ER)</option>
+                            <option value="1.15">×1.15 (high ER)</option>
+                            <option value="1.25">×1.25 (elite ER)</option>
+                          </select>
+                          <p className="text-[10px] text-mute mt-1">Based on measured ER%</p>
+                        </div>
+                        {/* Production style */}
+                        <div className="sm:col-span-2">
+                          <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">Production style</label>
+                          <select className="input text-sm h-9"
+                            value={creatorMults.o_production_style === null ? 'DEFAULT' : String(creatorMults.o_production_style)}
+                            onChange={e => setCreatorMults(s => ({ ...s, o_production_style: e.target.value === 'DEFAULT' ? null : parseFloat(e.target.value) }))}>
+                            <option value="DEFAULT">Creator default ({(selectedCreator as any).production_style_default ?? 'standard'})</option>
+                            <option value="0.9">Raw / UGC (×0.90)</option>
+                            <option value="1.0">Standard edit (×1.00)</option>
+                            <option value="1.20">Scripted / branded (×1.20)</option>
+                            <option value="1.40">Full studio production (×1.40)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Companion / Cameo role — half-rate cap across deliverables + rights */}
                   <div className="mt-5 rounded-lg border border-line bg-white p-3.5">
                     <div className="flex items-baseline justify-between gap-3 mb-1.5 flex-wrap">
