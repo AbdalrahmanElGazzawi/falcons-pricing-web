@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { UserRole, QuoteStatus } from '@/lib/types';
-import { Send, Check, X, Lock, Trophy, Frown, Trash2 } from 'lucide-react';
+import { Send, Check, X, Lock, Trophy, Frown, Trash2, Pencil } from 'lucide-react';
 
 const NEXT_STATUSES: Record<QuoteStatus, { status: QuoteStatus; label: string; icon: any; cls: string; staffOnly?: boolean; adminOnly?: boolean }[]> = {
   draft: [
@@ -86,6 +87,16 @@ export function QuoteActions({ quoteId, status, role, canDelete }: { quoteId: st
         </div>
       ) : (
         <div className="flex flex-col gap-2">
+          {/* Draft quotes get a fast path back into the builder so reps can
+              keep iterating after admin sends one back. */}
+          {status === 'draft' && (
+            <Link
+              href={`/quote/new?draft=${quoteId}`}
+              className="btn btn-primary w-full justify-center"
+            >
+              <Pencil size={14} /> Edit in builder
+            </Link>
+          )}
           {transitions.map(t => {
             const Icon = t.icon;
             return (

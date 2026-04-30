@@ -192,6 +192,15 @@ export function QuoteBuilder({
   const [clientCountry, setClientCountry] = useState('Saudi Arabia');
   const [expiresAt, setExpiresAt] = useState<string>(''); // ISO yyyy-mm-dd
   const [paymentTerms, setPaymentTerms] = useState('Immediate Payment');
+  // Designated approver — pick from the team or type a custom name. This pre-fills
+  // approved_by_name so the PDF carries the approver's identity even before the
+  // admin formally clicks "Approve" on /quote/[id].
+  const APPROVERS = [
+    { name: 'Ronza Mariam', email: 'ronza@falcons.sa' },
+    { name: 'Jordan',       email: 'jordan@falcons.sa' },
+  ];
+  const [approverName, setApproverName] = useState('');
+  const [approverEmail, setApproverEmail] = useState('');
 
   // ── Global axes (apply to every line unless overridden per line)
   const [eng, setEng] = useState(AXIS_OPTIONS.engagement[1].factor);
@@ -260,6 +269,8 @@ export function QuoteBuilder({
         if (d.clientCountry) setClientCountry(d.clientCountry);
         if (d.expiresAt) setExpiresAt(d.expiresAt);
         if (d.paymentTerms) setPaymentTerms(d.paymentTerms);
+        if (d.approverName) setApproverName(d.approverName);
+        if (d.approverEmail) setApproverEmail(d.approverEmail);
         if (Array.isArray(d.demoTarget)) setDemoTarget(d.demoTarget);
         if (d.genderSkew) setGenderSkew(d.genderSkew);
         if (d.region) setRegion(d.region);
@@ -334,6 +345,7 @@ export function QuoteBuilder({
         clientName, clientEmail, campaign, currency, vatRate, usdRate, notes,
         preparedByName, preparedByTitle, preparedByEmail,
         clientAddress, clientVatNumber, clientCountry, expiresAt, paymentTerms,
+        approverName, approverEmail,
         demoTarget, genderSkew, region, exclusivity, exclusivityMonths, kpiFocus,
         eng, aud, seas, ctype, lang, auth, obj, conf,
         addonMonths,
@@ -343,6 +355,7 @@ export function QuoteBuilder({
     } catch {}
   }, [hydrated, clientName, clientEmail, campaign, currency, vatRate, usdRate, notes, preparedByName, preparedByTitle, preparedByEmail,
       clientAddress, clientVatNumber, clientCountry, expiresAt, paymentTerms,
+      approverName, approverEmail,
       demoTarget, genderSkew, region, exclusivity, exclusivityMonths, kpiFocus,
       eng, aud, seas, ctype, lang, auth, obj, conf, addonMonths, lines]);
 
@@ -446,6 +459,8 @@ export function QuoteBuilder({
             client_country: clientCountry.trim() || null,
             expires_at: expiresAt || null,
             payment_terms: paymentTerms.trim() || null,
+            approved_by_name: approverName.trim() || null,
+            approved_by_email: approverEmail.trim() || null,
             demo_target: demoTarget,
             gender_skew: genderSkew,
             region: region,
@@ -564,6 +579,8 @@ export function QuoteBuilder({
       setClientCountry(h.client_country ?? 'Saudi Arabia');
       setExpiresAt(h.expires_at ? String(h.expires_at).slice(0, 10) : '');
       setPaymentTerms(h.payment_terms ?? 'Immediate Payment');
+      setApproverName(h.approved_by_name ?? '');
+      setApproverEmail(h.approved_by_email ?? '');
       setDemoTarget(Array.isArray(h.demo_target) ? h.demo_target : []);
       setGenderSkew(h.gender_skew === 'male' || h.gender_skew === 'female' ? h.gender_skew : 'mixed');
       setRegion(h.region ?? 'KSA');
@@ -704,6 +721,41 @@ export function QuoteBuilder({
             <label className="label">Payment terms</label>
             <input value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} className="input" placeholder="Immediate Payment" />
           </div>
+          <div>
+            <label className="label">Designated approver</label>
+            <select
+              value={
+                APPROVERS.find(a => a.name === approverName)
+                  ? approverName
+                  : (approverName ? '__custom' : '')
+              }
+              onChange={e => {
+                const v = e.target.value;
+                if (v === '') { setApproverName(''); setApproverEmail(''); return; }
+                if (v === '__custom') { setApproverName(approverName || ''); return; }
+                const a = APPROVERS.find(x => x.name === v);
+                if (a) { setApproverName(a.name); setApproverEmail(a.email); }
+              }}
+              className="input"
+            >
+              <option value="">- None -</option>
+              {APPROVERS.map(a => <option key={a.name} value={a.name}>{a.name}</option>)}
+              <option value="__custom">Custom...</option>
+            </select>
+            <p className="text-[10px] text-mute mt-1">Pre-fills the &quot;Approved by&quot; line on the PDF.</p>
+          </div>
+          {approverName && !APPROVERS.find(a => a.name === approverName) ? (
+            <div className="contents">
+              <div>
+                <label className="label">Approver name</label>
+                <input value={approverName} onChange={e => setApproverName(e.target.value)} className="input" placeholder="e.g. Mostafa Ahmed" />
+              </div>
+              <div>
+                <label className="label">Approver email</label>
+                <input value={approverEmail} onChange={e => setApproverEmail(e.target.value)} className="input" placeholder="approver@falcons.sa" />
+              </div>
+            </div>
+          ) : null}
           <div>
             <label className="label">Prepared by — your name</label>
             <input value={preparedByName} onChange={e => setPreparedByName(e.target.value)} className="input" placeholder="e.g. Abdalrahman ElGazzawi" />
