@@ -30,7 +30,9 @@ export default async function ShowcasePage() {
               'followers_ig, followers_twitch, followers_yt, followers_tiktok, followers_x, followers_fb, followers_snap, ' +
               'instagram, twitch, youtube, tiktok, x_handle, kick, facebook, ' +
               'bio, achievements, date_of_birth, ingame_role')
-      .eq('is_active', true),
+      .eq('is_active', true)
+      // Hide brand-account placeholders (e.g. "Team Falcons GG") from the showcase
+      .not('role', 'in', '("Brand","Brand Account")'),
     supabase
       .from('creators')
       .select('id, nickname, full_name, nationality, tier_code, score, avatar_url, ' +
