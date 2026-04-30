@@ -1,0 +1,26 @@
+# Falcons Pricing OS — code ownership.
+# GitHub will request review from these owners on PRs touching the listed paths.
+# Koge owns everything by default; specific paths below require explicit approval
+# because changes there have material business impact.
+
+# Default owner — everything
+*                                       @AbdalrahmanElGazzawi
+
+# Pricing methodology canon — change requires re-validating against benchmarks
+/Falcons-Pricing-SOT-v1.0.md            @AbdalrahmanElGazzawi
+/Falcons-Pricing-SOT-v1.0.docx          @AbdalrahmanElGazzawi
+/CLAUDE.md                              @AbdalrahmanElGazzawi
+
+# Database migrations — every migration changes live production rates / schema
+/supabase/migrations/                   @AbdalrahmanElGazzawi
+
+# Pricing engine — formula, tier baselines, multipliers
+/src/lib/pricing.ts                     @AbdalrahmanElGazzawi
+/src/lib/currency/                      @AbdalrahmanElGazzawi
+
+# Audit + market reference — versioned analysis artifacts
+/falcons-market-value-reference.xlsx    @AbdalrahmanElGazzawi
+/market-audit-memo*.md                  @AbdalrahmanElGazzawi
+/repricing-*.csv                        @AbdalrahmanElGazzawi
+/full-roster-audit-*.csv                @AbdalrahmanElGazzawi
+/methodology-refresh-*.csv              @AbdalrahmanElGazzawi

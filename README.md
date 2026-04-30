@@ -1,3 +1,8 @@
+> **Start here:** read [`CLAUDE.md`](./CLAUDE.md) before making changes. It's the canonical bootstrap doc — methodology, services connected, deploy flow, hard rules.
+> The pricing methodology lives in [`Falcons-Pricing-SOT-v1.0.md`](./Falcons-Pricing-SOT-v1.0.md). The audit and per-talent benchmarks live in [`falcons-market-value-reference.xlsx`](./falcons-market-value-reference.xlsx) and `market-audit-memo*.md`.
+
+---
+
 # Team Falcons · Pricing OS (Web)
 
 Internal pricing engine + client-facing quotation portal for Team Falcons commercials.
