@@ -84,10 +84,10 @@ export function QuoteBuilder({
   const [error, setError] = useState<string | null>(null);
 
   // ── Build/Preview tab
-  // Land on Campaign tab for fresh quotes — sales should set client + the
-  // campaign-level axes BEFORE picking deliverables. Loading a saved draft
-  // explicitly switches to Build (see loadDraft below).
-  const [view, setView] = useState<'campaign' | 'build' | 'summary'>('campaign');
+  // Default to Build so reps can start pricing immediately. Client / campaign
+  // meta still gets validated at submit — Campaign tab marker on the strip
+  // turns red until clientName is filled.
+  const [view, setView] = useState<'campaign' | 'build' | 'summary'>('build');
 
   // Track which lines are expanded inline for editing. Replaces the old
   // pencil→opens-configurator flow — rates, axes, addons all editable in place.

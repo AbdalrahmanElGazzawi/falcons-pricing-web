@@ -288,10 +288,10 @@ export function Calculator({
             </div>
           )}
         </div>
-        <div className="card overflow-hidden">
-          <div className="bg-gradient-to-br from-green to-greenDark text-white p-5">
-            <div className="text-[10px] tracking-widest opacity-80">QUICK ESTIMATE</div>
-            <div className="text-3xl font-extrabold mt-1 leading-tight tabular-nums">{fmtCurrency(computed.totals.total, currency, usdRate)}</div>
+        <div className="card overflow-hidden ring-2 ring-green/40 shadow-lg">
+          <div className="bg-gradient-to-br from-green to-greenDark text-white p-6">
+            <div className="text-[10px] tracking-widest opacity-90 font-semibold">QUICK ESTIMATE · LIVE TOTAL</div>
+            <div className="text-4xl font-extrabold mt-2 leading-tight tabular-nums">{fmtCurrency(computed.totals.total, currency, usdRate)}</div>
             {/* Side-by-side SAR ↔ USD so the sales rep sees both at once */}
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/15 text-xs">
               <div>
@@ -315,22 +315,27 @@ export function Calculator({
           </div>
         </div>
 
-        <button onClick={copySummary} disabled={lines.length === 0}
-          className="btn btn-ghost w-full justify-center disabled:opacity-50">
-          <Copy size={14} /> Copy summary
-        </button>
         <button onClick={shipToQuote} disabled={lines.length === 0}
-          className="btn btn-primary w-full justify-center disabled:opacity-50">
-          <Send size={14} /> Send to a quote →
+          className="btn btn-primary w-full justify-center disabled:opacity-50 text-base py-3 shadow-md">
+          <Send size={16} /> Convert to full quote →
+        </button>
+        <button onClick={copySummary} disabled={lines.length === 0}
+          className="btn btn-ghost w-full justify-center disabled:opacity-50 text-sm">
+          <Copy size={13} /> Copy summary to clipboard
         </button>
 
-        <div className="card card-p text-xs text-label">
-          <div className="flex items-center gap-2 mb-2 text-ink">
-            <Sparkles size={14} /> <span className="font-semibold">Tip</span>
+        <div className="card card-p text-xs text-label space-y-2">
+          <div className="flex items-center gap-2 text-ink">
+            <Sparkles size={14} /> <span className="font-semibold">How it works</span>
           </div>
-          <p className="leading-relaxed">
-            <strong>Copy summary</strong> drops a clean SAR breakdown into your clipboard for a quick reply. <strong>Send to a quote</strong> hands the basket off to /quote/new with everything pre-filled — fill in client name + campaign and Submit.
-          </p>
+          <ol className="list-decimal list-inside space-y-1.5 leading-relaxed">
+            <li>Pick a talent above, tick deliverables, set qty.</li>
+            <li>Live total updates instantly with all axes + rights stacked.</li>
+            <li>Hit <strong className="text-greenDark">Convert to full quote</strong> when ready — client name and campaign get filled at submit time, not now.</li>
+          </ol>
+          <div className="pt-2 mt-2 border-t border-line text-[11px] text-mute">
+            No client info needed here. Just price.
+          </div>
         </div>
       </aside>
     </div>
