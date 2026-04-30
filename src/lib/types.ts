@@ -39,6 +39,7 @@ export interface Player {
   rate_tiktok_repost: number;
   rate_tiktok_share: number;
   rate_yt_short: number;
+  rate_yt_short_repost: number;
   rate_x_post: number;
   rate_x_repost: number;
   rate_x_share: number;
@@ -96,6 +97,7 @@ export interface Creator {
   rate_yt_full: number;
   rate_yt_preroll: number;
   rate_yt_shorts: number;
+  rate_yt_shorts_repost: number;
   rate_snapchat: number;
   rate_tiktok_ours: number;
   rate_tiktok_client: number;
@@ -221,6 +223,7 @@ export const PLAYER_PLATFORMS = [
   { key: 'rate_tiktok_repost', label: 'TikTok Repost',      group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_tiktok_share',  label: 'TikTok Stitch/Duet', group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_yt_short',      label: 'YT Short',           group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_yt_short_repost', label: 'YT Short Repost',    group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_x_post',        label: 'X Post',             group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_x_repost',      label: 'X Retweet',          group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_x_share',       label: 'X Quote Tweet',      group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
@@ -255,6 +258,7 @@ export const CREATOR_PLATFORMS = [
   { key: 'rate_yt_full',           label: 'YT Full Video',       group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_yt_preroll',        label: 'YT 1–2min Pre-roll',  group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_yt_shorts',         label: 'YT Shorts',           group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_yt_shorts_repost',  label: 'YT Shorts Repost',    group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_snapchat',          label: 'Snapchat',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_tiktok_ours',       label: 'TikTok – Falcons Account (Ours)', group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_tiktok_client',     label: 'TikTok – Client Account (Theirs)', group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },

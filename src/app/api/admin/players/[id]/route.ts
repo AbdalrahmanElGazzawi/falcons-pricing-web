@@ -7,7 +7,7 @@ const ALLOWED = new Set([
   'avatar_url', 'date_of_birth', 'ingame_role',
   'nickname', 'full_name', 'role', 'game', 'team', 'nationality', 'tier_code',
   'rate_ig_reel', 'rate_ig_static', 'rate_ig_story', 'rate_tiktok_video',
-  'rate_yt_short', 'rate_x_post', 'rate_fb_post', 'rate_twitch_stream',
+  'rate_yt_short', 'rate_yt_short_repost', 'rate_x_post', 'rate_fb_post', 'rate_twitch_stream',
   'rate_twitch_integ', 'rate_irl',
   'commission', 'markup', 'floor_share', 'authority_factor',
   'default_seasonality', 'default_language', 'default_audience', 'default_engagement', 'measurement_confidence',
