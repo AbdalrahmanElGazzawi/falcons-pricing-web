@@ -2,7 +2,8 @@
  * Team Falcons Pricing — 9-axis matrix engine.
  * Ported from Apps Script Code.gs (computeLine).
  *
- *  Final = MAX(SocialPrice, AuthorityFloor) × ConfidenceCap × (1 + RightsPct)
+ *  Final = SocialPrice × ConfidenceCap × (1 + RightsPct)
+ *  (AuthorityFloor disabled — was inflating cheap deliverables. See computeLine.)
  *
  *  SocialPrice    = BaseFee × Eng × Aud × Seas × CType × Lang × AuthFactor
  *  AuthorityFloor = IRL     × FloorShare × Seas × Lang × AuthFactor
@@ -81,9 +82,13 @@ export function computeLine(p: LineInput): LineOutput {
   const socialPrice = Math.round(
     p.baseFee * engGated * aud * seasGated * ctype * lang * authGated
   );
-  const floorPrice = Math.round(
-    (p.irl ?? 0) * floorShare * seasGated * lang * authGated
-  );
+  // AuthorityFloor disabled. Originally enforced a minimum line price of
+  // IRL × floorShare so a top-tier player couldn't be under-priced for cheap
+  // deliverables — but with rate-card-anchored base rates it overrides
+  // valid cheap deliverables (TikTok Repost 1,800 SAR base inflated to
+  // 13,750 SAR by the floor). Hard-coded to 0 so saved drafts with stale
+  // floorShare=0.5 also compute correctly without DB sync.
+  const floorPrice = 0;
 
   const preAddOn = Math.max(socialPrice, floorPrice);
   const finalUnitOrganic = Math.round(preAddOn * confCap);
