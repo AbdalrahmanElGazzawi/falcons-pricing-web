@@ -115,18 +115,20 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     : (issuedAt ? new Date(new Date(issuedAt).getTime() + 9 * 86400000) : null);
 
   // Falcons company info — static legal block. Matches CR / VAT on the Odoo invoices.
+  // English-only because the bundled Helvetica font has no Arabic glyphs;
+  // Arabic strings would render as tofu. CR / VAT numbers stay verbatim.
   const FALCONS_COMPANY = {
-    nameAr: 'شركة فالكون الرياضية',
-    countryAr: 'المملكة العربية السعودية',
+    name: 'Team Falcons Sports Co.',
+    country: 'Kingdom of Saudi Arabia',
     addrLine1: '7661, King Abdulaziz Rd',
     addrLine2: 'Riyadh, Al-Yasmeen',
-    crLabel: 'س.ج 1010653211',
+    crLabel: 'CR: 1010653211',
     vat: '311123387600003',
   };
 
   // Static bank block — same account printed on existing Falcons quotations.
   const BANK = {
-    holder: 'شركة فالكون الرياضية',
+    holder: 'Team Falcons Sports Co.',
     name: 'Bank Albilad',
     account: '436132655700028',
     iban: 'SA4315000436132655700028',
@@ -269,75 +271,72 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   doc.fillColor('white').font('Helvetica-Bold').fontSize(16).text(quote.quote_number || '—', trX, 44);
 
   // ═══ BILLING BLOCK — two columns (matches Odoo template) ═══
-  // Left:  Falcons company legal info
-  // Right: Client name + address + VAT
-  let y = 130;
+  // Left:  Falcons company legal info  ·  Right: Client name + address + VAT
+  let y = 122;
   const billLeftX = MARGIN;
   const billRightX = W / 2 + 20;
   const billColW = (W - MARGIN * 2) / 2 - 10;
 
   // Falcons block (left)
   doc.fillColor(LABEL).font('Helvetica').fontSize(8).text('FROM', billLeftX, y, { characterSpacing: 1.5 });
-  doc.fillColor(INK).font('Helvetica-Bold').fontSize(11).text(FALCONS_COMPANY.nameAr, billLeftX, y + 12, { width: billColW });
-  doc.fillColor(INK).font('Helvetica').fontSize(9.5);
-  doc.text(FALCONS_COMPANY.countryAr, billLeftX, y + 28, { width: billColW });
-  doc.text(FALCONS_COMPANY.addrLine1, billLeftX, y + 42, { width: billColW });
-  doc.text(FALCONS_COMPANY.addrLine2, billLeftX, y + 56, { width: billColW });
-  doc.fillColor(LABEL).fontSize(9).text(FALCONS_COMPANY.crLabel, billLeftX, y + 72, { width: billColW });
-  doc.text(`VAT: ${FALCONS_COMPANY.vat}`, billLeftX, y + 86, { width: billColW });
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(11).text(FALCONS_COMPANY.name, billLeftX, y + 12, { width: billColW });
+  doc.fillColor(INK).font('Helvetica').fontSize(9);
+  doc.text(FALCONS_COMPANY.country,  billLeftX, y + 26, { width: billColW });
+  doc.text(FALCONS_COMPANY.addrLine1, billLeftX, y + 38, { width: billColW });
+  doc.text(FALCONS_COMPANY.addrLine2, billLeftX, y + 50, { width: billColW });
+  doc.fillColor(LABEL).fontSize(8.5).text(FALCONS_COMPANY.crLabel, billLeftX, y + 64, { width: billColW });
+  doc.text(`VAT: ${FALCONS_COMPANY.vat}`, billLeftX, y + 76, { width: billColW });
+  const fromBottom = y + 90;
 
   // Client block (right)
   doc.fillColor(LABEL).font('Helvetica').fontSize(8).text('BILL TO', billRightX, y, { characterSpacing: 1.5 });
   doc.fillColor(INK).font('Helvetica-Bold').fontSize(11).text(quote.client_name || '—', billRightX, y + 12, { width: billColW });
-  let clientYCursor = y + 28;
+  let clientYCursor = y + 26;
   if (clientAddress) {
-    doc.fillColor(INK).font('Helvetica').fontSize(9.5);
-    const addrHeight = doc.heightOfString(clientAddress, { width: billColW, lineGap: 1 });
-    doc.text(clientAddress, billRightX, clientYCursor, { width: billColW, lineGap: 1 });
-    clientYCursor += addrHeight + 4;
+    doc.fillColor(INK).font('Helvetica').fontSize(9);
+    const addrHeight = doc.heightOfString(clientAddress, { width: billColW, lineGap: 0 });
+    doc.text(clientAddress, billRightX, clientYCursor, { width: billColW, lineGap: 0 });
+    clientYCursor += addrHeight + 2;
   }
   if (clientCountry) {
-    doc.fillColor(INK).font('Helvetica').fontSize(9.5).text(clientCountry, billRightX, clientYCursor, { width: billColW });
-    clientYCursor += 14;
+    doc.fillColor(INK).font('Helvetica').fontSize(9).text(clientCountry, billRightX, clientYCursor, { width: billColW });
+    clientYCursor += 12;
   }
   if (clientVat) {
-    doc.fillColor(LABEL).font('Helvetica').fontSize(9).text(`VAT Number: ${clientVat}`, billRightX, clientYCursor, { width: billColW });
-    clientYCursor += 14;
+    doc.fillColor(LABEL).font('Helvetica').fontSize(8.5).text(`VAT Number: ${clientVat}`, billRightX, clientYCursor, { width: billColW });
+    clientYCursor += 12;
   }
   if (preparedEmail && !clientAddress && !clientVat) {
-    // Lightweight fallback when no formal billing details captured yet
-    doc.fillColor(LABEL).font('Helvetica').fontSize(9).text(`Contact: ${preparedEmail}`, billRightX, clientYCursor, { width: billColW });
-    clientYCursor += 14;
+    doc.fillColor(LABEL).font('Helvetica').fontSize(8.5).text(`Contact: ${preparedEmail}`, billRightX, clientYCursor, { width: billColW });
+    clientYCursor += 12;
   }
 
-  y = Math.max(y + 102, clientYCursor + 8);
+  y = Math.max(fromBottom, clientYCursor + 6);
 
   // ═══ DATE / EXPIRATION / SALESPERSON STRIP ═══
   const stripTop = y;
-  const stripH = 44;
-  doc.rect(MARGIN, stripTop, W - MARGIN * 2, stripH).fillOpacity(0.6).fill(LIGHT).fillOpacity(1);
+  const stripH = 38;
+  doc.rect(MARGIN, stripTop, W - MARGIN * 2, stripH).fillOpacity(0.55).fill(LIGHT).fillOpacity(1);
 
-  const stripCols = [
+  const stripCols: Array<{ label: string; value: string }> = [
     { label: 'QUOTATION DATE', value: dateStr(issuedAt) },
     { label: 'EXPIRATION',     value: expiresAt ? dateStr(expiresAt.toISOString()) : '—' },
     { label: 'SALESPERSON',    value: preparedName || '—' },
   ];
-  if (approvedName) {
-    stripCols.push({ label: 'APPROVED BY', value: approvedName });
-  }
+  if (approvedName) stripCols.push({ label: 'APPROVED BY', value: approvedName });
   const stripColW = (W - MARGIN * 2) / stripCols.length;
   stripCols.forEach((c, i) => {
     const sx = MARGIN + stripColW * i;
-    doc.fillColor(GREEN_DARK).font('Helvetica-Bold').fontSize(8.5).text(c.label, sx + 14, stripTop + 9, { width: stripColW - 16, characterSpacing: 1.2 });
-    doc.fillColor(INK).font('Helvetica').fontSize(11).text(c.value, sx + 14, stripTop + 22, { width: stripColW - 16 });
+    doc.fillColor(GREEN_DARK).font('Helvetica-Bold').fontSize(8).text(c.label, sx + 12, stripTop + 7, { width: stripColW - 14, characterSpacing: 1.2 });
+    doc.fillColor(INK).font('Helvetica').fontSize(10.5).text(c.value, sx + 12, stripTop + 19, { width: stripColW - 14 });
   });
-  y = stripTop + stripH + 16;
+  y = stripTop + stripH + 12;
 
-  // Campaign line (centered subtitle if present)
+  // Campaign line (single row, inline label + value)
   if (quote.campaign) {
-    doc.fillColor(LABEL).font('Helvetica').fontSize(9).text('CAMPAIGN', MARGIN, y, { characterSpacing: 1.5 });
-    doc.fillColor(INK).font('Helvetica-Bold').fontSize(11).text(quote.campaign, MARGIN, y + 12, { width: W - MARGIN * 2 });
-    y += 32;
+    doc.fillColor(LABEL).font('Helvetica').fontSize(8).text('CAMPAIGN', MARGIN, y, { characterSpacing: 1.5 });
+    doc.fillColor(INK).font('Helvetica-Bold').fontSize(10.5).text(quote.campaign, MARGIN + 70, y - 1, { width: W - MARGIN * 2 - 70 });
+    y += 18;
   }
 
   // ═══ LINE ITEMS TABLE ═══
@@ -360,39 +359,38 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   y += 24;
 
   doc.font('Helvetica').fontSize(10).fillColor(INK);
-  const rowH = 22;
+  const rowH = 20;
   (lines || []).forEach((l: any, idx: number) => {
     if (idx % 2 === 0) doc.rect(tableX, y, tableW, rowH).fill(LIGHT);
+    const kind = l.talent_type === 'creator' ? 'Creator' : 'Player';
+    // Single-line description: "Name — Platform · Kind" — keeps row tight, no badge sub-line.
+    doc.fillColor(INK).font('Helvetica').fontSize(10)
+      .text(`${l.talent_name} — ${l.platform}`, col.desc, y + 6, { width: tableW * 0.5 - 4, ellipsis: true });
+    doc.fillColor(MUTE).font('Helvetica').fontSize(8).text(kind, col.desc, y + 6, { width: tableW * 0.5 - 4, align: 'right' });
     doc.fillColor(INK).font('Helvetica').fontSize(10);
-    const tKind = l.talent_type === 'creator' ? 'creator' : 'player';
-    const kindBadge = tKind === 'creator' ? 'CREATOR' : 'PLAYER';
-    doc.fillColor(INK).font('Helvetica').fontSize(10);
-    doc.text(`${l.talent_name} — ${l.platform}`, col.desc, y + 7, { width: tableW * 0.5 });
-    // Small uppercase kind chip below the name (subtle)
-    doc.fillColor(MUTE).font('Helvetica').fontSize(7).text(kindBadge, col.desc, y + 19, { width: tableW * 0.5 });
-    doc.text(fmtMoney(Number(l.final_unit || 0), currency, usdRate), col.unit, y + 7, { width: tableW * 0.16, align: 'right' });
-    doc.text(`${Number(l.qty || 1)}`, col.qty, y + 7, { width: tableW * 0.07, align: 'right' });
-    doc.text(fmtMoney(Number(l.final_amount || 0), currency, usdRate), col.amt, y + 7, { width: colEnd - col.amt, align: 'right' });
+    doc.text(fmtMoney(Number(l.final_unit || 0), currency, usdRate), col.unit, y + 6, { width: tableW * 0.16, align: 'right' });
+    doc.text(`${Number(l.qty || 1)}`, col.qty, y + 6, { width: tableW * 0.07, align: 'right' });
+    doc.text(fmtMoney(Number(l.final_amount || 0), currency, usdRate), col.amt, y + 6, { width: colEnd - col.amt, align: 'right' });
     y += rowH;
   });
   if (!lines || lines.length === 0) {
-    doc.fillColor(LABEL).font('Helvetica-Oblique').fontSize(10).text('No line items', col.desc, y + 10);
+    doc.fillColor(LABEL).font('Helvetica-Oblique').fontSize(10).text('No line items', col.desc, y + 6);
     y += rowH;
   }
   doc.moveTo(tableX, y).lineTo(tableX + tableW, y).strokeColor(LINE).lineWidth(0.5).stroke();
-  y += 22;
+  y += 16;
 
-  // ═══ PRICING METHODOLOGY (transparent breakdown of the multipliers) ═══
+  // ═══ PRICING METHODOLOGY (left col) + SPECIAL NOTES (right col) ═══
   const methX = tableX;
   const methW = tableW * 0.55;
   const methTop = y;
   doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10).text('PRICING METHODOLOGY', methX, y);
-  y += 14;
-  doc.fillColor(LABEL).font('Helvetica').fontSize(8.5);
+  y += 13;
+  doc.fillColor(LABEL).font('Helvetica').fontSize(8);
   const formulaText = 'Final = MAX(Social Price, Authority Floor) × Confidence Cap × (1 + Rights Uplift)';
-  const formulaHeight = doc.heightOfString(formulaText, { width: methW, lineGap: 1 });
-  doc.text(formulaText, methX, y, { width: methW, lineGap: 1 });
-  y += formulaHeight + 8;
+  const formulaHeight = doc.heightOfString(formulaText, { width: methW, lineGap: 0 });
+  doc.text(formulaText, methX, y, { width: methW, lineGap: 0 });
+  y += formulaHeight + 6;
 
   // Campaign-level axes — talent-aware labels
   const hasCreator = (lines || []).some((l: any) => l.talent_type === 'creator');
@@ -401,9 +399,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   doc.fillColor(MUTE).font('Helvetica').fontSize(7.5).text(
     hasCreator && hasPlayer ? 'CAMPAIGN AXES (mixed roster)' :
     dominantKind === 'creator' ? 'CAMPAIGN AXES (creator pricing)' : 'CAMPAIGN AXES',
-    methX, y
+    methX, y, { characterSpacing: 1 }
   );
-  y += 11;
+  y += 10;
   const audienceLabel = dominantKind === 'creator' ? 'Audience fit' : 'Audience';
   const seasLabel     = dominantKind === 'creator' ? 'Production'   : 'Seasonality';
   const axes: Array<[string, string, number]> = [
@@ -417,20 +415,20 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   doc.font('Helvetica').fontSize(8.5).fillColor(INK);
   axes.forEach(([name, key, val]) => {
     doc.fillColor(LABEL).text(`${name}:`, methX, y);
-    doc.fillColor(INK).text(axisLabel(key, val, dominantKind), methX + 80, y);
-    y += 11;
+    doc.fillColor(INK).text(axisLabel(key, val, dominantKind), methX + 75, y, { width: methW - 75 });
+    y += 10;
   });
   if (Number(quote.addons_uplift_pct || 0) > 0) {
     doc.fillColor(LABEL).text('Add-on uplift:', methX, y);
-    doc.fillColor(INK).text(`+${fmtPct(Number(quote.addons_uplift_pct))}`, methX + 80, y);
-    y += 11;
+    doc.fillColor(INK).text(`+${fmtPct(Number(quote.addons_uplift_pct))}`, methX + 75, y);
+    y += 10;
   }
   if (currency === 'USD') {
     doc.fillColor(LABEL).text('FX rate:', methX, y);
-    doc.fillColor(INK).text(`${usdRate.toFixed(2)} SAR per 1 USD`, methX + 80, y);
-    y += 11;
+    doc.fillColor(INK).text(`${usdRate.toFixed(2)} SAR per 1 USD`, methX + 75, y);
+    y += 10;
   }
-
+  y += 4;
 
   // Brand brief block (conditional — only render if anything captured)
   const briefFields: Array<[string, string]> = [];
@@ -443,54 +441,55 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   if (quote.exclusivity) briefFields.push(['Exclusivity', `${quote.exclusivity_months || ''}mo category lockout`.trim()]);
 
   if (briefFields.length > 0) {
-    doc.fillColor(MUTE).font('Helvetica').fontSize(7.5).text('BRAND BRIEF', methX, y);
-    y += 11;
+    doc.fillColor(MUTE).font('Helvetica').fontSize(7.5).text('BRAND BRIEF', methX, y, { characterSpacing: 1 });
+    y += 10;
     briefFields.forEach(([name, val]) => {
       doc.fillColor(LABEL).font('Helvetica').fontSize(8.5).text(`${name}:`, methX, y);
-      doc.fillColor(INK).font('Helvetica').text(val, methX + 80, y, { width: methW - 80 });
-      y += 11;
+      doc.fillColor(INK).font('Helvetica').text(val, methX + 75, y, { width: methW - 75 });
+      y += 10;
     });
-    y += 4;
   }
+  const methBottom = y;
 
   // Notes block on right
   let notesY = methTop;
   const notesX = MARGIN + tableW * 0.58;
   const notesW = tableW * 0.42;
   doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10).text('SPECIAL NOTES', notesX, notesY);
-  notesY += 14;
+  notesY += 13;
   doc.fillColor(LABEL).font('Helvetica').fontSize(9);
   const notes = quote.notes ||
     '1. Payment within 30 days\n2. 50% down payment on acceptance\n3. Tax invoice issued upon receipt of payment';
-  doc.text(notes, notesX, notesY, { width: notesW, lineGap: 4 });
+  const notesHeight = doc.heightOfString(notes, { width: notesW, lineGap: 3 });
+  doc.text(notes, notesX, notesY, { width: notesW, lineGap: 3 });
+  const notesBottom = notesY + notesHeight;
 
-  // ═══ TOTALS BOX ═══
-  y = Math.max(y, notesY) + 24;
-  const tBoxW = tableW * 0.45;
+  // ═══ TOTALS BOX (right-aligned, below the notes block) ═══
+  y = Math.max(methBottom, notesBottom) + 14;
+  const tBoxW = tableW * 0.42;
   const tBoxX = MARGIN + tableW - tBoxW;
 
   doc.fillColor(LABEL).font('Helvetica').fontSize(10).text('Untaxed Amount', tBoxX, y);
   doc.fillColor(INK).font('Helvetica-Bold').text(fmtFX(subtotal, currency, usdRate), tBoxX, y, { width: tBoxW, align: 'right' });
-  y += 18;
+  y += 16;
   doc.fillColor(LABEL).font('Helvetica').text(`VAT Taxes (${(vatRate*100).toFixed(0)}%)`, tBoxX, y);
   doc.fillColor(INK).font('Helvetica').text(fmtFX(vatAmount, currency, usdRate), tBoxX, y, { width: tBoxW, align: 'right' });
-  y += 22;
-  doc.rect(tBoxX, y - 4, tBoxW, 28).fill(GREEN);
+  y += 20;
+  doc.rect(tBoxX, y - 3, tBoxW, 26).fill(GREEN);
   doc.fillColor('white').font('Helvetica-Bold').fontSize(13);
-  doc.text('Total', tBoxX + 12, y + 2);
-  doc.text(fmtFX(total, currency, usdRate), tBoxX, y + 2, { width: tBoxW - 12, align: 'right' });
-  y += 36;
+  doc.text('Total', tBoxX + 12, y + 3);
+  doc.text(fmtFX(total, currency, usdRate), tBoxX, y + 3, { width: tBoxW - 12, align: 'right' });
+  y += 32;
 
-  // ═══ PAYMENT DETAILS BLOCK ═══
-  // Mirrors the bank info on the existing Falcons Odoo quotation.
+  // ═══ PAYMENT DETAILS BLOCK (left side, single column) ═══
   const payX = MARGIN;
   const payW = tableW * 0.55;
   doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10).text('PAYMENT DETAILS', payX, y);
-  let payY = y + 14;
+  let payY = y + 13;
   const payRow = (label: string, value: string) => {
-    doc.fillColor(LABEL).font('Helvetica').fontSize(8.5).text(label, payX, payY, { width: 140 });
+    doc.fillColor(LABEL).font('Helvetica').fontSize(8).text(label, payX, payY, { width: 140 });
     doc.fillColor(INK).font('Helvetica').fontSize(9).text(value, payX + 140, payY, { width: payW - 140 });
-    payY += 13;
+    payY += 12;
   };
   payRow("Bank Account Holder's Name:", BANK.holder);
   payRow('Bank Name:', BANK.name);
@@ -499,10 +498,16 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   payRow('BIC / SWIFT:', BANK.swift);
   payRow('Payment terms:', paymentTerms);
 
-  y = Math.max(y + 36, payY) + 8;
+  y = Math.max(y + 30, payY) + 6;
 
   // ═══ SIGNATURE BLOCKS ═══
-  y += 20;
+  // Anchor signatures + footer to bottom: if the rolling cursor doesn't have
+  // headroom, push them down. Either way they sit just above the green band.
+  const footerH = 60;
+  const sigBlockH = 90;
+  const desiredSigY = H - footerH - sigBlockH - 8;
+  if (y < desiredSigY) y = desiredSigY;
+
   const sigW = (tableW - 40) / 2;
   const sigLeftX = MARGIN;
   const sigRightX = MARGIN + sigW + 40;
@@ -531,8 +536,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     doc.fillColor(MUTE).font('Helvetica-Oblique').fontSize(8).text('Pending approval', sigRightX, y + 44);
   }
 
-  // ═══ FOOTER (green band) ═══
-  const footerH = 60;
+  // ═══ FOOTER (green band) — footerH already declared above for sig anchoring ═══
   const footerY = H - footerH;
   doc.rect(0, footerY, W, footerH).fill(GREEN);
   doc.fillColor('white').font('Helvetica').fontSize(9);
