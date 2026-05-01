@@ -140,7 +140,6 @@ export interface Creator {
   followers_tiktok?: number | null;
   followers_twitch?: number | null;
   is_active?: boolean | null;
-  avatar_url?: string | null;
   brand_loyalty_default_pct?: number;
   exclusivity_premium_pct?: number;
   cross_vertical_multiplier?: number;
