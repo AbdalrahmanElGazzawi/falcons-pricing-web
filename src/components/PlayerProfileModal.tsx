@@ -2,10 +2,10 @@
 import { useLocale } from '@/lib/i18n/Locale';
 import { useEffect, useState } from 'react';
 import {
-import { normalizeImageUrl } from './Avatar';
   X, Trophy, Briefcase, Instagram, Twitter, Twitch, Youtube,
   ExternalLink, Calendar, Gamepad2, Award, Users,
 } from 'lucide-react';
+import { normalizeImageUrl } from './Avatar';
 
 interface PlayerDetail {
   id: number;
