@@ -16,6 +16,9 @@ const ALLOWED = new Set([
   'followers_ig', 'followers_twitch', 'followers_yt', 'followers_tiktok',
   'followers_x', 'followers_fb', 'followers_snap',
   'is_active',
+  'has_social_data', 'has_tournament_data', 'has_audience_demo', 'data_completeness',
+  'liquipedia_url', 'prize_money_24mo_usd', 'peak_tournament_tier', 'current_ranking',
+  'last_major_finish_date', 'last_major_placement', 'achievement_decay_factor',
 ]);
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {

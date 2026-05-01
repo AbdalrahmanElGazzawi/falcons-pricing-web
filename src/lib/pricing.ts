@@ -2,19 +2,38 @@
  * Team Falcons Pricing — 9-axis matrix engine.
  * Ported from Apps Script Code.gs (computeLine).
  *
- *  Final = SocialPrice × ConfidenceCap
- *          × (1 - BrandLoyaltyPct) × (1 + ExclusivityPct)
- *          × CrossVerticalMult × EngagementQualityMult × ProductionStyleMult
- *          × (1 + RightsPct) × (0.5 if Companion)
- *  (AuthorityFloor disabled — was inflating cheap deliverables. See computeLine.)
+ *  Final = MAX(SocialPrice, AuthorityFloor) × ConfidenceCap × (1 + RightsPct) × CompanionMult
  *
  *  SocialPrice    = BaseFee × Eng × Aud × Seas × CType × Lang × AuthFactor
  *  AuthorityFloor = IRL     × FloorShare × Seas × Lang × AuthFactor
  *  AuthFactor     = 1 + ObjectiveWeight × (Authority − 1)
- *  Confidence cap: pending=0.75 · estimated=0.9 · rounded=1.0 · exact=1.0
- *  Axis gating when confidence incomplete: Eng≤1.2, Auth≤1.3, Seas≤1.25
+ *
+ *  ─── DataCompleteness drives everything else ──────────────────────────
+ *  Replaces the old Shikenso-flavoured `MeasurementConfidence` semantics.
+ *  Every talent today carries one of four states; the engine derives
+ *  axis caps and the ConfidenceCap haircut from that state.
+ *
+ *    full              → all axes live, ConfidenceCap = 1.00, no caps
+ *    socials_only      → Authority capped at 1.15, ConfidenceCap = 0.95
+ *    tournament_only   → Eng/Aud locked at 1.00, ConfidenceCap = 0.95
+ *    minimal           → all axes locked at 1.00, ConfidenceCap = 0.85
+ *
+ *  The old MeasurementConfidence values (pending/estimated/rounded/exact)
+ *  remain on the database column for back-compat and audit history, but
+ *  the active driver is now `data_completeness`. Old values map cleanly:
+ *    pending   → minimal
+ *    estimated → derived from has_social_data + has_tournament_data
+ *    rounded   → derived from has_social_data + has_tournament_data
+ *    exact     → 'full' (data is verified)
  */
 
+export type DataCompleteness =
+  | 'full'
+  | 'socials_only'
+  | 'tournament_only'
+  | 'minimal';
+
+/** @deprecated kept only for back-compat with stored quote rows */
 export type MeasurementConfidence = 'pending' | 'estimated' | 'rounded' | 'exact';
 
 export interface LineInput {
@@ -27,31 +46,34 @@ export interface LineInput {
   lang?: number;        // language factor
   auth?: number;        // raw authority factor
   obj?: number;         // objective weight (0..1)
-  conf?: MeasurementConfidence;
+  /**
+   * Data state of this talent. Drives axis caps and the ConfidenceCap haircut.
+   * Pass either `dataCompleteness` (preferred, post-Migration 022) or the
+   * legacy `conf` field; if both are passed, dataCompleteness wins.
+   */
+  dataCompleteness?: DataCompleteness;
+  conf?: MeasurementConfidence; // legacy
   floorShare?: number;  // tier floor share
   rightsPct?: number;   // add-on uplift (cumulative)
   qty?: number;         // quantity
   /**
-   * Companion role flag. When true, the talent is appearing as a featured guest
-   * in another creator's content (cameo, supporting role, walk-on). Final unit
-   * price is multiplied by 0.5 — half-rate, capped, applied uniformly across
-   * whatever deliverable the line represents. Composes with all other axes.
+   * Talent appearing as a featured guest in another creator's content
+   * (cameo, supporting role, walk-on). Final unit price multiplied by 0.5.
    */
   isCompanion?: boolean;
-  // ─── Creator-specific per-quote multipliers (auto-loaded from the creator
-  //     record; per-line overridable in the Configurator). World best practice
-  //     for creator pricing — captures negotiation context that pure
-  //     CPM × reach can't model.
-  brandLoyaltyPct?: number;          // 0 / 0.10 / 0.20 / 0.30 — discount for recurring brand
-  exclusivityPremiumPct?: number;    // 0 / 0.25 / 0.50 / 1.0 — category-exclusivity premium
-  crossVerticalMultiplier?: number;  // 1.0 / 1.15 / 1.30 — non-endemic brand reach premium
-  engagementQualityModifier?: number;// 0.85 / 1.0 / 1.15 / 1.25 — based on actual ER%
-  productionStyleMultiplier?: number;// 0.9 (raw) / 1.0 / 1.20 (scripted) / 1.40 (full studio)
+  /**
+   * Per-talent achievement decay factor written by the Liquipedia scraper.
+   * Scales the AuthorityFloor only — protects pros whose tournament value
+   * is fading without affecting their social-derived SocialPrice. Default
+   * 1.0 if scraper hasn't run or talent has no tournament data.
+   */
+  achievementDecay?: number;
 }
 
 export interface LineOutput {
   authFactor: number;
   engGated: number;
+  audGated: number;
   authGated: number;
   seasGated: number;
   confCap: number;
@@ -60,16 +82,46 @@ export interface LineOutput {
   preAddOn: number;
   finalUnit: number;
   finalAmount: number;
-  // Per-line multiplier breakdown (so Configurator can surface 'why'):
-  brandLoyaltyApplied: number;
-  exclusivityApplied: number;
-  crossVerticalApplied: number;
-  engagementQualityApplied: number;
-  productionStyleApplied: number;
+  appliedState: DataCompleteness;
+}
+
+/** Map legacy MeasurementConfidence onto a DataCompleteness state. */
+function legacyToCompleteness(conf?: MeasurementConfidence): DataCompleteness {
+  switch (conf) {
+    case 'pending':   return 'minimal';
+    case 'estimated': return 'socials_only';
+    case 'rounded':   return 'socials_only';
+    case 'exact':     return 'full';
+    default:          return 'socials_only';
+  }
+}
+
+/**
+ * Caps + haircut driven by talent data state.
+ * Returns the multipliers to apply to each axis and the ConfidenceCap.
+ */
+export function gatesForState(state: DataCompleteness) {
+  switch (state) {
+    case 'full':
+      return { engCap: Infinity, audCap: Infinity, authCap: Infinity, seasCap: Infinity, confCap: 1.00 };
+    case 'socials_only':
+      // No tournament data → Authority claim less defensible. Cap it.
+      return { engCap: Infinity, audCap: Infinity, authCap: 1.15, seasCap: Infinity, confCap: 0.95 };
+    case 'tournament_only':
+      // No social data → can't claim Eng/Aud premiums.
+      return { engCap: 1.00, audCap: 1.00, authCap: Infinity, seasCap: Infinity, confCap: 0.95 };
+    case 'minimal':
+      // Staff/brand-new/no data → tier baseline only.
+      return { engCap: 1.00, audCap: 1.00, authCap: 1.00, seasCap: 1.00, confCap: 0.85 };
+  }
 }
 
 export function computeLine(p: LineInput): LineOutput {
-  const conf = (p.conf ?? 'exact').toLowerCase() as MeasurementConfidence;
+  // Resolve the active state. dataCompleteness wins when both are passed.
+  const state: DataCompleteness =
+    p.dataCompleteness ?? legacyToCompleteness(p.conf);
+  const gates = gatesForState(state);
+
   const auth = p.auth ?? 1;
   const obj = p.obj ?? 0;
   const eng = p.eng ?? 1;
@@ -79,68 +131,39 @@ export function computeLine(p: LineInput): LineOutput {
   const lang = p.lang ?? 1;
   const floorShare = p.floorShare ?? 0.5;
   const qty = p.qty ?? 1;
+  const decay = p.achievementDecay ?? 1.0;
 
   const authRaw = 1 + obj * (auth - 1);
 
-  const cap = (val: number, max: number): number => {
-    if (conf === 'pending') return 1;
-    if (conf === 'estimated') return Math.min(val, max);
-    return val;
-  };
+  // Apply state-driven caps
+  const engGated  = Math.min(eng,    gates.engCap);
+  const audGated  = Math.min(aud,    gates.audCap);
+  const authGated = Math.min(authRaw, gates.authCap);
+  const seasGated = Math.min(seas,   gates.seasCap);
 
-  const engGated = cap(eng, 1.2);
-  const authGated = cap(authRaw, 1.3);
-  const seasGated = cap(seas, 1.25);
-
-  const confCap =
-    conf === 'pending' ? 0.75 :
-    conf === 'estimated' ? 0.9 :
-    1.0;
+  const confCap = gates.confCap;
 
   const socialPrice = Math.round(
-    p.baseFee * engGated * aud * seasGated * ctype * lang * authGated
+    p.baseFee * engGated * audGated * seasGated * ctype * lang * authGated
   );
-  // AuthorityFloor disabled. Originally enforced a minimum line price of
-  // IRL × floorShare so a top-tier player couldn't be under-priced for cheap
-  // deliverables — but with rate-card-anchored base rates it overrides
-  // valid cheap deliverables (TikTok Repost 1,800 SAR base inflated to
-  // 13,750 SAR by the floor). Hard-coded to 0 so saved drafts with stale
-  // floorShare=0.5 also compute correctly without DB sync.
-  const floorPrice = 0;
+  // AuthorityFloor scales by achievement_decay so a 2019 Major winner
+  // doesn't get the same protection as a 2025 Major winner.
+  const floorPrice = Math.round(
+    (p.irl ?? 0) * floorShare * seasGated * lang * authGated * decay
+  );
 
   const preAddOn = Math.max(socialPrice, floorPrice);
-  const brandLoyaltyPct        = Math.max(0, Math.min(0.5, p.brandLoyaltyPct ?? 0));
-  const exclusivityPremiumPct  = Math.max(0, Math.min(2.0, p.exclusivityPremiumPct ?? 0));
-  const crossVerticalMult      = Math.max(0.5, Math.min(2.0, p.crossVerticalMultiplier ?? 1.0));
-  const engagementQualityMult  = Math.max(0.5, Math.min(2.0, p.engagementQualityModifier ?? 1.0));
-  const productionStyleMult    = Math.max(0.5, Math.min(2.0, p.productionStyleMultiplier ?? 1.0));
-
   const finalUnitOrganic = Math.round(preAddOn * confCap);
-  // Stack creator multipliers on the organic line BEFORE rights uplift, so
-  // rights add on top of the negotiated base. Brand loyalty is a discount
-  // (1 - x); exclusivity is a premium (1 + x); the others are direct mults.
-  const afterCreatorMults = Math.round(
-    finalUnitOrganic
-      * (1 - brandLoyaltyPct)
-      * (1 + exclusivityPremiumPct)
-      * crossVerticalMult
-      * engagementQualityMult
-      * productionStyleMult
-  );
-  const withRights = Math.round(afterCreatorMults * (1 + (p.rightsPct ?? 0)));
+  const withRights = Math.round(finalUnitOrganic * (1 + (p.rightsPct ?? 0)));
   const finalUnit = p.isCompanion ? Math.round(withRights * 0.5) : withRights;
   const finalAmount = Math.round(finalUnit * qty);
 
   return {
     authFactor: +authRaw.toFixed(3),
-    engGated, authGated, seasGated, confCap,
+    engGated, audGated, authGated, seasGated, confCap,
     socialPrice, floorPrice, preAddOn,
     finalUnit, finalAmount,
-    brandLoyaltyApplied:        brandLoyaltyPct,
-    exclusivityApplied:         exclusivityPremiumPct,
-    crossVerticalApplied:       crossVerticalMult,
-    engagementQualityApplied:   engagementQualityMult,
-    productionStyleApplied:     productionStyleMult,
+    appliedState: state,
   };
 }
 
@@ -158,6 +181,32 @@ export function computeQuoteTotals(params: {
   const total = preVat + vatAmount;
   return { subtotal, preVat, vatAmount, total, addonsUpliftPct: addons, vatRate: vat };
 }
+
+/** Default lever values for a talent based on their data state. */
+export function defaultLeversForState(state: DataCompleteness) {
+  switch (state) {
+    case 'full':
+      return { eng: 1.0, aud: 1.0, seas: 1.0, ctype: 1.0, lang: 1.0, auth: 1.0, obj: 0.5 };
+    case 'socials_only':
+      return { eng: 1.0, aud: 1.0, seas: 1.0, ctype: 1.0, lang: 1.0, auth: 1.0, obj: 0.5 };
+    case 'tournament_only':
+      // Authority axis live (defensible from tournament data); Eng/Aud
+      // pinned to 1.0 because we have no follower data to back a premium.
+      return { eng: 1.0, aud: 1.0, seas: 1.0, ctype: 1.0, lang: 1.0, auth: 1.15, obj: 0.7 };
+    case 'minimal':
+      return { eng: 1.0, aud: 1.0, seas: 1.0, ctype: 1.0, lang: 1.0, auth: 1.0, obj: 0.2 };
+  }
+}
+
+/** Human-readable description of a data state, for the builder UI. */
+export const DATA_STATE_META: Record<DataCompleteness, {
+  label: string; tone: 'green' | 'amber' | 'navy' | 'red'; hint: string;
+}> = {
+  full:             { label: 'Full data',        tone: 'green', hint: 'Socials + tournament data on file. All axes live.' },
+  socials_only:     { label: 'Socials only',     tone: 'amber', hint: 'No tournament record. Authority capped at 1.15×.' },
+  tournament_only:  { label: 'Tournament only',  tone: 'amber', hint: 'No social data. Engagement/Audience locked at 1.00×.' },
+  minimal:          { label: 'Minimal',          tone: 'red',   hint: 'Tier baseline only. Confidence haircut 0.85×.' },
+};
 
 /** Human-friendly axis option catalogues (label + factor). */
 export const AXIS_OPTIONS = {
@@ -199,14 +248,20 @@ export const AXIS_OPTIONS = {
     { label: 'Conversion (Wt 0.7)', weight: 0.7 },
     { label: 'Authority (Wt 1.0)', weight: 1.0 },
   ],
+  // Data state replaces the Shikenso-flavoured confidence picker.
+  // The labels here are surfaced verbatim in the builder.
+  dataCompleteness: [
+    { label: 'Full — socials + tournament data',   value: 'full'             as const },
+    { label: 'Socials only — no tournament record', value: 'socials_only'    as const },
+    { label: 'Tournament only — weak/no socials',   value: 'tournament_only' as const },
+    { label: 'Minimal — staff / brand-new / no data', value: 'minimal'       as const },
+  ],
+  /** @deprecated kept for old quote rows */
   confidence: [
-    // Labels reframed around the Shikenso integration timeline (Phase 2, Q3 2026).
-    // Until that lands, almost every player sits at 'rounded' — manually-verified
-    // FMG numbers rounded to the nearest 100. 'TBV' = To Be Verified via Shikenso.
-    { label: 'Pending — no follower data (1.0× cap + haircut)',          value: 'pending'   as const },
-    { label: 'Estimated — partial data, public sources (capped premiums)', value: 'estimated' as const },
-    { label: 'TBV via Shikenso — manually verified (premiums active)',   value: 'rounded'   as const },
-    { label: 'Verified — Shikenso confirmed',                            value: 'exact'     as const },
+    { label: 'Pending (legacy)',   value: 'pending'   as const },
+    { label: 'Estimated (legacy)', value: 'estimated' as const },
+    { label: 'Rounded (legacy)',   value: 'rounded'   as const },
+    { label: 'Exact (legacy)',     value: 'exact'     as const },
   ],
 };
 
