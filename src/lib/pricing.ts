@@ -68,6 +68,17 @@ export interface LineInput {
    * 1.0 if scraper hasn't run or talent has no tournament data.
    */
   achievementDecay?: number;
+  /**
+   * Creator-specific multipliers (added by QuoteBuilder + QuoteConfigurator).
+   * Currently passed through but not consumed in the SocialPrice/AuthorityFloor
+   * math — they're stored for the per-line creator multiplier override panel
+   * and surfaced in the quote PDF. Math wiring is a follow-up phase.
+   */
+  brandLoyaltyPct?: number;
+  exclusivityPremiumPct?: number;
+  crossVerticalMultiplier?: number;
+  engagementQualityModifier?: number;
+  productionStyleMultiplier?: number;
 }
 
 export interface LineOutput {
