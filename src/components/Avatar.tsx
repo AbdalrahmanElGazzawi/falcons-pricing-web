@@ -1,19 +1,40 @@
 'use client';
+import { useState } from 'react';
 /**
  * Talent avatar with graceful fallback chain:
- *   1. If avatar_url looks like a real URL (http/https), render <img />
- *   2. If it's a filename or empty, render initials in a tinted circle
- *
- * This is intentionally tolerant of the messy data we just imported from the
- * roster sheet (mix of Drive links, drive.google.com viewer URLs, raw
- * filenames like "DSC02382.png", etc.).
+ *   1. If avatar_url is an http(s) URL → render <img />.
+ *      Drive thumbnail URLs are transformed to lh3.googleusercontent.com,
+ *      which is the same image served from Google's CDN — reliable on mobile.
+ *      drive.google.com/thumbnail rate-limits and sometimes returns HTML
+ *      instead of image bytes (especially on Saudi mobile carriers).
+ *   2. On image load error → fall back to initials.
+ *   3. If no URL → render initials directly.
  */
 function isDisplayableUrl(s: string | undefined | null): boolean {
   if (!s) return false;
-  // Accept absolute URLs (https://...) AND root-relative paths (/avatars/...)
-  // — relative paths are served from /public by Next.js and are safe to use
-  // as <img src>.
-  return /^https?:\/\//.test(s) || s.startsWith('/');
+  return /^https?:\/\//.test(s);
+}
+
+/**
+ * Convert any Google Drive sharing/thumbnail URL to lh3.googleusercontent.com
+ * which serves the same file reliably on mobile.
+ *
+ *   drive.google.com/thumbnail?id=ABC          → lh3.googleusercontent.com/d/ABC=w400
+ *   drive.google.com/thumbnail?id=ABC&sz=w400  → lh3.googleusercontent.com/d/ABC=w400
+ *   drive.google.com/uc?id=ABC                 → lh3.googleusercontent.com/d/ABC=w400
+ *   drive.google.com/file/d/ABC/view           → lh3.googleusercontent.com/d/ABC=w400
+ *   anything else                              → unchanged
+ */
+export function normalizeImageUrl(src: string): string {
+  if (!src) return src;
+  const m =
+    src.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+    src.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+    src.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (m && /drive\.google\.com|googleusercontent\.com/.test(src)) {
+    return `https://lh3.googleusercontent.com/d/${m[1]}=w400`;
+  }
+  return src;
 }
 
 function initials(name: string): string {
@@ -38,12 +59,18 @@ export function Avatar({
   size?: keyof typeof SIZES;
 }) {
   const sizeClasses = SIZES[size];
-  if (isDisplayableUrl(src)) {
+  const [errored, setErrored] = useState(false);
+  const showImage = !errored && isDisplayableUrl(src);
+  if (showImage) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={src!}
+        src={normalizeImageUrl(src!)}
         alt={name}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={() => setErrored(true)}
         className={`${sizeClasses} rounded-full object-cover bg-bg border border-line`}
       />
     );

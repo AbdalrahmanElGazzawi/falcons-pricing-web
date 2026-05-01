@@ -1,4 +1,5 @@
 'use client';
+import { normalizeImageUrl } from '@/components/Avatar';
 import { useState } from 'react';
 import { PlayerProfileModal } from '@/components/PlayerProfileModal';
 import { Briefcase } from 'lucide-react';
@@ -24,7 +25,8 @@ export function ATeamGrid({ players }: { players: Player[] }) {
             <div className="aspect-square rounded-xl bg-gradient-to-br from-navy/5 to-amber-50 border border-line overflow-hidden grid place-items-center relative">
               {p.avatar_url ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={p.avatar_url} alt={p.nickname} className="w-full h-full object-cover"
+                <img src={normalizeImageUrl(p.avatar_url)} alt={p.nickname} className="w-full h-full object-cover"
+                  loading="lazy" decoding="async" referrerPolicy="no-referrer"
                   onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
                 <div className="text-3xl font-bold text-navy/40">{p.nickname.slice(0, 2).toUpperCase()}</div>
@@ -67,7 +69,8 @@ export function BrainTrustGrid({ players, max = 8, totalCount }: { players: Play
             <div className="w-10 h-10 rounded-full bg-navy text-white grid place-items-center font-bold text-xs flex-shrink-0 overflow-hidden">
               {p.avatar_url ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={p.avatar_url} alt={p.nickname} className="w-full h-full object-cover"
+                <img src={normalizeImageUrl(p.avatar_url)} alt={p.nickname} className="w-full h-full object-cover"
+                  loading="lazy" decoding="async" referrerPolicy="no-referrer"
                   onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
                 <span>{p.nickname.slice(0, 2).toUpperCase()}</span>

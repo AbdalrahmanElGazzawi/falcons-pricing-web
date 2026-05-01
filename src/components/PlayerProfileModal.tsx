@@ -2,6 +2,7 @@
 import { useLocale } from '@/lib/i18n/Locale';
 import { useEffect, useState } from 'react';
 import {
+import { normalizeImageUrl } from './Avatar';
   X, Trophy, Briefcase, Instagram, Twitter, Twitch, Youtube,
   ExternalLink, Calendar, Gamepad2, Award, Users,
 } from 'lucide-react';
@@ -146,7 +147,8 @@ export function PlayerProfileModal({
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-white/10 flex-shrink-0 grid place-items-center">
                 {player.avatar_url ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={player.avatar_url} alt={player.nickname}
+                  <img src={normalizeImageUrl(player.avatar_url)} alt={player.nickname}
+                    loading="lazy" decoding="async" referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 ) : (
