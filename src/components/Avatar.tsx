@@ -12,7 +12,7 @@ import { useState } from 'react';
  */
 function isDisplayableUrl(s: string | undefined | null): boolean {
   if (!s) return false;
-  return /^https?:\/\//.test(s);
+  return /^https?:\/\//.test(s) || s.startsWith("/");
 }
 
 /**
