@@ -83,19 +83,19 @@ export interface Player {
   agency_name?: string | null;
   agency_contact?: string | null;
   // ── Data state (Migration 022) ────────────────────────────────────────
-  has_social_data: boolean;
-  has_tournament_data: boolean;
-  has_audience_demo: boolean;
+  has_social_data?: boolean;
+  has_tournament_data?: boolean;
+  has_audience_demo?: boolean;
   data_completeness?: 'full' | 'socials_only' | 'tournament_only' | 'minimal';
   // ── Liquipedia / tournament fields (Migration 022) ─────────────────────
   liquipedia_url?: string | null;
   liquipedia_synced_at?: string | null;
-  prize_money_24mo_usd: number;
+  prize_money_24mo_usd?: number;
   peak_tournament_tier?: 'S' | 'A' | 'B' | 'C' | 'unrated' | null;
   current_ranking?: string | null;
   last_major_finish_date?: string | null;
   last_major_placement?: string | null;
-  achievement_decay_factor: number;
+  achievement_decay_factor?: number;
 }
 
 export interface Creator {
@@ -151,8 +151,8 @@ export interface Creator {
   notes?: string;
   link?: string;
   // ── Data state (Migration 022) ────────────────────────────────────────
-  has_social_data: boolean;
-  has_audience_demo: boolean;
+  has_social_data?: boolean;
+  has_audience_demo?: boolean;
   data_completeness?: 'full' | 'socials_only' | 'minimal';
 }
 
