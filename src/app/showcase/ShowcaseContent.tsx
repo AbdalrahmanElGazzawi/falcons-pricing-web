@@ -33,6 +33,8 @@ type Creator = {
   followers_ig: number | null; followers_x: number | null;
   followers_yt: number | null; followers_tiktok: number | null; followers_twitch: number | null;
   notes: string | null; link: string | null;
+  past_campaigns?: Array<{ brand: string; year?: number; deliverable?: string; conversion_signal?: string; link?: string; notes?: string }> | null;
+  delivered_kpis?: Array<{ kpi: string; value: string; unit?: string; source?: string; captured_at?: string }> | null;
 };
 
 // Hardcoded championship signals — until we have a proper achievements table,
