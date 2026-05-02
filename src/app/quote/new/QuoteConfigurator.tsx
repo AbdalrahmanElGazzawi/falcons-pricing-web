@@ -59,6 +59,55 @@ function readTalentDefaults(talent: Player | Creator | null): {
 }
 
 
+
+// ─── Base-price 'why' helper ───────────────────────────────────────────────
+// Returns a short prose explanation of where the base SAR comes from.
+// Used inside the price-breakdown popover.
+function baseWhyFor(platformKey: string, talent: any, tierCode: string | null): string {
+  if (!talent) return '';
+  const fmt = (n: number) => Number(n || 0).toLocaleString('en-US');
+  const followersOf = (k: string) => Number(talent[k] || 0);
+  // Map platform → (label, follower field)
+  const map: Record<string, { label: string; field: string }> = {
+    rate_ig_reel:         { label: 'Instagram', field: 'followers_ig' },
+    rate_ig_static:       { label: 'Instagram', field: 'followers_ig' },
+    rate_ig_story:        { label: 'Instagram', field: 'followers_ig' },
+    rate_ig_post:         { label: 'Instagram', field: 'followers_ig' },
+    rate_ig_repost:       { label: 'Instagram', field: 'followers_ig' },
+    rate_ig_share:        { label: 'Instagram', field: 'followers_ig' },
+    rate_tiktok_video:    { label: 'TikTok',    field: 'followers_tiktok' },
+    rate_tiktok_repost:   { label: 'TikTok',    field: 'followers_tiktok' },
+    rate_tiktok_share:    { label: 'TikTok',    field: 'followers_tiktok' },
+    rate_yt_short:        { label: 'YouTube',   field: 'followers_yt' },
+    rate_yt_short_repost: { label: 'YouTube',   field: 'followers_yt' },
+    rate_yt_full:         { label: 'YouTube',   field: 'followers_yt' },
+    rate_x_post:          { label: 'X / Twitter', field: 'followers_x' },
+    rate_x_repost:        { label: 'X / Twitter', field: 'followers_x' },
+    rate_x_share:         { label: 'X / Twitter', field: 'followers_x' },
+    rate_twitch_stream:   { label: 'Twitch',    field: 'followers_twitch' },
+    rate_twitch_integ:    { label: 'Twitch',    field: 'followers_twitch' },
+    rate_kick_stream:     { label: 'Kick',      field: 'followers_kick' },
+    rate_kick_integ:      { label: 'Kick',      field: 'followers_kick' },
+    rate_fb_post:         { label: 'Facebook',  field: 'followers_fb' },
+  };
+  const m = map[platformKey];
+  if (m) {
+    const n = followersOf(m.field);
+    if (n > 0) return `Anchored to ${m.label} reach (${fmt(n)} followers) at MENA CPM.`;
+    return `Anchored to ${m.label} reach — no follower count on file.`;
+  }
+  if (platformKey === 'rate_irl' || platformKey === 'rate_irl_event') {
+    return `Tier-flat event fee${tierCode ? ` for ${tierCode}` : ''} — doesn't scale with followers.`;
+  }
+  if (platformKey === 'rate_promo_monthly' || platformKey === 'rate_usage_monthly') {
+    return 'Monthly retainer rate — set per talent.';
+  }
+  if (platformKey.startsWith('manual_')) {
+    return 'Manual rate entered for this quote.';
+  }
+  return '';
+}
+
 export function QuoteConfigurator({
   players, creators, tiers, addons, globals, currency, usdRate, addonsUpliftPct, scrollHook,
   initialEdit, onCommit, onCancelEdit, onCurrencyChange, onPreviewChange,
@@ -342,8 +391,11 @@ export function QuoteConfigurator({
           })(),
           isCompanion,
         });
+        const baseWhy = d.manual
+          ? 'Manual rate entered for this quote.'
+          : baseWhyFor(d.key, (selectedPlayer ?? selectedCreator), (selectedPlayer as any)?.tier_code ?? (selectedCreator as any)?.tier_code ?? null);
         return {
-          key: k, label: d.label, qty: sel.qty, rate: baseFee,
+          key: k, label: d.label, qty: sel.qty, rate: baseFee, baseWhy,
           // Inputs as-applied (after override fall-through) for breakdown UI
           mults: {
             base:  baseFee,
@@ -997,7 +1049,7 @@ function DeliverableGroups({
   currency: string;
   usdRate: number;
   previewLines: Array<{
-    key: string; finalAmount: number; finalUnit: number;
+    key: string; finalAmount: number; finalUnit: number; baseWhy: string;
     socialPrice: number; floorPrice: number; preAddOn: number; confCap: number;
     engGated: number; audGated: number; seasGated: number; authGated: number;
     qty: number;
@@ -1202,7 +1254,7 @@ function PriceBreakdownChip({
   line, currency, usdRate,
 }: {
   line: {
-    finalAmount: number; finalUnit: number; qty: number;
+    finalAmount: number; finalUnit: number; qty: number; baseWhy: string;
     socialPrice: number; floorPrice: number; preAddOn: number; confCap: number;
     engGated: number; audGated: number; seasGated: number; authGated: number;
     mults: {
@@ -1255,6 +1307,12 @@ function PriceBreakdownChip({
               <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Why this price?</div>
               <button onClick={() => setOpen(false)} className="text-mute hover:text-ink">×</button>
             </div>
+            {line.baseWhy && (
+              <div className="text-[11px] text-label leading-relaxed bg-bg/60 border border-line rounded-md px-2.5 py-1.5">
+                <span className="text-mute font-semibold uppercase tracking-wider text-[9px] block mb-0.5">Where the base comes from</span>
+                {line.baseWhy}
+              </div>
+            )}
             <div className="text-xs space-y-1 font-mono tabular-nums">
               {rows.map((r, i) => (
                 <div key={i} className={[
