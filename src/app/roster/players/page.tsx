@@ -3,7 +3,6 @@ import { requireStaff } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { RosterOverview } from './RosterOverview';
-import { SyncAllLiquipediaButton } from './SyncAllLiquipediaButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +25,6 @@ export default async function RosterPage() {
         action={
           <div className="flex items-center gap-2">
             <Link href="/roster/audit" className="btn btn-ghost text-xs" title="Per-player rate audit vs methodology">Audit pricing</Link>
-            {profile.role === 'admin' && <SyncAllLiquipediaButton />}
             {profile.role === 'admin' && (
               <Link href="/admin/players/new" className="btn btn-primary">+ Add roster member</Link>
             )}

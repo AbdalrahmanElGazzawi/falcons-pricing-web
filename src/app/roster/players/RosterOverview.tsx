@@ -459,7 +459,7 @@ function RosterRow({
         <td><TierReviewBadge p={p} isAdmin={isAdmin} onPatch={onPatch} tierReview={tierReview} /></td>
       )}
       <td><CutChip commission={p.commission} /></td>
-      <td><LiquipediaChip p={p as any} size="sm" /></td>
+      <td><LiquipediaChip p={p as any} /></td>
       <td className="text-label whitespace-nowrap">{p.game || '—'}</td>
       <td className="text-label whitespace-nowrap">{p.team || '—'}</td>
       <td className="text-label whitespace-nowrap">{age ?? '—'}</td>
