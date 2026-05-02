@@ -56,7 +56,7 @@ export function LiquipediaCoverageBanner({
         disabled={!onClick}
         className={[
           'flex-1 min-w-[140px] text-left px-3 py-2.5 rounded-lg border transition',
-          active ? 'border-greenDark bg-greenSoft/40' : 'border-line bg-white hover:border-mute',
+          active ? 'border-greenDark bg-greenSoft/40' : 'border-line bg-card hover:bg-cardHover hover:border-mute',
           !onClick ? 'cursor-default' : 'cursor-pointer',
           dim ? 'opacity-50' : '',
         ].join(' ')}

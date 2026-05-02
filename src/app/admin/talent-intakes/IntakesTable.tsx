@@ -22,11 +22,11 @@ type P = {
 };
 
 const STATUS_CHIP: Record<string, string> = {
-  not_started: 'bg-bg text-mute border-line',
-  sent:        'bg-amber-50 text-amber-800 border-amber-300',
-  submitted:   'bg-greenSoft text-greenDark border-greenDark/40',
-  approved:    'bg-greenSoft text-greenDark border-greenDark/40',
-  revised:     'bg-blue-50 text-blue-800 border-blue-300',
+  not_started: 'bg-bg dark:bg-card text-mute border-line',
+  sent:        'bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700/50',
+  submitted:   'bg-greenSoft dark:bg-green/15 text-greenDark dark:text-green border-greenDark/40',
+  approved:    'bg-greenSoft dark:bg-green/15 text-greenDark dark:text-green border-greenDark/40',
+  revised:     'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700/50',
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -205,12 +205,12 @@ export function IntakesTable({ players }: { players: P[] }) {
                               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-red-50 border border-red-200 text-[10px] flex items-center justify-center text-red-600 font-bold">
+                            <div className="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700/50 text-[10px] flex items-center justify-center text-red-600 dark:text-red-300 font-bold">
                               {p.nickname.slice(0,2).toUpperCase()}
                             </div>
                           )}
                           {auto && (
-                            <Sparkles size={9} className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full p-0.5 text-orange-600" />
+                            <Sparkles size={9} className="absolute -bottom-0.5 -right-0.5 bg-card rounded-full p-0.5 text-orange-600 dark:text-orange-400" />
                           )}
                         </div>
                         <div className="min-w-0">
@@ -229,9 +229,9 @@ export function IntakesTable({ players }: { players: P[] }) {
                     <td className="px-3 py-2 text-xs whitespace-nowrap">
                       <span className={[
                         'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[10px] font-semibold',
-                        market === 'KSA'    ? 'bg-green/10 text-greenDark border-green/30' :
-                        market === 'MENA'   ? 'bg-amber-50 text-amber-800 border-amber-300' :
-                                              'bg-blue-50 text-blue-700 border-blue-200',
+                        market === 'KSA'    ? 'bg-green/10 text-greenDark dark:text-green border-green/30' :
+                        market === 'MENA'   ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700/50' :
+                                              'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700/50',
                       ].join(' ')}>
                         {market === 'Global' ? <Globe size={9} /> : null}
                         {market}
@@ -303,7 +303,7 @@ export function IntakesTable({ players }: { players: P[] }) {
                             const vSar = Number(v);
                             const vUsd = vSar / SAR_PER_USD;
                             return (
-                              <div key={k} className="rounded-lg border border-line bg-white px-2.5 py-1.5">
+                              <div key={k} className="rounded-lg border border-line bg-card px-2.5 py-1.5">
                                 <div className="text-[10px] uppercase tracking-wider text-mute font-semibold">{PLATFORM_LABELS[k] || k.replace(/^rate_/, '').replace(/_/g, ' ')}</div>
                                 <div className="text-sm font-semibold text-ink tabular-nums">
                                   {ccy === 'USD' ? `$ ${Math.round(vUsd).toLocaleString('en-US')}` : `SAR ${Math.round(vSar).toLocaleString('en-US')}`}

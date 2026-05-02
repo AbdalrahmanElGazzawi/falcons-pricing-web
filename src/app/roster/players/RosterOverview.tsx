@@ -290,16 +290,16 @@ export function RosterOverview({
             className={[
               'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition whitespace-nowrap',
               reviewOnly
-                ? 'border-orange-400 bg-orange-50 text-orange-700'
+                ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                 : reviewFlagCount > 0
-                  ? 'border-orange-300 text-orange-700 hover:bg-orange-50'
+                  ? 'border-orange-300 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/30'
                   : 'border-line text-label hover:bg-bg',
             ].join(' ')}
           >
             <AlertTriangle size={14} />
             Tier review
             {reviewFlagCount > 0 && (
-              <span className="ml-0.5 px-1.5 py-0 rounded-full bg-orange-100 text-orange-700 text-[11px] font-bold">{reviewFlagCount}</span>
+              <span className="ml-0.5 px-1.5 py-0 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 text-[11px] font-bold">{reviewFlagCount}</span>
             )}
           </button>
         )}
@@ -509,7 +509,7 @@ function DensityToggle({ value, onChange }: { value: Density; onChange: (d: Dens
     { k: 'spacious', icon: Rows2, title: 'Spacious' },
   ];
   return (
-    <div className="inline-flex rounded-lg border border-line bg-white overflow-hidden">
+    <div className="inline-flex rounded-lg border border-line bg-card overflow-hidden">
       {opts.map(o => {
         const Icon = o.icon;
         const active = o.k === value;
@@ -569,7 +569,7 @@ function TierReviewBadge({ p, isAdmin, onPatch, tierReview }: { p: Player; isAdm
   if (flag === 'no-data') return <span className="text-mute text-xs">—</span>;
   if (flag === 'ok') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green/10 text-greenDark text-[11px] font-semibold whitespace-nowrap">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green/10 text-greenDark dark:text-green text-[11px] font-semibold whitespace-nowrap">
         <Check size={11} /> match
       </span>
     );
@@ -580,7 +580,7 @@ function TierReviewBadge({ p, isAdmin, onPatch, tierReview }: { p: Player; isAdm
   if (isDismissed) {
     return (
       <span className="inline-flex items-center gap-1 text-[11px] whitespace-nowrap">
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-bg text-mute font-semibold border border-line">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-bg dark:bg-card text-mute font-semibold border border-line">
           <Check size={11} /> kept
         </span>
         {isAdmin && (
@@ -594,7 +594,7 @@ function TierReviewBadge({ p, isAdmin, onPatch, tierReview }: { p: Player; isAdm
 
   return (
     <div className="inline-flex items-center gap-1 whitespace-nowrap">
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[11px] font-semibold">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-[11px] font-semibold">
         <AlertTriangle size={11} />
         {flag === 'promote' ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
         {expected}
@@ -639,7 +639,7 @@ function TierReviewSettingsPanel({ tierReview, onClose, pendingCount }: { tierRe
   const tolPct = Math.round(tierReview.tolerance * 100);
 
   return (
-    <div ref={ref} className="absolute right-0 mt-2 w-80 z-50 rounded-xl border border-line bg-white shadow-lg p-4 text-sm" role="dialog">
+    <div ref={ref} className="absolute right-0 mt-2 w-80 z-50 rounded-xl border border-line bg-card shadow-lg p-4 text-sm" role="dialog">
       <div className="flex items-start justify-between mb-2">
         <div>
           <div className="font-semibold text-ink">Tier review</div>

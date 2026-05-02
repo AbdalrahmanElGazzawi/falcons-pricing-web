@@ -44,7 +44,7 @@ export function LiquipediaChip({ p, size = 'md' }: { p: Player; size?: 'sm' | 'm
   if (!p.liquipedia_url) {
     return (
       <span
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200 font-semibold whitespace-nowrap ${text}`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700/50 font-semibold whitespace-nowrap ${text}`}
         title="No Liquipedia URL set — add it from the player's full editor"
       >
         <CircleDashed size={ic} /> no link
@@ -62,12 +62,12 @@ export function LiquipediaChip({ p, size = 'md' }: { p: Player; size?: 'sm' | 'm
   const tierIsMajor = tier === 'S' || tier === 'A';
 
   const tone = !synced
-    ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'
+    ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700/50 dark:hover:bg-orange-900/50'
     : stale
       ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
       : tierIsMajor
         ? 'bg-green/10 text-greenDark border-green/30 hover:bg-green/15'
-        : 'bg-bg text-ink border-line hover:bg-bg/80';
+        : 'bg-bg text-ink border-line hover:bg-bg/80 dark:bg-card dark:hover:bg-cardHover';
 
   const titleLines = [
     !synced ? 'URL set, not synced yet' : `Synced ${ageDays === 0 ? 'today' : `${ageDays}d ago`}${stale ? ' (stale — re-sync)' : ''}`,
@@ -90,7 +90,7 @@ export function LiquipediaChip({ p, size = 'md' }: { p: Player; size?: 'sm' | 'm
       {synced ? <Trophy size={ic} /> : <ExternalLink size={ic} />}
       <span className="truncate max-w-[120px]">{label}</span>
       {synced && tier && tier !== 'UNRATED' && (
-        <span className="px-1 rounded bg-white/60 text-[9px] font-bold tabular-nums">{tier}</span>
+        <span className="px-1 rounded bg-white/60 dark:bg-black/30 text-[9px] font-bold tabular-nums">{tier}</span>
       )}
       {stale && <AlertCircle size={ic - 1} />}
       <ExternalLink size={ic - 1} className="opacity-50 group-hover:opacity-100" />

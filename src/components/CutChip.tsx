@@ -22,10 +22,10 @@ export function CutChip({ commission, size = 'md' }: { commission?: number | nul
   const falconsPct = Math.round(pct * 1000) / 10;
 
   const tone =
-    player >= 0.70 ? 'bg-green/10 text-greenDark border-green/30' :
-    player >= 0.50 ? 'bg-blue-50 text-blue-700 border-blue-200'   :
-    player >= 0.30 ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                     'bg-red-50 text-red-700 border-red-200';
+    player >= 0.70 ? 'bg-green/10 text-greenDark border-green/30 dark:bg-green/15' :
+    player >= 0.50 ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/50' :
+    player >= 0.30 ? 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700/50' :
+                     'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700/50';
 
   const px = size === 'sm' ? 'px-1.5 py-0 text-[10px]' : 'px-2 py-0.5 text-[11px]';
   return (

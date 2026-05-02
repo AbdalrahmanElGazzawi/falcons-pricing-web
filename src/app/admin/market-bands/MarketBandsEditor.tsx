@@ -236,10 +236,10 @@ export function MarketBandsEditor({
 
 function SourceChip({ source, url, notes }: { source: string; url?: string | null; notes?: string | null }) {
   const tone =
-    source === 'peer_rate_card'         ? 'bg-green/10 text-greenDark border-green/30' :
-    source === 'closed_deal_history'    ? 'bg-blue-50 text-blue-700 border-blue-200' :
-    source === 'manual_override'        ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                                          'bg-bg text-mute border-line';
+    source === 'peer_rate_card'         ? 'bg-green/10 text-greenDark dark:text-green border-green/30' :
+    source === 'closed_deal_history'    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700/50' :
+    source === 'manual_override'        ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700/50' :
+                                          'bg-bg dark:bg-card text-mute border-line';
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-semibold ${tone}`}
           title={notes ?? sourceLabel(source)}>
@@ -340,7 +340,7 @@ function NewBandModal({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-xl p-5">
+      <div className="bg-card rounded-xl shadow-xl w-full max-w-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="font-semibold text-ink text-base">Add market band</div>

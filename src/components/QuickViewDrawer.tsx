@@ -22,12 +22,12 @@ function DrawerShell({
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+    <div className="fixed inset-0 z-[60]">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
       <aside
         role="dialog"
         aria-label={title}
-        className="absolute right-0 top-0 h-full w-full sm:w-[480px] bg-card shadow-2xl border-l border-line overflow-y-auto"
+        className="absolute right-0 top-0 h-full w-full sm:w-[480px] bg-card shadow-2xl border-l border-line overflow-y-auto z-[61]"
       >
         <div className="sticky top-0 z-10 flex items-center justify-between bg-card border-b border-line px-4 py-3">
           <div className="text-sm font-semibold text-ink truncate">{title}</div>

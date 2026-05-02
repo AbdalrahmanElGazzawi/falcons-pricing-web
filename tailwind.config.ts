@@ -23,6 +23,9 @@ const config: Config = {
         bg:         cssVar('color-bg'),
         danger:     cssVar('color-danger'),
         amber:      cssVar('color-amber'),
+        card:       cssVar('surface-card'),
+        cardHover:  cssVar('surface-card-hover'),
+        elevated:   cssVar('surface-elevated'),
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

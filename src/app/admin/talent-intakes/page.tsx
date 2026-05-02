@@ -52,9 +52,9 @@ export default async function TalentIntakesPage() {
 
 function Tile({ label, value, sub, accent }: { label: string; value: number | string; sub?: string; accent?: 'green' | 'amber' }) {
   const cls = accent === 'green'
-    ? 'border-greenDark/30 bg-greenSoft/40 text-greenDark'
+    ? 'border-greenDark/30 bg-greenSoft/40 dark:bg-green/15 text-greenDark dark:text-green'
     : accent === 'amber'
-      ? 'border-amber-300 bg-amber-50 text-amber-800'
+      ? 'border-amber-300 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
       : 'border-line bg-card text-ink';
   return (
     <div className={`rounded-xl border p-4 ${cls}`}>
