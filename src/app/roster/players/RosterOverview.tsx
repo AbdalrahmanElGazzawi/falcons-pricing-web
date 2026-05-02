@@ -16,10 +16,10 @@ import {
   Settings, Eye, EyeOff, Undo2, ArrowUpRight, ArrowDownRight, ChevronDown,
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
+import { PlayerQuickView } from '@/components/QuickViewDrawer';
 import { CutChip } from '@/components/CutChip';
 import { LiquipediaChip } from '@/components/LiquipediaChip';
 import { LiquipediaCoverageBanner } from './LiquipediaCoverageBanner';
-import { PlayerQuickView } from '@/components/QuickViewDrawer';
 
 type Density = 'compact' | 'comfortable' | 'spacious';
 
@@ -128,7 +128,6 @@ export function RosterOverview({
   const [reviewOnly, setReviewOnly] = useState(false);
   const tierReview = useTierReviewSettings();
   const [showTrSettings, setShowTrSettings] = useState(false);
-  const [quickViewId, setQuickViewId] = useState<number | null>(null);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -341,6 +340,7 @@ export function RosterOverview({
               <thead>
                 <tr>
                   <th>Member</th>
+                  <th className="w-8 text-center" title="Quick view"></th>
                   <th>Role</th>
                   <th>In-game</th>
                   <th>Tier</th>
@@ -374,7 +374,7 @@ export function RosterOverview({
           <PlayerQuickView
             open={true}
             onClose={() => setQuickViewId(null)}
-            player={pl as any}
+            player={pl}
             isAdmin={isAdmin}
             onPatch={patchPlayer}
           />
@@ -385,7 +385,7 @@ export function RosterOverview({
 }
 
 function RosterRow({
-  p, ccy, isAdmin, onPatch, tierReview, onOpenQuick,
+  p, ccy, isAdmin, onPatch, tierReview,
 }: {
   p: Player;
   ccy: 'SAR' | 'USD';
@@ -459,7 +459,7 @@ function RosterRow({
         <td><TierReviewBadge p={p} isAdmin={isAdmin} onPatch={onPatch} tierReview={tierReview} /></td>
       )}
       <td><CutChip commission={p.commission} /></td>
-      <td><LiquipediaChip p={p as any} /></td>
+      <td><LiquipediaChip p={p as any} size="sm" /></td>
       <td className="text-label whitespace-nowrap">{p.game || '—'}</td>
       <td className="text-label whitespace-nowrap">{p.team || '—'}</td>
       <td className="text-label whitespace-nowrap">{age ?? '—'}</td>
