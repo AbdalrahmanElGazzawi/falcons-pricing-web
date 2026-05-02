@@ -108,6 +108,7 @@ export interface Creator {
   rate_ig_post: number;
   rate_ig_story: number;
   rate_ig_reels: number;
+  commission?: number;            // Falcons take fraction 0..1; player cut = 1 - commission
   rate_yt_full: number;
   rate_yt_preroll: number;
   rate_yt_shorts: number;

@@ -18,6 +18,7 @@ const ALLOWED = new Set([
   'rate_twitch_kick_live', 'rate_kick_irl',
   'rate_telegram',
   'rate_usage_monthly', 'rate_promo_monthly',
+  'commission',
   'audience_market', 'rate_source', 'data_completeness',
 ]);
 

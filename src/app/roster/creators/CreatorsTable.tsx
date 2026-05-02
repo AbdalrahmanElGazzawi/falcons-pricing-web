@@ -14,6 +14,7 @@ import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { SearchInput } from '@/components/SearchInput';
+import { CutChip } from '@/components/CutChip';
 import {
   Users, Rows2, Rows3, Rows4, Pencil, Check, X as XIcon,
   Twitch, Youtube, Instagram, Music2, AlertTriangle, Lock, Hourglass,
@@ -54,6 +55,7 @@ type EditDraft = {
   followers_yt: string;
   followers_tiktok: string;
   followers_twitch: string;
+  commission: string;
 } & Record<RateKey, string>;
 
 function toDraft(c: Creator): EditDraft {
@@ -76,6 +78,7 @@ function toDraft(c: Creator): EditDraft {
     followers_yt:       c.followers_yt != null ? String(c.followers_yt) : '',
     followers_tiktok:   c.followers_tiktok != null ? String(c.followers_tiktok) : '',
     followers_twitch:   c.followers_twitch != null ? String(c.followers_twitch) : '',
+    commission:         c.commission != null ? String(c.commission) : '',
   };
   for (const p of KEY_PLATFORMS) {
     const v = (c as any)[p.key];
@@ -104,6 +107,7 @@ function draftToPatch(d: EditDraft) {
     followers_yt:       d.followers_yt === '' ? null : Number(d.followers_yt),
     followers_tiktok:   d.followers_tiktok === '' ? null : Number(d.followers_tiktok),
     followers_twitch:   d.followers_twitch === '' ? null : Number(d.followers_twitch),
+    commission:         d.commission === '' ? null : Number(d.commission),
   };
   for (const p of KEY_PLATFORMS) {
     patch[p.key] = d[p.key] === '' ? null : Number(d[p.key]);
@@ -323,6 +327,7 @@ export function CreatorsTable({
                   <th>Nationality</th>
                   <th>Market</th>
                   <th>Socials</th>
+                  <th title="Creator's share of the deal">Cut</th>
                   <th className="text-right">Reach</th>
                   {KEY_PLATFORMS.map(p => (
                     <th key={p.key} className="text-right">{p.label}</th>
@@ -432,6 +437,7 @@ function CreatorRow({
         ) : '—'}
       </td>
       <td><CreatorSocials c={c} /></td>
+      <td><CutChip commission={c.commission} /></td>
       <td className="text-right text-ink whitespace-nowrap">{reach > 0 ? fmtFollowers(reach) : '—'}</td>
       {KEY_PLATFORMS.map(p => {
         const v = (c as any)[p.key] as number | null;
@@ -502,6 +508,18 @@ function CreatorEditRow({
           <SocialInput icon={Youtube}   handle={draft.handle_yt}     followers={draft.followers_yt}     onHandle={v => set('handle_yt', v)}     onFollowers={v => set('followers_yt', v)} />
           <SocialInput icon={XIcon}     handle={draft.handle_x}      followers={draft.followers_x}      onHandle={v => set('handle_x', v)}      onFollowers={v => set('followers_x', v)} />
           <SocialInput icon={Twitch}    handle={draft.handle_twitch} followers={draft.followers_twitch} onHandle={v => set('handle_twitch', v)} onFollowers={v => set('followers_twitch', v)} />
+        </div>
+      </td>
+      <td>
+        <div className="flex items-center gap-1">
+          <input
+            type="number" min="0" max="1" step="0.05"
+            className="input py-1 text-right w-[60px] text-xs tabular-nums"
+            value={draft.commission}
+            onChange={e => set('commission', e.target.value)}
+            placeholder="0.30"
+          />
+          <span className="text-[10px] text-mute">×Falcons</span>
         </div>
       </td>
       <td className="text-right text-mute text-xs">auto</td>

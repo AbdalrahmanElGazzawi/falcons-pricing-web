@@ -16,6 +16,7 @@ import {
   Settings, Eye, EyeOff, Undo2, ArrowUpRight, ArrowDownRight, ChevronDown,
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
+import { CutChip } from '@/components/CutChip';
 
 type Density = 'compact' | 'comfortable' | 'spacious';
 
@@ -327,6 +328,7 @@ export function RosterOverview({
                   <th>In-game</th>
                   <th>Tier</th>
                   {!tierReview.disabled && <th>Tier check</th>}
+                  <th title="Talent's share of the deal (1 - Falcons commission)">Cut</th>
                   <th>Game</th>
                   <th>Team</th>
                   <th>Age</th>
@@ -413,6 +415,7 @@ function RosterRow({
       {!tierReview.disabled && (
         <td><TierReviewBadge p={p} isAdmin={isAdmin} onPatch={onPatch} tierReview={tierReview} /></td>
       )}
+      <td><CutChip commission={p.commission} /></td>
       <td className="text-label whitespace-nowrap">{p.game || '—'}</td>
       <td className="text-label whitespace-nowrap">{p.team || '—'}</td>
       <td className="text-label whitespace-nowrap">{age ?? '—'}</td>
