@@ -10,16 +10,19 @@ type Player = {
   last_major_placement?: string | null;
 };
 
-/** Pull a clean label from the Liquipedia URL: 'apexlegends/ImperialHal' style. */
+/**
+ * Pull a clean label from the Liquipedia URL.
+ * The roster's GAME column already shows the game, so we render the SLUG
+ * (player handle on Liquipedia) only — saves ~120px per row on scroll.
+ */
 function urlLabel(url: string): string {
   try {
     const u = new URL(url);
     const parts = u.pathname.split('/').filter(Boolean);
     if (parts.length === 0) return 'Liquipedia';
-    const game = parts[0];
     const slug = parts.slice(1).join('/');
-    const slugClean = decodeURIComponent(slug).replace(/_/g, ' ');
-    return slugClean ? `${game}/${slugClean}` : game;
+    if (slug) return decodeURIComponent(slug).replace(/_/g, ' ');
+    return parts[0]; // game-only fallback (rare)
   } catch { return 'Liquipedia'; }
 }
 
@@ -85,7 +88,7 @@ export function LiquipediaChip({ p, size = 'md' }: { p: Player; size?: 'sm' | 'm
       title={titleLines || url}
     >
       {synced ? <Trophy size={ic} /> : <ExternalLink size={ic} />}
-      <span className="truncate max-w-[180px]">{label}</span>
+      <span className="truncate max-w-[120px]">{label}</span>
       {synced && tier && tier !== 'UNRATED' && (
         <span className="px-1 rounded bg-white/60 text-[9px] font-bold tabular-nums">{tier}</span>
       )}

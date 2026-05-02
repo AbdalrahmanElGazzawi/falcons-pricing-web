@@ -386,7 +386,7 @@ export function RosterOverview({
 }
 
 function RosterRow({
-  p, ccy, isAdmin, onPatch, tierReview,
+  p, ccy, isAdmin, onPatch, tierReview, onOpenQuick,
 }: {
   p: Player;
   ccy: 'SAR' | 'USD';

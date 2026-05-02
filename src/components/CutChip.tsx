@@ -34,7 +34,10 @@ export function CutChip({ commission, size = 'md' }: { commission?: number | nul
       title={`Talent keeps ${playerPct}% · Falcons commission ${falconsPct}%`}
     >
       <Coins size={size === 'sm' ? 9 : 11} />
+      <span className="opacity-60 font-normal">T</span>
       {playerPct}%
+      <span className="opacity-50 font-normal">/</span>
+      <span className="opacity-70 font-normal">F {falconsPct}%</span>
     </span>
   );
 }
