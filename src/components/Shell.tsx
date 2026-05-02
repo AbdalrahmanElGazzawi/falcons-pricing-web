@@ -35,7 +35,6 @@ const NAV = (role: UserRole, email: string) => [
   ] : []),
   ...(role === 'admin' ? [
     { href: '/admin/esports-teams', key: 'nav.esports_teams' as const, icon: Trophy },
-    { href: '/admin/users',       key: 'nav.users'       as const, icon: UserCog },
     { href: '/admin/talent-intakes', key: 'nav.talent_intakes' as const, icon: ShieldCheck },
     { href: '/admin/tiers',       key: 'nav.tiers'       as const, icon: Settings },
     { href: '/admin/market-bands',key: 'nav.market_bands'as const, icon: Database },
@@ -43,6 +42,7 @@ const NAV = (role: UserRole, email: string) => [
     { href: '/admin/assumptions', key: 'nav.assumptions' as const, icon: BookOpen },
   ] : []),
   ...(isSuperAdminEmail(email) ? [
+    { href: '/admin/users',     key: 'nav.users'      as const, icon: UserCog },
     { href: '/admin/pricing',   key: 'nav.pricing_os' as const, icon: Calculator },
     { href: '/admin/audit-log', key: 'nav.audit_log'  as const, icon: ScrollText },
   ] : []),

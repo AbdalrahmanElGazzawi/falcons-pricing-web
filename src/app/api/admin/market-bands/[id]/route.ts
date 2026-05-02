@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin, requireSuperAdmin } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -42,8 +42,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const { denied, profile, supabase } = await requireAdmin();
-  if (denied) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+  const { denied, profile, supabase } = await requireSuperAdmin();
+  if (denied) return NextResponse.json({ error: 'Super-admin only' }, { status: 403 });
   // Soft retire by setting effective_to=today
   const { error } = await supabase.from('market_bands').update({ effective_to: new Date().toISOString().slice(0,10) }).eq('id', params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

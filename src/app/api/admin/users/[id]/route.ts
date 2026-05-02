@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth';
+import { requireSuperAdmin, SUPER_ADMIN_EMAIL } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const { denied, profile } = await requireAdmin();
-  if (denied) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+  const { denied, profile } = await requireSuperAdmin();
+  if (denied) return NextResponse.json({ error: 'Super-admin only' }, { status: 403 });
 
   let body: any;
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
@@ -31,6 +31,20 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   const sb = createServiceClient();
+
+  // Safety rail: nobody — not even another super-admin if we ever add one — can
+  // demote or deactivate the SUPER_ADMIN_EMAIL via this endpoint.
+  const { data: target } = await sb
+    .from('profiles')
+    .select('email')
+    .eq('id', params.id)
+    .single();
+  if (target?.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+    if ('role' in patch || 'is_active' in patch) {
+      return NextResponse.json({ error: 'Cannot modify super-admin role or status' }, { status: 403 });
+    }
+  }
+
   const { error } = await sb.from('profiles').update(patch).eq('id', params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -47,8 +61,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const { denied, profile } = await requireAdmin();
-  if (denied) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+  const { denied, profile } = await requireSuperAdmin();
+  if (denied) return NextResponse.json({ error: 'Super-admin only' }, { status: 403 });
 
   if (params.id === profile.id) {
     return NextResponse.json({ error: 'You cannot remove yourself' }, { status: 400 });
@@ -64,6 +78,11 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     .single();
 
   if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+  // Safety rail: never let anyone delete the super-admin account.
+  if (target.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+    return NextResponse.json({ error: 'Cannot delete super-admin' }, { status: 403 });
+  }
 
   // 1. Pull email off the invited_emails allowlist so they can't be re-authed
   //    without a fresh admin invite

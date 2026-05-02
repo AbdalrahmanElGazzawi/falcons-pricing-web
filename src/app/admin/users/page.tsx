@@ -1,4 +1,4 @@
-import { requireAdmin } from '@/lib/auth';
+import { requireSuperAdmin } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
@@ -7,8 +7,8 @@ import { UsersTable } from './UsersTable';
 export const dynamic = 'force-dynamic';
 
 export default async function UsersAdminPage() {
-  const { denied, profile } = await requireAdmin();
-  if (denied) return <AccessDenied message="Admin only." />;
+  const { denied, profile } = await requireSuperAdmin();
+  if (denied) return <AccessDenied message="Super-admin only." />;
 
   // Use service client so we can list ALL profiles (even inactive)
   const sb = createServiceClient();

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth';
+import { requireSuperAdmin } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { randomBytes } from 'node:crypto';
 
@@ -16,8 +16,8 @@ function generateTempPassword(): string {
 }
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
-  const { denied, profile } = await requireAdmin();
-  if (denied) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+  const { denied, profile } = await requireSuperAdmin();
+  if (denied) return NextResponse.json({ error: 'Super-admin only' }, { status: 403 });
 
   if (params.id === profile.id) {
     return NextResponse.json({

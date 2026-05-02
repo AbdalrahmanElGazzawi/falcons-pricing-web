@@ -6,7 +6,7 @@
 // Vercel's 5-min max). Returns per-player summary.
 
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth';
+import { requireSuperAdmin } from '@/lib/auth';
 import { syncFromLiquipedia } from '@/lib/liquipedia';
 
 export const runtime = 'nodejs';
@@ -14,8 +14,8 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 export async function POST() {
-  const { denied, profile, supabase } = await requireAdmin();
-  if (denied) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+  const { denied, profile, supabase } = await requireSuperAdmin();
+  if (denied) return NextResponse.json({ error: 'Super-admin only' }, { status: 403 });
 
   const { data: players, error } = await supabase
     .from('players')

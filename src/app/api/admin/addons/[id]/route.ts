@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin, requireSuperAdmin } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -27,8 +27,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const { denied, profile, supabase } = await requireAdmin();
-  if (denied) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+  const { denied, profile, supabase } = await requireSuperAdmin();
+  if (denied) return NextResponse.json({ error: 'Super-admin only' }, { status: 403 });
 
   // Soft-delete by deactivating to preserve quote_addons history
   const { error } = await supabase.from('addons').update({ is_active: false }).eq('id', Number(params.id));
