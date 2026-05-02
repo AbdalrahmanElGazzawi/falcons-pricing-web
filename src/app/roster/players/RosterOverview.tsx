@@ -467,8 +467,22 @@ function RosterRow({
       <td className="text-label whitespace-nowrap">{p.nationality || '—'}</td>
       <td><FollowerCluster p={p} /></td>
       <td className="text-right text-ink whitespace-nowrap">{totalReach(p) > 0 ? fmtFollowers(totalReach(p)) : '—'}</td>
-      <td className="text-right">{p.rate_ig_reel ? fmtCurrency(p.rate_ig_reel, ccy, 3.75) : '—'}</td>
-      <td className="text-right">{p.rate_irl ? fmtCurrency(p.rate_irl, ccy, 3.75) : '—'}</td>
+      <td className="text-right whitespace-nowrap">
+        {p.rate_ig_reel ? (
+          <div className="flex flex-col items-end leading-tight tabular-nums">
+            <span className="text-ink font-medium">{fmtCurrency(p.rate_ig_reel, ccy, 3.75)}</span>
+            <span className="text-[10px] text-mute">{fmtCurrency(p.rate_ig_reel, ccy === 'SAR' ? 'USD' : 'SAR', 3.75)}</span>
+          </div>
+        ) : '—'}
+      </td>
+      <td className="text-right whitespace-nowrap">
+        {p.rate_irl ? (
+          <div className="flex flex-col items-end leading-tight tabular-nums">
+            <span className="text-ink font-medium">{fmtCurrency(p.rate_irl, ccy, 3.75)}</span>
+            <span className="text-[10px] text-mute">{fmtCurrency(p.rate_irl, ccy === 'SAR' ? 'USD' : 'SAR', 3.75)}</span>
+          </div>
+        ) : '—'}
+      </td>
       {isAdmin && (
         <td>
           <Link href={`/admin/players/${p.id}`} className="row-actions text-xs text-greenDark hover:underline whitespace-nowrap">

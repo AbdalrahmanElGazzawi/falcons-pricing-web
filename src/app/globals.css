@@ -89,8 +89,8 @@ button { cursor: pointer; }
 .chip-gold  { @apply bg-gold/15 text-gold; }
 .chip-mint  { @apply bg-green/15 text-greenDark; }
 .chip-peach { @apply bg-amber/20 text-amber; }
-.chip-sky   { @apply bg-blue-100 text-blue-700; }
-.chip-grey  { @apply bg-slate-100 text-slate-600; }
+.chip-sky   { @apply bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300; }
+.chip-grey  { @apply bg-slate-100 text-slate-600 dark:bg-slate-700/60 dark:text-slate-300; }
 
 /* Status hierarchy: pending/rejected demand attention; closed states recede. */
 .status            { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide; }
@@ -123,9 +123,13 @@ button { cursor: pointer; }
 .data-table              { @apply w-full text-sm; }
 .data-table thead th     { @apply text-left text-[11px] text-label uppercase tracking-wider bg-bg sticky top-0 z-10 px-4 py-2.5 font-semibold border-b border-line; }
 .data-table tbody tr     { @apply border-b border-line transition-colors; }
-.data-table tbody tr:hover { @apply bg-bg; }
-.data-table tbody tr:nth-child(even) { background: rgba(247, 249, 251, 0.6); }
-.data-table tbody tr:nth-child(even):hover { background: #F7F9FB; }
+/* Striping uses theme-aware tokens. Hardcoded RGBA values were the cause of
+ * the 'ghosted rows' bug in dark mode — pale-on-dark looked semi-transparent. */
+.data-table tbody tr:hover { background-color: rgb(var(--surface-card-hover)); }
+.data-table tbody tr:nth-child(even) { background-color: rgb(var(--surface-card)); }
+.data-table tbody tr:nth-child(even):hover { background-color: rgb(var(--surface-card-hover)); }
+html[data-theme="dark"] .data-table tbody tr:hover,
+html[data-theme="dark"] .data-table tbody tr:nth-child(even):hover { background-color: rgb(var(--surface-card-hover)); }
 .data-table tbody td     { @apply px-4 py-2.5 align-middle; }
 
 .data-table.density-compact tbody td,
