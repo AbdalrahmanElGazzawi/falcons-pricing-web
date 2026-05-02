@@ -238,6 +238,8 @@ export function QuoteBuilder({
 
   // ── Lines
   const [lines, setLines] = useState<LineDraft[]>([]);
+  // In-flight preview from the active QuoteConfigurator (un-added picks)
+  const [pendingPreview, setPendingPreview] = useState<{ count: number; total: number; talent: string }>({ count: 0, total: 0, talent: '' });
 
   // ── Wizard state
   const [wizard, setWizard] = useState<
@@ -1000,6 +1002,7 @@ export function QuoteBuilder({
         usdRate={usdRate}
         addonsUpliftPct={addonsUpliftPct}
         onCurrencyChange={setCurrency}
+        onPreviewChange={setPendingPreview}
         initialEdit={wizard?.mode === 'edit' ? wizard.initial : null}
         onCommit={(drafts) => {
           if (wizard?.mode === 'edit' && drafts.length > 0) {
@@ -1376,16 +1379,17 @@ export function QuoteBuilder({
 
         {/* Desktop sticky save rail */}
         <aside className="hidden lg:block lg:sticky lg:top-6 self-start">
-          <SaveRail
+          <QuoteCart
+            rows={computed.rows}
             totals={computed.totals}
-            rowCount={computed.rows.length}
             currency={currency}
             vatRate={vatRate}
             usdRate={usdRate}
-            addonsUpliftPct={addonsUpliftPct}
             saving={saving}
             error={error}
             clientName={clientName}
+            pendingPreview={pendingPreview}
+            onRemoveLine={removeLine}
             onDraft={() => save('draft')}
             onSubmit={() => save('pending_approval')}
           />
@@ -1792,6 +1796,133 @@ function QuotePreview({
   );
 }
 // ─── Save rail (desktop sticky) ─────────────────────────────────────────────
+// ─── Quote Cart (right rail) ───────────────────────────────────────────────
+// Itemised view of all committed quote lines, grouped by talent. Each line
+// has an inline remove button. Footer shows subtotal/VAT/total + Submit/Save.
+// When the configurator has un-added picks, an animated 'pending' band
+// surfaces them so the rep knows what hasn't been committed yet.
+function QuoteCart({
+  rows, totals, currency, vatRate, usdRate, saving, error, clientName,
+  pendingPreview, onRemoveLine, onDraft, onSubmit,
+}: {
+  rows: Array<{ uid: string; talent_name: string; talent_id: number | null; talent_type: 'player' | 'creator'; platform_label: string; qty: number; finalAmount: number }>;
+  totals: { subtotal: number; preVat: number; vatAmount: number; total: number };
+  currency: string; vatRate: number; usdRate: number;
+  saving: boolean; error: string | null; clientName: string;
+  pendingPreview: { count: number; total: number; talent: string };
+  onRemoveLine: (uid: string) => void;
+  onDraft: () => void; onSubmit: () => void;
+}) {
+  const blocked = clientName.trim() === '' || rows.length === 0;
+
+  // Group rows by talent
+  const groups = (() => {
+    const m = new Map<string, { talent: string; talent_id: number | null; talent_type: string; rows: typeof rows; subtotal: number }>();
+    for (const r of rows) {
+      const key = `${r.talent_type}:${r.talent_id ?? r.talent_name}`;
+      const g = m.get(key) ?? { talent: r.talent_name, talent_id: r.talent_id, talent_type: r.talent_type, rows: [], subtotal: 0 };
+      g.rows.push(r);
+      g.subtotal += r.finalAmount;
+      m.set(key, g);
+    }
+    return Array.from(m.values());
+  })();
+
+  return (
+    <div className="card overflow-hidden flex flex-col max-h-[calc(100vh-3rem)]">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-line bg-bg/40">
+        <div className="flex items-baseline justify-between gap-2">
+          <div className="text-[11px] uppercase tracking-wider text-mute font-bold">Quote</div>
+          <div className="text-[11px] text-mute tabular-nums">{rows.length} line{rows.length === 1 ? '' : 's'}</div>
+        </div>
+        <div className="text-3xl font-extrabold text-ink tabular-nums leading-tight mt-0.5">{fmtCurrency(totals.total, currency, usdRate)}</div>
+        <div className="text-[11px] text-mute mt-0.5">incl. VAT {fmtPct(vatRate, 0)}{currency === 'USD' && ` · @ ${usdRate} SAR/USD`}</div>
+      </div>
+
+      {/* Cart body — grouped by talent, scrollable */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {rows.length === 0 ? (
+          <div className="px-4 py-8 text-center">
+            <div className="text-5xl mb-2 opacity-20">𝒙</div>
+            <div className="text-sm text-mute">Your cart is empty.</div>
+            <div className="text-[11px] text-mute mt-1">Pick a talent and tick deliverables to start.</div>
+          </div>
+        ) : (
+          <ul className="divide-y divide-line/70">
+            {groups.map((g, gi) => (
+              <li key={gi} className="px-3 py-2.5">
+                <div className="flex items-baseline justify-between gap-2 mb-1">
+                  <div className="font-semibold text-sm text-ink truncate">{g.talent}</div>
+                  <div className="text-[11px] tabular-nums text-mute font-mono">{fmtCurrency(g.subtotal, currency, usdRate)}</div>
+                </div>
+                <ul className="space-y-0.5">
+                  {g.rows.map(r => (
+                    <li key={r.uid} className="flex items-baseline justify-between gap-2 group text-xs pl-2">
+                      <div className="text-label truncate min-w-0">
+                        {r.platform_label}{r.qty > 1 && <span className="text-mute"> × {r.qty}</span>}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="font-semibold tabular-nums text-ink font-mono">{fmtCurrency(r.finalAmount, currency, usdRate)}</span>
+                        <button
+                          onClick={() => onRemoveLine(r.uid)}
+                          className="opacity-0 group-hover:opacity-100 text-mute hover:text-red-600 transition w-5 h-5 inline-flex items-center justify-center rounded hover:bg-red-50"
+                          title="Remove"
+                          aria-label="Remove line"
+                        >
+                          <XIcon size={12} />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Pending preview band */}
+      {pendingPreview.count > 0 && (
+        <div className="px-4 py-2.5 border-t border-amber-300 bg-amber-50 text-xs flex items-center justify-between gap-2 animate-pulse">
+          <div className="text-amber-800">
+            <span className="font-bold">{pendingPreview.count}</span> in progress
+            {pendingPreview.talent && <span className="text-amber-700"> · {pendingPreview.talent}</span>}
+          </div>
+          <div className="font-bold tabular-nums text-amber-900">+{fmtCurrency(pendingPreview.total, currency, usdRate)}</div>
+        </div>
+      )}
+
+      {/* Totals + actions */}
+      <div className="border-t border-line bg-bg/30 px-4 py-3 space-y-2">
+        <div className="space-y-0.5 text-xs">
+          <Row label="Subtotal" value={fmtCurrency(totals.subtotal, currency, usdRate)} muted />
+          <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtCurrency(totals.vatAmount, currency, usdRate)} muted />
+          <Row label="Total" value={fmtCurrency(totals.total, currency, usdRate)} bold />
+        </div>
+        <button
+          onClick={onSubmit}
+          disabled={saving || blocked}
+          className="btn btn-primary w-full justify-center disabled:opacity-50"
+        >
+          <Send size={14} /> {saving ? 'Saving…' : 'Submit for approval'}
+        </button>
+        <button
+          onClick={onDraft}
+          disabled={saving || blocked}
+          className="btn btn-ghost w-full justify-center text-sm disabled:opacity-50"
+        >
+          <Save size={14} /> Save as draft
+        </button>
+        {error && <div className="text-xs text-red-600">{error}</div>}
+        {clientName.trim() === '' && rows.length > 0 && (
+          <div className="text-[11px] text-amber">Client name required to save.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SaveRail({
   totals, rowCount, currency, vatRate, usdRate, addonsUpliftPct, saving, error, clientName,
   onDraft, onSubmit,

@@ -61,7 +61,7 @@ function readTalentDefaults(talent: Player | Creator | null): {
 
 export function QuoteConfigurator({
   players, creators, tiers, addons, globals, currency, usdRate, addonsUpliftPct, scrollHook,
-  initialEdit, onCommit, onCancelEdit, onCurrencyChange,
+  initialEdit, onCommit, onCancelEdit, onCurrencyChange, onPreviewChange,
 }: {
   players: Player[];
   creators: Creator[];
@@ -76,6 +76,7 @@ export function QuoteConfigurator({
   onCommit: (drafts: LineDraft[]) => void;
   onCancelEdit?: () => void;
   onCurrencyChange?: (next: string) => void;
+  onPreviewChange?: (p: { count: number; total: number; talent: string }) => void;
 }) {
   const { t } = useLocale();
   const isEditing = !!initialEdit;
@@ -363,6 +364,17 @@ export function QuoteConfigurator({
 
   const previewTotal = previewLines.reduce((s, l) => s + l.finalAmount, 0);
   const selectedCount = previewLines.length;
+
+  // Notify parent (QuoteBuilder) so the cart sidebar can show the in-flight preview.
+  useEffect(() => {
+    if (onPreviewChange) {
+      const talentName = (selectedTalent as any)?.nickname ?? '';
+      onPreviewChange({ count: selectedCount, total: previewTotal, talent: talentName });
+    }
+    // Clear on unmount
+    return () => { if (onPreviewChange) onPreviewChange({ count: 0, total: 0, talent: '' }); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewTotal, selectedCount, selectedTalent]);
 
   function togglePick(key: string, manual: boolean) {
     setPicks(p => {
