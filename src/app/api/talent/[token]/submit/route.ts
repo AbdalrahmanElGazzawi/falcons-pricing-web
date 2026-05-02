@@ -37,11 +37,13 @@ export async function POST(
   const notes = typeof body.notes === 'string' ? body.notes.slice(0, 4000) : null;
 
   // Find player by token
-  const { data: player } = await supabase
+  const { data: playerRow } = await supabase
     .from('players')
     .select('id, nickname, intake_status, min_rates, is_active')
     .eq('intake_token', params.token)
     .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const player: any = playerRow;
 
   if (!player) return NextResponse.json({ error: 'Token not found' }, { status: 404 });
   if (player.is_active === false) {
@@ -70,7 +72,7 @@ export async function POST(
     actor_kind:  'human',
     action:      isRevision ? 'talent.intake_revised' : 'talent.intake_submitted',
     entity_type: 'player',
-    entity_id:   player.id,
+    entity_id:   String(player.id),
     diff: {
       nickname: player.nickname,
       before:   player.min_rates ?? {},

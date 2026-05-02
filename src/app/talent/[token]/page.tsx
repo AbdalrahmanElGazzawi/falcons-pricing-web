@@ -41,13 +41,15 @@ type PlayerRateColumns = {
 export default async function TalentIntakePage({ params }: { params: { token: string } }) {
   const supabase = createServiceClient();
 
-  const { data: player } = await supabase
+  const { data: playerRow } = await supabase
     .from('players')
     .select('*')
     .eq('intake_token', params.token)
     .maybeSingle();
 
-  if (!player) notFound();
+  if (!playerRow) notFound();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const player: any = playerRow;
   if (player.is_active === false) {
     return (
       <Shell>
@@ -91,7 +93,7 @@ export default async function TalentIntakePage({ params }: { params: { token: st
 
     void supabase.from('audit_log').insert({
       actor_email: 'talent@portal', actor_kind: 'system',
-      action: 'talent.intake_opened', entity_type: 'player', entity_id: player.id,
+      action: 'talent.intake_opened', entity_type: 'player', entity_id: String(player.id),
       diff: { nickname: player.nickname, market: audienceMarket },
     }).then(() => null);
   }

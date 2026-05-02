@@ -6,25 +6,27 @@ import { IntakesTable } from './IntakesTable';
 export const dynamic = 'force-dynamic';
 
 export default async function TalentIntakesPage() {
-  const { denied, supabase } = await requireSuperAdmin();
+  const { denied, profile, supabase } = await requireSuperAdmin();
   if (denied) return <AccessDenied />;
 
-  const { data: players } = await supabase
+  const { data: playersRows } = await supabase
     .from('players')
     .select('id, nickname, full_name, tier_code, role, game, team, is_active, intake_token, intake_status, intake_sent_at, intake_submitted_at, min_rates, min_rates_notes, avatar_url, nationality')
     .eq('is_active', true)
     .order('intake_status', { ascending: false })
     .order('nickname');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const players: any[] = playersRows ?? [];
 
   const counts = {
-    total:     players?.length ?? 0,
-    submitted: (players ?? []).filter(p => ['submitted','approved','revised'].includes(p.intake_status)).length,
-    sent:      (players ?? []).filter(p => p.intake_status === 'sent').length,
-    pending:   (players ?? []).filter(p => p.intake_status === 'not_started').length,
+    total:     players.length,
+    submitted: players.filter(p => ['submitted','approved','revised'].includes(p.intake_status)).length,
+    sent:      players.filter(p => p.intake_status === 'sent').length,
+    pending:   players.filter(p => p.intake_status === 'not_started').length,
   };
 
   return (
-    <Shell>
+    <Shell role={profile.role} email={profile.email} fullName={profile.full_name}>
       <PageHeader
         title="Talent intake — minimum rates"
         subtitle="Send each player their private link. They submit the SAR floor they'll accept per deliverable; pricing engine respects it as a hard floor."
@@ -37,7 +39,7 @@ export default async function TalentIntakesPage() {
         <Tile label="Not started"    value={counts.pending} />
       </div>
 
-      <IntakesTable players={players ?? []} />
+      <IntakesTable players={players} />
     </Shell>
   );
 }
