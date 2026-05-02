@@ -8,7 +8,7 @@ import { isSuperAdminEmail } from '@/lib/super-admin';
 import {
   LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog,
   Sparkles, BookOpen, KeyRound, ScrollText, Calculator, Map, Menu, X,
-  Inbox, HelpCircle, Search, Trophy, Layers, PanelLeftClose, PanelLeftOpen, Database,
+  Inbox, HelpCircle, Search, Trophy, Layers, PanelLeftClose, PanelLeftOpen, Database, ShieldCheck,
 } from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
 import { LocaleSwitcher } from './LocaleSwitcher';
@@ -36,6 +36,7 @@ const NAV = (role: UserRole, email: string) => [
   ...(role === 'admin' ? [
     { href: '/admin/esports-teams', key: 'nav.esports_teams' as const, icon: Trophy },
     { href: '/admin/users',       key: 'nav.users'       as const, icon: UserCog },
+    { href: '/admin/talent-intakes', key: 'nav.talent_intakes' as const, icon: ShieldCheck },
     { href: '/admin/tiers',       key: 'nav.tiers'       as const, icon: Settings },
     { href: '/admin/market-bands',key: 'nav.market_bands'as const, icon: Database },
     { href: '/admin/addons',      key: 'nav.addons'      as const, icon: Settings },

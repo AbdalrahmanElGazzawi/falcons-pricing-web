@@ -25,6 +25,7 @@ export const dict = {
   'nav.about':        { en: 'About',        ar: 'حول' },
   'nav.pricing_logic':{ en: 'Pricing Logic', ar: 'منطق التسعير' },
   'nav.users':        { en: 'Users',        ar: 'المستخدمون' },
+  'nav.talent_intakes': { en: 'Talent intake', ar: 'إدخال المواهب' },
   'nav.esports_teams':{ en: 'Owned Media', ar: 'القنوات المملوكة' },
   'nav.tiers':        { en: 'Tiers',        ar: 'الفئات' },
   'nav.market_bands': { en: 'Market Bands',  ar: 'نطاقات السوق' },
