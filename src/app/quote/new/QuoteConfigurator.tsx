@@ -655,6 +655,8 @@ export function QuoteConfigurator({
                     deliverables={deliverables}
                     picks={picks}
                     currency={currency}
+                    usdRate={usdRate ?? 3.75}
+                    previewLines={previewLines}
                     onToggle={togglePick}
                     onQty={setRowQty}
                     onRate={setRowRate}
@@ -912,8 +914,8 @@ export function QuoteConfigurator({
                 </div>
               </details>
 
-              {/* Live total + commit */}
-              <div className="rounded-lg bg-greenSoft/40 border border-green/30 p-4 flex items-center justify-between gap-3 flex-wrap">
+              {/* Live total + commit — sticky so it's always visible */}
+              <div className="sticky bottom-2 z-20 rounded-xl bg-greenSoft/90 backdrop-blur border-2 border-green/50 shadow-lift p-4 flex items-center justify-between gap-3 flex-wrap">
                 <div>
                   <div className="flex items-center gap-2">
                     <div className="text-[10px] uppercase tracking-wider text-label">Selection total</div>
@@ -960,15 +962,18 @@ export function QuoteConfigurator({
 const GROUP_ORDER = ['Social Media', 'Live & Stream', 'Continuity & Rights', 'On-Ground & Events', 'Other'];
 
 function DeliverableGroups({
-  deliverables, picks, currency, onToggle, onQty, onRate,
+  deliverables, picks, currency, usdRate, previewLines, onToggle, onQty, onRate,
 }: {
   deliverables: Array<{ key: string; label: string; rate: number; group: string; manual: boolean; suggestedRange: [number, number] | null }>;
   picks: Record<string, RowSel>;
   currency: string;
+  usdRate: number;
+  previewLines: Array<{ key: string; finalAmount: number; finalUnit: number }>;
   onToggle: (k: string, manual: boolean) => void;
   onQty: (k: string, q: number) => void;
   onRate: (k: string, r: number) => void;
 }) {
+  const priceMap = new Map(previewLines.map(l => [l.key, l]));
   const grouped: Record<string, typeof deliverables> = {};
   for (const d of deliverables) (grouped[d.group] ||= []).push(d);
 
@@ -1000,6 +1005,12 @@ function DeliverableGroups({
                           : `Base ${fmtCurrency(d.rate, currency, 3.75)}`}
                       </div>
                     </div>
+                    {checked && priceMap.get(d.key) && (
+                      <div className="text-right mr-1 hidden sm:block">
+                        <div className="text-[10px] uppercase tracking-wider text-mute font-semibold leading-none">Live</div>
+                        <div className="text-sm font-bold text-greenDark tabular-nums leading-tight">{fmtCurrency(priceMap.get(d.key)!.finalAmount, currency, usdRate)}</div>
+                      </div>
+                    )}
                     {checked && (
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                         {d.manual && (
