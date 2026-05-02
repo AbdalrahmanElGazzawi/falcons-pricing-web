@@ -341,7 +341,23 @@ export function QuoteConfigurator({
           })(),
           isCompanion,
         });
-        return { key: k, label: d.label, qty: sel.qty, rate: baseFee, ...r };
+        return {
+          key: k, label: d.label, qty: sel.qty, rate: baseFee,
+          // Inputs as-applied (after override fall-through) for breakdown UI
+          mults: {
+            base:  baseFee,
+            eng:   overrides.o_eng   ?? globals.eng,
+            aud:   overrides.o_aud   ?? globals.aud,
+            seas:  overrides.o_seas  ?? globals.seas,
+            ctype: overrides.o_ctype ?? globals.ctype,
+            lang:  overrides.o_lang  ?? globals.lang,
+            auth:  overrides.o_auth  ?? globals.auth,
+            obj:   globals.obj,
+            rightsPct: lineAddonsUpliftPct,
+            isCompanion,
+          },
+          ...r,
+        };
       });
   }, [picks, deliverables, selectedTalent, selectedPlayer, selectedCreator, tierMap, overrides, globals, addonsUpliftPct, lineAddonsUpliftPct, isCompanion, creatorMults]);
 
@@ -968,7 +984,16 @@ function DeliverableGroups({
   picks: Record<string, RowSel>;
   currency: string;
   usdRate: number;
-  previewLines: Array<{ key: string; finalAmount: number; finalUnit: number }>;
+  previewLines: Array<{
+    key: string; finalAmount: number; finalUnit: number;
+    socialPrice: number; floorPrice: number; preAddOn: number; confCap: number;
+    engGated: number; audGated: number; seasGated: number; authGated: number;
+    qty: number;
+    mults: {
+      base: number; eng: number; aud: number; seas: number; ctype: number;
+      lang: number; auth: number; obj: number; rightsPct: number; isCompanion: boolean;
+    };
+  }>;
   onToggle: (k: string, manual: boolean) => void;
   onQty: (k: string, q: number) => void;
   onRate: (k: string, r: number) => void;
@@ -1006,10 +1031,11 @@ function DeliverableGroups({
                       </div>
                     </div>
                     {checked && priceMap.get(d.key) && (
-                      <div className="text-right mr-1 hidden sm:block">
-                        <div className="text-[10px] uppercase tracking-wider text-mute font-semibold leading-none">Live</div>
-                        <div className="text-sm font-bold text-greenDark tabular-nums leading-tight">{fmtCurrency(priceMap.get(d.key)!.finalAmount, currency, usdRate)}</div>
-                      </div>
+                      <PriceBreakdownChip
+                        line={priceMap.get(d.key)!}
+                        currency={currency}
+                        usdRate={usdRate}
+                      />
                     )}
                     {checked && (
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
@@ -1153,6 +1179,105 @@ function SocialChips({ talent }: { talent: Player | Creator | null }) {
           </a>
         );
       })}
+    </div>
+  );
+}
+
+// ─── PriceBreakdownChip ─────────────────────────────────────────────────────
+// Click the live SAR figure → popover that explains the multiplier chain.
+// Highlights any axis ≠ 1.0× so 'why is it 11,495' is answered at a glance.
+function PriceBreakdownChip({
+  line, currency, usdRate,
+}: {
+  line: {
+    finalAmount: number; finalUnit: number; qty: number;
+    socialPrice: number; floorPrice: number; preAddOn: number; confCap: number;
+    engGated: number; audGated: number; seasGated: number; authGated: number;
+    mults: {
+      base: number; eng: number; aud: number; seas: number; ctype: number;
+      lang: number; auth: number; obj: number; rightsPct: number; isCompanion: boolean;
+    };
+  };
+  currency: string;
+  usdRate: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const m = line.mults;
+  // The actual axis multipliers applied (with state-driven gating)
+  const rows: Array<{ k: string; v: number; note?: string }> = [
+    { k: 'Base', v: m.base, note: 'Base SAR' },
+    { k: 'Engagement', v: line.engGated },
+    { k: 'Audience',   v: line.audGated },
+    { k: 'Seasonality',v: line.seasGated },
+    { k: 'Content',    v: m.ctype },
+    { k: 'Language',   v: m.lang },
+    { k: 'Authority',  v: line.authGated, note: m.auth !== line.authGated ? `gated from ${m.auth}` : undefined },
+  ];
+  if (line.confCap !== 1) rows.push({ k: 'Confidence cap', v: line.confCap });
+  if (m.rightsPct > 0)    rows.push({ k: 'Rights uplift', v: 1 + m.rightsPct, note: `+${Math.round(m.rightsPct * 100)}%` });
+  if (m.isCompanion)      rows.push({ k: 'Companion', v: 0.5, note: '50% — supporting role' });
+  const flooredByIRL = line.floorPrice > line.socialPrice;
+  return (
+    <div className="relative text-right mr-1 hidden sm:block">
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(v => !v); }}
+        className="text-right rounded-md hover:bg-white/40 px-1.5 py-0.5 -mx-1.5 -my-0.5 transition group"
+        title="Click to see how this price was computed"
+      >
+        <div className="text-[10px] uppercase tracking-wider text-mute font-semibold leading-none">
+          Live <span className="text-greenDark normal-case font-normal">· why?</span>
+        </div>
+        <div className="text-sm font-bold text-greenDark tabular-nums leading-tight">
+          {fmtCurrency(line.finalAmount, currency, usdRate)}
+        </div>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div
+            className="absolute right-0 top-full mt-2 w-80 z-40 rounded-xl border-2 border-greenDark/30 bg-white shadow-2xl text-left p-4 space-y-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-baseline justify-between">
+              <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Why this price?</div>
+              <button onClick={() => setOpen(false)} className="text-mute hover:text-ink">×</button>
+            </div>
+            <div className="text-xs space-y-1 font-mono tabular-nums">
+              {rows.map((r, i) => (
+                <div key={i} className={[
+                  'flex justify-between gap-3 px-2 py-1 rounded',
+                  r.v !== 1 && r.k !== 'Base' ? 'bg-amber-50 border-l-2 border-amber-400' : '',
+                ].join(' ')}>
+                  <span className="text-label">{r.k}{r.note && <span className="text-mute"> ({r.note})</span>}</span>
+                  <span className={r.v !== 1 && r.k !== 'Base' ? 'text-amber-700 font-bold' : 'text-ink'}>
+                    {r.k === 'Base' ? fmtCurrency(r.v, currency, usdRate) : `× ${r.v.toFixed(2)}`}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-line pt-2 text-xs space-y-1">
+              <div className="flex justify-between"><span className="text-label">Social price</span><span className="font-mono tabular-nums">{fmtCurrency(line.socialPrice, currency, usdRate)}</span></div>
+              {line.floorPrice > 0 && (
+                <div className={`flex justify-between ${flooredByIRL ? 'text-amber-700 font-semibold' : 'text-mute'}`}>
+                  <span>IRL floor {flooredByIRL && '· winning'}</span>
+                  <span className="font-mono tabular-nums">{fmtCurrency(line.floorPrice, currency, usdRate)}</span>
+                </div>
+              )}
+              {line.qty > 1 && (
+                <div className="flex justify-between text-mute"><span>× Qty {line.qty}</span><span className="font-mono tabular-nums">per unit {fmtCurrency(line.finalUnit, currency, usdRate)}</span></div>
+              )}
+              <div className="flex justify-between border-t border-line pt-1 mt-1">
+                <span className="font-bold text-ink">Final</span>
+                <span className="font-mono font-extrabold tabular-nums text-greenDark">{fmtCurrency(line.finalAmount, currency, usdRate)}</span>
+              </div>
+            </div>
+            <div className="text-[10px] text-mute italic leading-relaxed">
+              Highlighted rows are the multipliers actually moving the price away from base. Adjust them in the Campaign tab or the per-line axis overrides.
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
