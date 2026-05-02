@@ -128,6 +128,7 @@ export function RosterOverview({
   const [reviewOnly, setReviewOnly] = useState(false);
   const tierReview = useTierReviewSettings();
   const [showTrSettings, setShowTrSettings] = useState(false);
+  const [quickViewId, setQuickViewId] = useState<number | null>(null);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
