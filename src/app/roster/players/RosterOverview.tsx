@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
 import { CutChip } from '@/components/CutChip';
+import { LiquipediaChip } from '@/components/LiquipediaChip';
+import { LiquipediaCoverageBanner } from './LiquipediaCoverageBanner';
 
 type Density = 'compact' | 'comfortable' | 'spacious';
 
@@ -120,6 +122,7 @@ export function RosterOverview({
   const [team, setTeam] = useState('');
   const [country, setCountry] = useState('');
   const [dataFilter, setDataFilter] = useState<'' | 'locked' | 'tbd' | 'pending'>('');
+  const [liqFilter, setLiqFilter] = useState<'' | 'missing_url' | 'has_url_unsynced' | 'synced' | 'stale'>('');
   const [density, setDensity] = useState<Density>('comfortable');
   const [reviewOnly, setReviewOnly] = useState(false);
   const tierReview = useTierReviewSettings();
@@ -162,6 +165,18 @@ export function RosterOverview({
         if (dataFilter === 'tbd'     && c !== 'rounded' && c !== 'estimated') return false;
         if (dataFilter === 'pending' && c !== 'pending') return false;
       }
+      if (liqFilter) {
+        const hasUrl = !!p.liquipedia_url;
+        const synced = !!p.liquipedia_synced_at;
+        if (liqFilter === 'missing_url'      && hasUrl) return false;
+        if (liqFilter === 'has_url_unsynced' && (!hasUrl || synced)) return false;
+        if (liqFilter === 'synced'           && !synced) return false;
+        if (liqFilter === 'stale') {
+          if (!synced) return false;
+          const ageDays = Math.floor((Date.now() - new Date(p.liquipedia_synced_at!).getTime()) / 86400000);
+          if (ageDays <= 30) return false;
+        }
+      }
       if (country) {
         const nat = (p.nationality ?? '').trim();
         const target = country.toLowerCase();
@@ -183,7 +198,7 @@ export function RosterOverview({
       }
       return true;
     });
-  }, [players, q, tier, game, team, country, dataFilter, tabMatch, reviewOnly, tierReview.disabled, tierReview.dismissed, tierReview.tolerance]);
+  }, [players, q, tier, game, team, country, dataFilter, tabMatch, reviewOnly, tierReview.disabled, tierReview.dismissed, tierReview.tolerance, liqFilter]);
 
   const reviewFlagCount = useMemo(() => {
     if (tierReview.disabled) return 0;
@@ -329,6 +344,7 @@ export function RosterOverview({
                   <th>Tier</th>
                   {!tierReview.disabled && <th>Tier check</th>}
                   <th title="Talent's share of the deal (1 - Falcons commission)">Cut</th>
+                  <th>Liquipedia</th>
                   <th>Game</th>
                   <th>Team</th>
                   <th>Age</th>
@@ -416,6 +432,7 @@ function RosterRow({
         <td><TierReviewBadge p={p} isAdmin={isAdmin} onPatch={onPatch} tierReview={tierReview} /></td>
       )}
       <td><CutChip commission={p.commission} /></td>
+      <td><LiquipediaChip p={p as any} size="sm" /></td>
       <td className="text-label whitespace-nowrap">{p.game || '—'}</td>
       <td className="text-label whitespace-nowrap">{p.team || '—'}</td>
       <td className="text-label whitespace-nowrap">{age ?? '—'}</td>
