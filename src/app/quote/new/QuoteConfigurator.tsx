@@ -737,6 +737,9 @@ export function QuoteConfigurator({
                     currency={currency}
                     usdRate={usdRate ?? 3.75}
                     previewLines={previewLines}
+                    overrides={overrides}
+                    axisOptions={talentKind === 'creator' ? CREATOR_AXIS_OPTIONS : AXIS_OPTIONS}
+                    onAxisChange={setOverrideManual}
                     onToggle={togglePick}
                     onQty={setRowQty}
                     onRate={setRowRate}
@@ -1042,8 +1045,11 @@ export function QuoteConfigurator({
 const GROUP_ORDER = ['Social Media', 'Live & Stream', 'Continuity & Rights', 'On-Ground & Events', 'Other'];
 
 function DeliverableGroups({
-  deliverables, picks, currency, usdRate, previewLines, onToggle, onQty, onRate,
+  deliverables, picks, currency, usdRate, previewLines, overrides, axisOptions, onAxisChange, onToggle, onQty, onRate,
 }: {
+  overrides: { o_eng: number | null; o_aud: number | null; o_seas: number | null; o_lang: number | null; o_auth: number | null; o_ctype: number | null };
+  axisOptions: any;
+  onAxisChange: (key: 'o_eng' | 'o_aud' | 'o_seas' | 'o_lang' | 'o_auth', value: number | null) => void;
   deliverables: Array<{ key: string; label: string; rate: number; group: string; manual: boolean; suggestedRange: [number, number] | null }>;
   picks: Record<string, RowSel>;
   currency: string;
@@ -1099,6 +1105,9 @@ function DeliverableGroups({
                         line={priceMap.get(d.key)!}
                         currency={currency}
                         usdRate={usdRate}
+                        overrides={overrides}
+                        axisOptions={axisOptions}
+                        onAxisChange={onAxisChange}
                       />
                     )}
                     {checked && (
@@ -1251,7 +1260,7 @@ function SocialChips({ talent }: { talent: Player | Creator | null }) {
 // Click the live SAR figure → popover that explains the multiplier chain.
 // Highlights any axis ≠ 1.0× so 'why is it 11,495' is answered at a glance.
 function PriceBreakdownChip({
-  line, currency, usdRate,
+  line, currency, usdRate, overrides, axisOptions, onAxisChange,
 }: {
   line: {
     finalAmount: number; finalUnit: number; qty: number; baseWhy: string;
@@ -1264,18 +1273,57 @@ function PriceBreakdownChip({
   };
   currency: string;
   usdRate: number;
+  overrides: { o_eng: number | null; o_aud: number | null; o_seas: number | null; o_lang: number | null; o_auth: number | null; o_ctype: number | null };
+  axisOptions: any;
+  onAxisChange: (key: 'o_eng' | 'o_aud' | 'o_seas' | 'o_lang' | 'o_auth', value: number | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const m = line.mults;
   // The actual axis multipliers applied (with state-driven gating)
-  const rows: Array<{ k: string; v: number; note?: string }> = [
+  // Interactive axis rows — clicking opens a small picker that calls onAxisChange.
+  // Falls back to global value when override is null. The picker dropdown also
+  // includes a 'Reset to campaign' option (sets override → null).
+  type AxisRow = {
+    k: string; v: number; note?: string;
+    axisKey?: 'o_eng' | 'o_aud' | 'o_seas' | 'o_lang' | 'o_auth';
+    options?: number[]; labels?: string[];
+    isOverridden?: boolean;
+  };
+  const rows: AxisRow[] = [
     { k: 'Base', v: m.base, note: 'Base SAR' },
-    { k: 'Engagement', v: line.engGated },
-    { k: 'Audience',   v: line.audGated },
-    { k: 'Seasonality',v: line.seasGated },
-    { k: 'Content',    v: m.ctype },
-    { k: 'Language',   v: m.lang },
-    { k: 'Authority',  v: line.authGated, note: m.auth !== line.authGated ? `gated from ${m.auth}` : undefined },
+    {
+      k: 'Engagement', v: line.engGated, axisKey: 'o_eng',
+      options: axisOptions.engagement.map((e: any) => e.factor),
+      labels:  axisOptions.engagement.map((e: any) => e.label.replace(/ —.*$/, '')),
+      isOverridden: overrides.o_eng != null,
+    },
+    {
+      k: 'Audience', v: line.audGated, axisKey: 'o_aud',
+      options: axisOptions.audience.map((e: any) => e.factor),
+      labels:  axisOptions.audience.map((e: any) => e.label.replace(/ \/.*$/, '')),
+      isOverridden: overrides.o_aud != null,
+    },
+    {
+      k: 'Seasonality', v: line.seasGated, axisKey: 'o_seas',
+      options: (axisOptions.seasonality ?? axisOptions.production)?.map((e: any) => e.factor) ?? [],
+      labels:  (axisOptions.seasonality ?? axisOptions.production)?.map((e: any) => e.label) ?? [],
+      isOverridden: overrides.o_seas != null,
+    },
+    { k: 'Content', v: m.ctype },
+    {
+      k: 'Language', v: m.lang, axisKey: 'o_lang',
+      options: axisOptions.language.map((e: any) => e.factor),
+      labels:  axisOptions.language.map((e: any) => e.label),
+      isOverridden: overrides.o_lang != null,
+    },
+    {
+      k: 'Authority', v: line.authGated,
+      note: m.auth !== line.authGated ? `gated from ${m.auth}` : undefined,
+      axisKey: 'o_auth',
+      options: axisOptions.authority.map((e: any) => e.factor),
+      labels:  axisOptions.authority.map((e: any) => e.label),
+      isOverridden: overrides.o_auth != null,
+    },
   ];
   if (line.confCap !== 1) rows.push({ k: 'Confidence cap', v: line.confCap });
   if (m.rightsPct > 0)    rows.push({ k: 'Rights uplift', v: 1 + m.rightsPct, note: `+${Math.round(m.rightsPct * 100)}%` });
@@ -1315,15 +1363,13 @@ function PriceBreakdownChip({
             )}
             <div className="text-xs space-y-1 font-mono tabular-nums">
               {rows.map((r, i) => (
-                <div key={i} className={[
-                  'flex justify-between gap-3 px-2 py-1 rounded',
-                  r.v !== 1 && r.k !== 'Base' ? 'bg-amber-50 border-l-2 border-amber-400' : '',
-                ].join(' ')}>
-                  <span className="text-label">{r.k}{r.note && <span className="text-mute"> ({r.note})</span>}</span>
-                  <span className={r.v !== 1 && r.k !== 'Base' ? 'text-amber-700 font-bold' : 'text-ink'}>
-                    {r.k === 'Base' ? fmtCurrency(r.v, currency, usdRate) : `× ${r.v.toFixed(2)}`}
-                  </span>
-                </div>
+                <AxisPickRow
+                  key={i}
+                  r={r}
+                  currency={currency}
+                  usdRate={usdRate}
+                  onChange={(v) => r.axisKey && onAxisChange(r.axisKey, v)}
+                />
               ))}
             </div>
             <div className="border-t border-line pt-2 text-xs space-y-1">
@@ -1348,6 +1394,100 @@ function PriceBreakdownChip({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// ─── Interactive axis row inside the price-breakdown popover ────────────────
+// Click the value chip → opens a small dropdown of valid options for the axis.
+// Picking an option calls onChange and the parent's setOverrideManual fires —
+// previewLines re-computes, and the popover updates live (same render).
+// 'Reset to campaign' sends null which removes the per-line override.
+function AxisPickRow({
+  r, currency, usdRate, onChange,
+}: {
+  r: {
+    k: string; v: number; note?: string;
+    axisKey?: 'o_eng' | 'o_aud' | 'o_seas' | 'o_lang' | 'o_auth';
+    options?: number[]; labels?: string[];
+    isOverridden?: boolean;
+  };
+  currency: string; usdRate: number;
+  onChange: (v: number | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const editable = !!r.axisKey && !!(r.options && r.options.length);
+  const highlighted = r.v !== 1 && r.k !== 'Base';
+  return (
+    <div className={[
+      'flex justify-between gap-3 px-2 py-1 rounded items-center',
+      highlighted ? 'bg-amber-50 border-l-2 border-amber-400' : '',
+    ].join(' ')}>
+      <span className="text-label">
+        {r.k}
+        {r.note && <span className="text-mute"> ({r.note})</span>}
+        {r.isOverridden && (
+          <span className="ml-1.5 inline-block text-[9px] uppercase tracking-wider text-greenDark font-bold align-middle">override</span>
+        )}
+      </span>
+      <div className="relative">
+        {editable ? (
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(o => !o); }}
+            className={[
+              'inline-flex items-center gap-1 px-2 py-0.5 rounded border transition cursor-pointer',
+              highlighted
+                ? 'border-amber-400 text-amber-700 font-bold bg-white hover:bg-amber-100'
+                : 'border-line text-ink hover:bg-bg',
+            ].join(' ')}
+            title="Click to change for this line"
+          >
+            × {r.v.toFixed(2)}
+            <span className="text-[8px] text-mute">▾</span>
+          </button>
+        ) : (
+          <span className={highlighted ? 'text-amber-700 font-bold' : 'text-ink'}>
+            {r.k === 'Base' ? fmtCurrency(r.v, currency, usdRate) : `× ${r.v.toFixed(2)}`}
+          </span>
+        )}
+        {open && editable && (
+          <>
+            <div className="fixed inset-0 z-50" onClick={() => setOpen(false)} />
+            <div className="absolute right-0 top-full mt-1 w-52 z-[60] rounded-lg border border-line bg-white shadow-2xl py-1 max-h-72 overflow-y-auto">
+              {r.options!.map((opt, idx) => {
+                const isCurrent = Math.abs(opt - r.v) < 0.001;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onChange(opt); setOpen(false); }}
+                    className={[
+                      'w-full text-left px-3 py-1.5 text-xs flex items-center justify-between gap-2 transition',
+                      isCurrent ? 'bg-greenSoft/40 text-greenDark font-semibold' : 'hover:bg-bg text-ink',
+                    ].join(' ')}
+                  >
+                    <span className="truncate">{r.labels?.[idx] ?? String(opt)}</span>
+                    <span className="font-mono tabular-nums text-mute">× {opt.toFixed(2)}</span>
+                  </button>
+                );
+              })}
+              {r.isOverridden && (
+                <>
+                  <div className="border-t border-line my-1" />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onChange(null); setOpen(false); }}
+                    className="w-full text-left px-3 py-1.5 text-xs text-mute hover:bg-red-50 hover:text-red-700"
+                  >
+                    Reset to campaign default
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
