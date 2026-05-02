@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { SearchInput } from '@/components/SearchInput';
 import { CutChip } from '@/components/CutChip';
+import { CreatorQuickView } from '@/components/QuickViewDrawer';
 import {
   Users, Rows2, Rows3, Rows4, Pencil, Check, X as XIcon,
   Twitch, Youtube, Instagram, Music2, AlertTriangle, Lock, Hourglass,
@@ -134,6 +135,7 @@ export function CreatorsTable({
   const [ccy] = useDisplayCurrency();
 
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [quickViewId, setQuickViewId] = useState<number | null>(null);
   const [draft, setDraft] = useState<EditDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [, startTransition] = useTransition();
@@ -322,6 +324,7 @@ export function CreatorsTable({
               <thead>
                 <tr>
                   <th>Creator</th>
+                  <th></th>{/* quick view */}
                   <th>Tier</th>
                   {!tierReview.disabled && <th>Tier check</th>}
                   <th>Nationality</th>
@@ -362,6 +365,7 @@ export function CreatorsTable({
                       onEdit={() => startEdit(c)}
                       onPatch={patchCreator}
                       tierReview={tierReview}
+                      onOpenQuick={() => setQuickViewId(c.id)}
                     />
                   );
                 })}
@@ -370,12 +374,25 @@ export function CreatorsTable({
           </div>
         )}
       </div>
+      {quickViewId != null && (() => {
+        const c = creators.find(x => x.id === quickViewId);
+        if (!c) return null;
+        return (
+          <CreatorQuickView
+            open={true}
+            onClose={() => setQuickViewId(null)}
+            creator={c}
+            isAdmin={isAdmin}
+            onPatch={patchCreator}
+          />
+        );
+      })()}
     </>
   );
 }
 
 function CreatorRow({
-  c, ccy, isAdmin, onEdit, onPatch, tierReview,
+  c, ccy, isAdmin, onEdit, onPatch, tierReview, onOpenQuick,
 }: {
   c: Creator;
   ccy: 'SAR' | 'USD';
@@ -383,6 +400,7 @@ function CreatorRow({
   onEdit: () => void;
   onPatch: (id: number, body: Record<string, any>) => Promise<boolean>;
   tierReview: ReturnType<typeof useTierReviewSettings>;
+  onOpenQuick: () => void;
 }) {
   const reach = totalReach(c);
   const market = (c as any).audience_market as string | undefined;
@@ -417,6 +435,17 @@ function CreatorRow({
             )}
           </div>
         </div>
+      </td>
+      <td className="px-1">
+        <button
+          type="button"
+          onClick={onOpenQuick}
+          className="text-mute hover:text-greenDark p-1 -m-1 rounded transition"
+          title="Quick view — details + inline edit"
+          aria-label="Quick view"
+        >
+          <Eye size={14} />
+        </button>
       </td>
       <td>
         <div className="inline-flex items-center gap-1">

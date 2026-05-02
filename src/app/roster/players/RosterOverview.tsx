@@ -408,6 +408,17 @@ function RosterRow({
           </div>
         </div>
       </td>
+      <td className="px-1">
+        <button
+          type="button"
+          onClick={onOpenQuick}
+          className="text-mute hover:text-greenDark p-1 -m-1 rounded transition"
+          title="Quick view — details + inline edit"
+          aria-label="Quick view"
+        >
+          <Eye size={14} />
+        </button>
+      </td>
       <td>
         {editingRole && isAdmin ? (
           <InlineSelect value={role} options={ROLE_OPTIONS.map(r => ({ value: r, label: r }))} onCancel={() => { setRole(p.role ?? 'Player'); setEditingRole(false); }} onCommit={async (v) => { const ok = await onPatch(p.id, { role: v }); if (ok) setEditingRole(false); }} />
