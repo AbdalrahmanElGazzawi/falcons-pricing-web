@@ -1,6 +1,12 @@
 /**
  * Team Falcons Pricing — 9-axis matrix engine.
- * Ported from Apps Script Code.gs (computeLine).
+ *
+ * Floor-First model (post Migration 030):
+ *   • base_rate_anchor in the DB is the talent's defensible FLOOR for IG Reel.
+ *   • All other rate_* columns derive as floor × platform_ratio.
+ *   • Multipliers stack ABOVE the floor; engine never quotes below baseFee
+ *     for a non-companion line (enforceFloor=true, default).
+ *   • Companion lines bypass the floor (their fee = 0.5 × solo by design).
  *
  *  Final = MAX(SocialPrice, AuthorityFloor) × ConfidenceCap × (1 + RightsPct) × CompanionMult
  *
@@ -79,6 +85,13 @@ export interface LineInput {
   crossVerticalMultiplier?: number;
   engagementQualityModifier?: number;
   productionStyleMultiplier?: number;
+  /**
+   * Floor enforcement (Migration 030): when true (default), final unit price
+   * never drops below baseFee for a non-companion line. Multipliers can only
+   * push UP from the floor. Set to false ONLY for explicitly-approved deals
+   * that need to dip below floor (variance register logs them).
+   */
+  enforceFloor?: boolean;
 }
 
 export interface LineOutput {
@@ -93,6 +106,10 @@ export interface LineOutput {
   preAddOn: number;
   finalUnit: number;
   finalAmount: number;
+  /** Floor enforcement: true if engine clamped finalUnit up to baseFee. */
+  floorHit?: boolean;
+  /** Floor enforcement: SAR amount the floor enforcement added. */
+  floorDelta?: number;
   appliedState: DataCompleteness;
 }
 
@@ -166,7 +183,19 @@ export function computeLine(p: LineInput): LineOutput {
   const preAddOn = Math.max(socialPrice, floorPrice);
   const finalUnitOrganic = Math.round(preAddOn * confCap);
   const withRights = Math.round(finalUnitOrganic * (1 + (p.rightsPct ?? 0)));
-  const finalUnit = p.isCompanion ? Math.round(withRights * 0.5) : withRights;
+  const rawUnit = p.isCompanion ? Math.round(withRights * 0.5) : withRights;
+
+  // Floor enforcement (Migration 030). Default ON. Companion lines bypass.
+  const enforceFloor = p.enforceFloor !== false && !p.isCompanion;
+  let finalUnit = rawUnit;
+  let floorHit = false;
+  let floorDelta = 0;
+  if (enforceFloor && p.baseFee > 0 && rawUnit < p.baseFee) {
+    floorHit = true;
+    floorDelta = p.baseFee - rawUnit;
+    finalUnit = p.baseFee;
+  }
+
   const finalAmount = Math.round(finalUnit * qty);
 
   return {
@@ -174,6 +203,7 @@ export function computeLine(p: LineInput): LineOutput {
     engGated, audGated, authGated, seasGated, confCap,
     socialPrice, floorPrice, preAddOn,
     finalUnit, finalAmount,
+    ...(floorHit ? { floorHit, floorDelta } : {}),
     appliedState: state,
   };
 }

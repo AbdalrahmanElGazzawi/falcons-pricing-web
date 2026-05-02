@@ -242,16 +242,83 @@ export function PricingLogicContent({
         </div>
       </section>
 
-            {/* ─── Calibration math (the Apr 2026 lock pass) ─────────────── */}
+      {/* ─── Floor-First pricing model (Migration 030, May 2 2026) ───── */}
+      <section className="card card-p border-2 border-green/50 bg-greenSoft/30">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-green text-white flex items-center justify-center flex-shrink-0">
+            <ShieldCheck size={20} />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-xl font-bold text-ink">Floor-First pricing model</h2>
+              <span className="text-[10px] uppercase tracking-wider font-bold bg-green text-white px-2 py-0.5 rounded">Live · May 2, 2026</span>
+            </div>
+            <p className="text-sm text-label mt-1">
+              Every talent's <code className="px-1 py-0.5 rounded bg-white border text-xs">base_rate_anchor</code> is the <strong>conservative defensible floor</strong>. Multipliers stack <strong>above</strong>; the engine never quotes below.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-lg border border-green/30 bg-white p-4">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-green mb-1.5">Why floor-first</div>
+            <p className="text-sm text-ink leading-relaxed">
+              The base IS the floor — kept conservative on purpose. Region, achievement, audience, engagement, content type, language, seasonality, confidence, rights — all multipliers stack on top. Sales reps push <strong>up</strong> with every defensible signal, never accidentally <strong>down</strong>.
+            </p>
+          </div>
+          <div className="rounded-lg border border-green/30 bg-white p-4">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-green mb-1.5">How floor is computed</div>
+            <p className="text-sm text-ink leading-relaxed">
+              <code className="px-1 rounded bg-bg/40 text-xs">floor = MAX(tier×game, market_band_median, authority_capped)</code><br />
+              CPM-from-followers stays out of the base — that's anchor/stretch territory, captured in axis multipliers (audience quality, authority, etc.) at quote time.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-lg border border-green/30 bg-white p-4">
+          <div className="text-[10px] uppercase tracking-wider font-bold text-green mb-2">Three evidence methods (highest wins)</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="rounded border border-line p-3">
+              <strong className="text-ink">A. Tier × Game</strong>
+              <div className="text-label mt-1 leading-relaxed">tier_anchor × game_multiplier (SOT v1.0). The default floor for every talent.</div>
+            </div>
+            <div className="rounded border border-line p-3">
+              <strong className="text-ink">G. Market band</strong>
+              <div className="text-label mt-1 leading-relaxed">tier × audience_market median (KSA / MENA / Global). Captures regional premium where it exists.</div>
+            </div>
+            <div className="rounded border border-line p-3">
+              <strong className="text-ink">H. Authority (capped 1.20×)</strong>
+              <div className="text-label mt-1 leading-relaxed">peak Liquipedia tournament tier × decay × game_multiplier, hard-capped at 1.20× tier×game so champions get a modest lift, never a runaway.</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-lg bg-navy text-white p-4">
+          <div className="text-[10px] uppercase tracking-wider font-bold text-gold mb-2">The formula</div>
+          <code className="block text-[12px] font-mono leading-relaxed text-white/90">
+            base_rate_anchor (DB) = floor = MAX(A, G, H_capped)<br />
+            quote_unit = base × eng × aud × seas × ctype × lang × auth_factor × confidence_cap × (1 + rights_pct)<br />
+            <strong className="text-gold">final_unit = MAX(quote_unit, base_rate_anchor)</strong>  &nbsp;&larr; floor enforcement, non-companion lines
+          </code>
+        </div>
+
+        <div className="mt-3 text-xs text-label">
+          Companion lines bypass floor enforcement (their fee is 0.5× solo by design).
+          Negotiated-card and manual-override rates keep their locked values regardless of floor methodology.
+          Re-query <code className="px-1 rounded bg-white border">player_floor_v3</code> any time to see the current evidence per talent.
+        </div>
+      </section>
+
+            {/* ─── Calibration math (legacy reference) ────────────────────── */}
       <section className="card card-p">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-lg bg-navy/10 text-navy flex items-center justify-center flex-shrink-0">
             <Sigma size={20} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-ink">Within-tier calibration math</h2>
+            <h2 className="text-xl font-bold text-ink">Within-tier calibration math <span className="text-[10px] font-normal text-label ml-2">(legacy — superseded by Floor-First above)</span></h2>
             <p className="text-sm text-label mt-0.5">
-              How max-platform-reach turns into a SAR rate. Run on Apr 2026 to lock 149 of 183 talents.
+              Original methodology, kept for historical reference. The Floor-First model replaces this for active quotes.
             </p>
           </div>
         </div>
