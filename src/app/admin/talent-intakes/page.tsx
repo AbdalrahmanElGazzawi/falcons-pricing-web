@@ -2,6 +2,7 @@ import { requireSuperAdmin } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { IntakesTable } from './IntakesTable';
+import { resolveTalentPhoto, audienceMarketFor } from '@/lib/talent-photo';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ export default async function TalentIntakesPage() {
 
   const { data: playersRows } = await supabase
     .from('players')
-    .select('id, nickname, full_name, tier_code, role, game, team, is_active, intake_token, intake_status, intake_sent_at, intake_submitted_at, min_rates, min_rates_notes, avatar_url, nationality')
+    .select('id, nickname, full_name, tier_code, role, game, team, is_active, intake_token, intake_status, intake_sent_at, intake_submitted_at, min_rates, min_rates_notes, avatar_url, nationality, instagram, x_handle, tiktok, twitch, youtube, commission')
     .eq('is_active', true)
     .order('intake_status', { ascending: false })
     .order('nickname');
@@ -23,6 +24,9 @@ export default async function TalentIntakesPage() {
     submitted: players.filter(p => ['submitted','approved','revised'].includes(p.intake_status)).length,
     sent:      players.filter(p => p.intake_status === 'sent').length,
     pending:   players.filter(p => p.intake_status === 'not_started').length,
+    withPhoto: players.filter(p => resolveTalentPhoto(p).url !== null).length,
+    explicitPhoto: players.filter(p => !!p.avatar_url).length,
+    global:    players.filter(p => audienceMarketFor(p.nationality) === 'Global').length,
   };
 
   return (
@@ -32,11 +36,13 @@ export default async function TalentIntakesPage() {
         subtitle="Send each player their private link. They submit the SAR floor they'll accept per deliverable; pricing engine respects it as a hard floor."
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
         <Tile label="Active players" value={counts.total} />
         <Tile label="Submitted"      value={counts.submitted} accent="green" />
         <Tile label="Link sent, no reply" value={counts.sent} accent="amber" />
         <Tile label="Not started"    value={counts.pending} />
+        <Tile label="With photo"     value={`${counts.withPhoto} / ${counts.total}`} sub={`${counts.explicitPhoto} uploaded · ${counts.withPhoto - counts.explicitPhoto} auto`} accent={counts.withPhoto === counts.total ? 'green' : undefined} />
+        <Tile label="Global talents" value={counts.global} sub={"USD primary"} />
       </div>
 
       <IntakesTable players={players} />
@@ -44,7 +50,7 @@ export default async function TalentIntakesPage() {
   );
 }
 
-function Tile({ label, value, accent }: { label: string; value: number; accent?: 'green' | 'amber' }) {
+function Tile({ label, value, sub, accent }: { label: string; value: number | string; sub?: string; accent?: 'green' | 'amber' }) {
   const cls = accent === 'green'
     ? 'border-greenDark/30 bg-greenSoft/40 text-greenDark'
     : accent === 'amber'
@@ -54,6 +60,7 @@ function Tile({ label, value, accent }: { label: string; value: number; accent?:
     <div className={`rounded-xl border p-4 ${cls}`}>
       <div className="text-[11px] uppercase tracking-wider opacity-80 font-bold">{label}</div>
       <div className="text-2xl font-extrabold tabular-nums">{value}</div>
+      {sub && <div className="text-[10px] opacity-75 mt-0.5">{sub}</div>}
     </div>
   );
 }

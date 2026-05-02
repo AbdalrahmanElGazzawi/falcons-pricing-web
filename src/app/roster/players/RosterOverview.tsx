@@ -19,6 +19,7 @@ import { SearchInput } from '@/components/SearchInput';
 import { CutChip } from '@/components/CutChip';
 import { LiquipediaChip } from '@/components/LiquipediaChip';
 import { LiquipediaCoverageBanner } from './LiquipediaCoverageBanner';
+import { PlayerQuickView } from '@/components/QuickViewDrawer';
 
 type Density = 'compact' | 'comfortable' | 'spacious';
 
@@ -127,6 +128,7 @@ export function RosterOverview({
   const [reviewOnly, setReviewOnly] = useState(false);
   const tierReview = useTierReviewSettings();
   const [showTrSettings, setShowTrSettings] = useState(false);
+  const [quickViewId, setQuickViewId] = useState<number | null>(null);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -358,25 +360,39 @@ export function RosterOverview({
               </thead>
               <tbody>
                 {filtered.map(p => (
-                  <RosterRow key={p.id} p={p} ccy={ccy} isAdmin={isAdmin} onPatch={patchPlayer} tierReview={tierReview} />
+                  <RosterRow key={p.id} p={p} ccy={ccy} isAdmin={isAdmin} onPatch={patchPlayer} tierReview={tierReview} onOpenQuick={() => setQuickViewId(p.id)} />
                 ))}
               </tbody>
             </table>
           </div>
         )}
       </div>
+      {quickViewId != null && (() => {
+        const pl = players.find(x => x.id === quickViewId);
+        if (!pl) return null;
+        return (
+          <PlayerQuickView
+            open={true}
+            onClose={() => setQuickViewId(null)}
+            player={pl as any}
+            isAdmin={isAdmin}
+            onPatch={patchPlayer}
+          />
+        );
+      })()}
     </>
   );
 }
 
 function RosterRow({
-  p, ccy, isAdmin, onPatch, tierReview,
+  p, ccy, isAdmin, onPatch, tierReview, onOpenQuick,
 }: {
   p: Player;
   ccy: 'SAR' | 'USD';
   isAdmin: boolean;
   onPatch: (id: number, body: Record<string, any>) => Promise<boolean>;
   tierReview: ReturnType<typeof useTierReviewSettings>;
+  onOpenQuick: () => void;
 }) {
   const [editingNick, setEditingNick] = useState(false);
   const [editingName, setEditingName] = useState(false);
