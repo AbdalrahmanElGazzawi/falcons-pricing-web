@@ -153,6 +153,8 @@ export interface Creator {
   has_social_data?: boolean;
   has_audience_demo?: boolean;
   data_completeness?: 'full' | 'socials_only' | 'minimal';
+  audience_market?: string | null;
+  rate_source?: string | null;
 }
 
 export interface Tier {

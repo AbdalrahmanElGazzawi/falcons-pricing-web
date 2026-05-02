@@ -200,17 +200,36 @@ export function QuoteConfigurator({
   }, [initialEdit?.uid]);
   if (scrollHook) scrollHook.current = rootRef.current;
 
-  // ── Filtered talent list
+  // ── Filtered talent list (avatar + reach for richer picker)
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (talentKind === 'creator') {
       let list = creators.slice();
       if (tierFilter) list = list.filter(c => c.tier_code === tierFilter);
-      if (q) list = list.filter(c => c.nickname.toLowerCase().includes(q));
-      return list.map(c => ({
-        id: c.id, kind: 'creator' as const, nickname: c.nickname,
-        full_name: '', tier: c.tier_code || '', game: '', team: '', role: '',
-      }));
+      if (saudiOnly) list = list.filter(c => (c.nationality || '').trim().toLowerCase().startsWith('saudi'));
+      if (q) list = list.filter(c =>
+        c.nickname.toLowerCase().includes(q) ||
+        (c.full_name ?? '').toLowerCase().includes(q) ||
+        ((c as any).audience_market ?? '').toLowerCase().includes(q) ||
+        (c.handle_ig ?? '').toLowerCase().includes(q) ||
+        (c.handle_tiktok ?? '').toLowerCase().includes(q)
+      );
+      return list.map(c => {
+        const reach = Math.max(
+          Number(c.followers_ig)     || 0,
+          Number(c.followers_tiktok) || 0,
+          Number(c.followers_yt)     || 0,
+          Number(c.followers_x)      || 0,
+          Number(c.followers_twitch) || 0,
+        );
+        return {
+          id: c.id, kind: 'creator' as const, nickname: c.nickname,
+          full_name: c.full_name || '', tier: c.tier_code || '',
+          game: (c as any).audience_market || '', team: '', role: '',
+          avatar_url: c.avatar_url || '',
+          reach,
+        };
+      });
     }
     let list = players.slice();
     if (roleFilter === 'influencer') list = list.filter(p => (p.role || '').toLowerCase() === 'influencer');
@@ -224,11 +243,22 @@ export function QuoteConfigurator({
       (p.full_name ?? '').toLowerCase().includes(q) ||
       (p.team ?? '').toLowerCase().includes(q)
     );
-    return list.map(p => ({
-      id: p.id, kind: 'player' as const, nickname: p.nickname,
-      full_name: p.full_name || '', tier: p.tier_code || '', game: p.game || '',
-      team: p.team || '', role: p.role || '',
-    }));
+    return list.map(p => {
+      const reach = Math.max(
+        Number(p.followers_ig)     || 0,
+        Number(p.followers_twitch) || 0,
+        Number(p.followers_yt)     || 0,
+        Number(p.followers_tiktok) || 0,
+        Number(p.followers_x)      || 0,
+      );
+      return {
+        id: p.id, kind: 'player' as const, nickname: p.nickname,
+        full_name: p.full_name || '', tier: p.tier_code || '', game: p.game || '',
+        team: p.team || '', role: p.role || '',
+        avatar_url: p.avatar_url || '',
+        reach,
+      };
+    });
   }, [search, tierFilter, roleFilter, gameFilter, saudiOnly, talentKind, players, creators]);
 
   const games = useMemo(
@@ -480,27 +510,40 @@ export function QuoteConfigurator({
                 (t.kind === 'creator' && talentKind === 'creator') ||
                 (t.kind === 'player' && talentKind === 'player')
               );
+              const reach = (t as any).reach as number | undefined;
+              const reachStr = !reach ? '' :
+                reach >= 1_000_000 ? `${(reach / 1_000_000).toFixed(reach >= 10_000_000 ? 0 : 1)}M`
+                : reach >= 1_000   ? `${(reach / 1_000).toFixed(reach >= 10_000 ? 0 : 1)}K`
+                : String(reach);
               return (
                 <button
                   key={t.kind + t.id}
                   onClick={() => { setSelectedId(t.id); }}
                   className={[
-                    'w-full text-left px-3 py-2.5 transition',
+                    'w-full text-left px-3 py-2.5 transition flex items-center gap-2.5',
                     active ? 'bg-greenSoft border-l-4 border-green' : 'hover:bg-bg',
                   ].join(' ')}
                 >
-                  <div className="font-medium text-ink text-sm truncate">{t.nickname}</div>
-                  {(t.tier || t.game || t.team || t.role) && (
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[11px] text-mute">
-                      {t.tier && (
-                        <span className={`chip border ${tierClass(t.tier)} !px-1.5 !py-0 text-[10px]`}>{t.tier}</span>
-                      )}
-                      {t.role && t.role !== 'Player' && t.role !== 'Influencer' && (
-                        <span className="chip chip-grey !px-1.5 !py-0 text-[10px]">{t.role}</span>
-                      )}
-                      {t.game && <span className="truncate">{t.game}</span>}
-                      {t.team && <span className="opacity-75">· {t.team}</span>}
-                    </div>
+                  <Avatar src={(t as any).avatar_url || undefined} name={t.nickname} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-ink text-sm truncate">{t.nickname}</div>
+                    {(t.tier || t.game || t.team || t.role) && (
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-[11px] text-mute">
+                        {t.tier && (
+                          <span className={`chip border ${tierClass(t.tier)} !px-1.5 !py-0 text-[10px]`}>{t.tier}</span>
+                        )}
+                        {t.role && t.role !== 'Player' && t.role !== 'Influencer' && (
+                          <span className="chip chip-grey !px-1.5 !py-0 text-[10px]">{t.role}</span>
+                        )}
+                        {t.game && <span className="truncate">{t.game}</span>}
+                        {t.team && <span className="opacity-75">· {t.team}</span>}
+                      </div>
+                    )}
+                  </div>
+                  {reachStr && (
+                    <span className="text-[11px] text-mute tabular-nums shrink-0" title={`Max-platform reach ${(reach || 0).toLocaleString('en-US')}`}>
+                      {reachStr}
+                    </span>
                   )}
                 </button>
               );

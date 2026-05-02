@@ -1,6 +1,5 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import type { Player } from '@/lib/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -18,11 +17,19 @@ export const TIER_REVIEW_RANK: Record<string, number> = {
   'Tier 4': 1, 'Tier 3': 2, 'Tier 2': 3, 'Tier 1': 4, 'Tier S': 5,
 };
 
-type ReachLike = Partial<Pick<
-  Player,
-  'followers_ig' | 'followers_twitch' | 'followers_yt' | 'followers_tiktok'
-  | 'followers_x' | 'followers_fb' | 'followers_snap'
->> & { followers_kick?: number | null };
+// Structural — accepts both Player and Creator. Any platform a particular
+// talent type doesn't have (e.g. creators have no Facebook/Snap/Kick) just
+// reads as undefined → coerced to 0.
+type ReachLike = {
+  followers_ig?:     number | null;
+  followers_twitch?: number | null;
+  followers_yt?:     number | null;
+  followers_tiktok?: number | null;
+  followers_x?:      number | null;
+  followers_fb?:     number | null;
+  followers_snap?:   number | null;
+  followers_kick?:   number | null;
+};
 
 const num = (v: unknown): number => (Number(v) || 0);
 
