@@ -13,6 +13,7 @@ type Player = {
   nationality: string | null; tier_code: string | null;
   avatar_url: string | null;
   rate_ig_reel: number; rate_irl: number;
+  pricing_rationale?: string | null;
   authority_factor: number | null; measurement_confidence: string | null;
   followers_ig: number | null; followers_twitch: number | null; followers_yt: number | null;
   followers_tiktok: number | null; followers_x: number | null; followers_fb: number | null; followers_snap: number | null;
@@ -27,6 +28,7 @@ type Creator = {
   avatar_url: string | null;
   tier_code: string | null; score: number | null;
   rate_ig_reels: number; rate_yt_full: number; rate_yt_shorts: number;
+  pricing_rationale?: string | null;
   rate_tiktok_ours: number; rate_twitch_kick_live: number;
   handle_ig: string | null; handle_x: string | null;
   handle_yt: string | null; handle_tiktok: string | null; handle_twitch: string | null;
@@ -538,11 +540,20 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                         )}
 
                         {showRates && p.rate_ig_reel > 0 && (
-                          <div className="flex items-center justify-between pt-2 border-t border-dashed border-line">
+                          <div
+                            className="flex items-center justify-between pt-2 border-t border-dashed border-line"
+                            title={p.pricing_rationale || undefined}
+                          >
                             <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Starts from</div>
                             <div className="text-sm font-bold text-greenDark tabular-nums">
                               SAR {p.rate_ig_reel.toLocaleString('en-US')}
                             </div>
+                          </div>
+                        )}
+                        {showRates && p.pricing_rationale && (
+                          <div className="text-[10px] text-mute italic leading-snug -mt-1 line-clamp-2"
+                            title={p.pricing_rationale}>
+                            {p.pricing_rationale}
                           </div>
                         )}
                       </div>
@@ -743,9 +754,16 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                     )}
 
                     {showRates && c.rate_ig_reels > 0 && (
-                      <div className="mt-3 pt-3 border-t border-dashed border-line flex items-center justify-between">
+                      <div className="mt-3 pt-3 border-t border-dashed border-line flex items-center justify-between"
+                        title={c.pricing_rationale || undefined}>
                         <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Starts at (IG Reel)</div>
                         <div className="text-sm font-bold text-greenDark tabular-nums">SAR {c.rate_ig_reels.toLocaleString('en-US')}</div>
+                      </div>
+                    )}
+                    {showRates && c.pricing_rationale && (
+                      <div className="text-[10px] text-mute italic leading-snug line-clamp-2"
+                        title={c.pricing_rationale}>
+                        {c.pricing_rationale}
                       </div>
                     )}
                   </div>

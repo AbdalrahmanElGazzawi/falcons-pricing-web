@@ -411,7 +411,7 @@ function RosterRow({
       <td>
         <div className="flex items-center gap-3 min-w-0">
           <Avatar src={p.avatar_url} name={p.nickname} size="sm" />
-          <div className="min-w-0">
+          <div className="min-w-0" title={p.pricing_rationale || undefined}>
             {editingNick && isAdmin ? (
               <InlineInput value={nick} onCancel={() => { setNick(p.nickname); setEditingNick(false); }} onCommit={async (v) => { if (!v.trim()) { setEditingNick(false); return; } const ok = await onPatch(p.id, { nickname: v.trim() }); if (ok) setEditingNick(false); }} />
             ) : (
@@ -467,7 +467,7 @@ function RosterRow({
       <td className="text-label whitespace-nowrap">{p.nationality || '—'}</td>
       <td><FollowerCluster p={p} /></td>
       <td className="text-right text-ink whitespace-nowrap">{totalReach(p) > 0 ? fmtFollowers(totalReach(p)) : '—'}</td>
-      <td className="text-right whitespace-nowrap">
+      <td className="text-right whitespace-nowrap" title={p.pricing_rationale || undefined}>
         {p.rate_ig_reel ? (
           <div className="flex flex-col items-end leading-tight tabular-nums">
             <span className="text-ink font-medium">{fmtCurrency(p.rate_ig_reel, ccy, 3.75)}</span>
@@ -475,7 +475,7 @@ function RosterRow({
           </div>
         ) : '—'}
       </td>
-      <td className="text-right whitespace-nowrap">
+      <td className="text-right whitespace-nowrap" title={p.pricing_rationale || undefined}>
         {p.rate_irl ? (
           <div className="flex flex-col items-end leading-tight tabular-nums">
             <span className="text-ink font-medium">{fmtCurrency(p.rate_irl, ccy, 3.75)}</span>
