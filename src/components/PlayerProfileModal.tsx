@@ -6,6 +6,7 @@ import {
   ExternalLink, Calendar, Gamepad2, Award, Users,
 } from 'lucide-react';
 import { normalizeImageUrl } from './Avatar';
+import { TalentHero } from './TalentHero';
 
 interface PlayerDetail {
   id: number;
@@ -15,6 +16,7 @@ interface PlayerDetail {
   ingame_role?: string | null;
   tier_code?: string | null;
   avatar_url?: string | null;
+  portrait_url?: string | null;
   date_of_birth?: string | null;
   bio?: string | null;
   achievements?: string[] | null;
@@ -147,17 +149,13 @@ export function PlayerProfileModal({
           ) : player ? (
             <div className="p-6 flex flex-col sm:flex-row gap-4">
               {/* Avatar */}
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-white/10 flex-shrink-0 grid place-items-center">
-                {player.avatar_url ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={normalizeImageUrl(player.avatar_url)} alt={player.nickname}
-                    loading="lazy" decoding="async" referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                ) : (
-                  <div className="text-3xl font-bold text-white/40">{initials}</div>
-                )}
-              </div>
+              <TalentHero
+                portraitUrl={player.portrait_url ?? undefined}
+                avatarUrl={player.avatar_url ? normalizeImageUrl(player.avatar_url) : undefined}
+                name={player.nickname}
+                size="lg"
+                className="flex-shrink-0"
+              />
 
               {/* Identity */}
               <div className="flex-1 min-w-0">

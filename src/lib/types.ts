@@ -28,6 +28,7 @@ export interface Player {
   nationality?: string;
   tier_code?: string;
   avatar_url?: string;
+  portrait_url?: string | null;
   date_of_birth?: string;  // ISO yyyy-mm-dd
   ingame_role?: string;    // SMG, Flex, Tank, etc.
   rate_ig_reel: number;

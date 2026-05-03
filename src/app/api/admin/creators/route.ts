@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 const ALLOWED = new Set([
   'nickname', 'full_name', 'nationality', 'tier_code', 'score',
   // Identity / handles
-  'avatar_url', 'link', 'notes', 'is_active',
+  'avatar_url', 'portrait_url', 'link', 'notes', 'is_active',
   'brand_loyalty_default_pct', 'exclusivity_premium_pct', 'cross_vertical_multiplier', 'engagement_quality_modifier', 'production_style_default', 'past_campaigns', 'delivered_kpis',
   'handle_ig', 'handle_x', 'handle_yt', 'handle_tiktok', 'handle_twitch',
   'followers_ig', 'followers_x', 'followers_yt', 'followers_tiktok', 'followers_twitch',

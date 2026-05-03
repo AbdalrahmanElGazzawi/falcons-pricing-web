@@ -169,7 +169,8 @@ export function PlayerForm({
             <input type="date" value={v.date_of_birth || ''}
               onChange={e => set('date_of_birth' as any, e.target.value)} className="input" />
           </div>
-          <Field label="Avatar URL or filename" v={v.avatar_url} on={x => set('avatar_url' as any, x)} />
+          <Field label="Avatar URL — small face crop" v={v.avatar_url} on={x => set('avatar_url' as any, x)} />
+          <Field label="Portrait URL — full photo (modal hero)" v={v.portrait_url} on={x => set('portrait_url' as any, x)} />
           <div>
             <label className="label">Tier <span className="text-rose-600">*</span></label>
             <select value={v.tier_code ?? ''} onChange={e => set('tier_code', e.target.value)} className="input" required>
