@@ -32,6 +32,7 @@ export const dict = {
   'nav.addons':       { en: 'Add-ons',      ar: 'الإضافات' },
   'nav.assumptions':  { en: 'Assumptions',  ar: 'الفرضيات' },
   'nav.pricing_os':   { en: 'Pricing OS',   ar: 'نظام التسعير' },
+  'nav.analytics':    { en: 'Team Activity', ar: 'نشاط الفريق' },
   'nav.audit_log':    { en: 'Audit Log',    ar: 'سجل التدقيق' },
   'nav.sales_log':    { en: 'Sales Log',    ar: 'سجل المبيعات' },
   'nav.search':       { en: 'Search…',      ar: '...بحث' },

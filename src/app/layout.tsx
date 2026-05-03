@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { ToastProvider } from '@/components/Toast';
+import { VisitTracker } from '@/components/VisitTracker';
 import { LocaleProvider } from '@/lib/i18n/Locale';
 import { ThemeProvider, type Theme } from '@/lib/theme/Theme';
 import { CurrencyProvider, type DisplayCurrency } from '@/lib/currency/Currency';
@@ -44,7 +45,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider initial={initialTheme}>
           <LocaleProvider initial={initialLocale}>
             <CurrencyProvider initialCurrency={initialCurrency}>
-              <ToastProvider>{children}</ToastProvider>
+              <ToastProvider><VisitTracker />
+              {children}</ToastProvider>
             </CurrencyProvider>
           </LocaleProvider>
         </ThemeProvider>

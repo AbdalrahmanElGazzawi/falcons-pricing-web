@@ -44,6 +44,7 @@ const NAV = (role: UserRole, email: string) => [
   ...(isSuperAdminEmail(email) ? [
     { href: '/admin/users',     key: 'nav.users'      as const, icon: UserCog },
     { href: '/admin/pricing',   key: 'nav.pricing_os' as const, icon: Calculator },
+    { href: '/admin/analytics',key: 'nav.analytics'  as const, icon: BarChart3 },
     { href: '/admin/audit-log', key: 'nav.audit_log'  as const, icon: ScrollText },
   ] : []),
 ];
