@@ -45,12 +45,13 @@ export const PLATFORM_RATIO: Record<string, number> = {
   rate_ig_reel:        1.00,
   rate_ig_static:      0.65,
   rate_ig_story:       0.55,
-  rate_ig_repost:      0.25,
+  rate_ig_repost:      0.50,    // RESTORED M041: 50% of ig_reel
   rate_ig_share:       0.15,
   rate_tiktok_video:   0.80,
-  rate_tiktok_repost:  0.25,
+  rate_tiktok_repost:  0.40,    // RESTORED M041: 50% of tiktok_video (0.80)
   rate_tiktok_share:   0.35,
   rate_yt_short:       0.32,
+  rate_yt_short_repost: 0.16,    // M041: 50% of yt_short (0.32)
   rate_yt_full:        1.85,
   rate_x_post:         0.20,
   rate_x_repost:       0.10,
