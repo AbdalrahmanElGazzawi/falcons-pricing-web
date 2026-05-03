@@ -22,7 +22,17 @@ export default async function EditPlayer({ params }: { params: { id: string } })
       <Link href="/roster/players" className="inline-flex items-center gap-1 text-sm text-label hover:text-ink mb-3">
         <ArrowLeft size={14} /> Players
       </Link>
-      <PageHeader title={`Edit · ${player.nickname}`} />
+      <PageHeader
+        title={`Edit · ${player.nickname}`}
+        action={(
+          <Link
+            href={`/admin/players/${player.id}/pricing`}
+            className="btn btn-ghost text-sm"
+          >
+            Pricing audit →
+          </Link>
+        )}
+      />
       <PlayerForm player={player} tiers={tiers ?? []} />
     </Shell>
   );
