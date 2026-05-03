@@ -194,16 +194,22 @@ export function PlayerQuickView({
           const handle = player[s.handle] as string | null | undefined;
           const followers = Number(player[s.key] || 0);
           if (!handle && followers === 0) return null;
+          // Handle may be a full URL (post-dossier ingest) or bare handle (legacy)
+          const isUrl = handle ? /^https?:\/\//i.test(String(handle).trim()) : false;
+          const href = handle ? (isUrl ? String(handle).trim() : `https://${s.prefix}${String(handle).replace(/^@/, '')}`) : '#';
+          const displayHandle = handle ? (isUrl
+            ? (String(handle).match(/([^\/?#]+)\/?(?:$|[?#])/)?.[1] || String(handle))
+            : String(handle).replace(/^@/, '')) : '';
           return (
             <div key={s.key} className="flex items-center justify-between gap-3 py-1.5 border-b border-line/60 text-xs">
               <span className="text-mute font-medium inline-flex items-center gap-1">{s.icon} {s.label}</span>
               <span className="text-right flex items-center gap-2">
                 {handle && (
                   <a
-                    href={`https://${s.prefix}${handle.replace(/^@/, '')}`}
+                    href={href}
                     target="_blank" rel="noopener noreferrer"
                     className="text-greenDark hover:underline truncate max-w-[140px]"
-                  >@{handle.replace(/^@/, '')}</a>
+                  >@{displayHandle.replace(/^@/, '')}</a>
                 )}
                 <EditableNumberInline
                   value={followers}

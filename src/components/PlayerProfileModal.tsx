@@ -101,20 +101,42 @@ export function PlayerProfileModal({
   const age = calcAge(player?.date_of_birth);
   const initials = (player?.nickname || '??').slice(0, 2).toUpperCase();
 
-  // Build social rows from the columns that have actual handles
+  // Build social rows from the columns that have actual handles or URLs.
+  // Each value may be either a full URL (post-dossier ingest) or a bare handle (legacy).
+  // Helper detects URLs (starts with http) and uses them directly; bare handles get wrapped.
+  const toUrl = (val: string | null | undefined, base: string): string | null => {
+    if (!val) return null;
+    const s = String(val).trim();
+    if (/^https?:\/\//i.test(s)) return s;
+    return `${base}${s.replace(/^@/, '')}`;
+  };
+  const toDisplay = (val: string | null | undefined): string => {
+    if (!val) return '';
+    const s = String(val).trim();
+    if (/^https?:\/\//i.test(s)) {
+      // extract last path segment as the visible handle
+      const m = s.match(/([^/?#]+)\/?(?:$|[?#])/);
+      return m ? m[1].replace(/^@/, '') : s;
+    }
+    return s.replace(/^@/, '');
+  };
   const socialDefs = player ? [
     { key: 'instagram', icon: Instagram, label: 'Instagram', handle: player.instagram, followers: player.followers_ig,
-      url: player.instagram ? `https://instagram.com/${String(player.instagram).replace(/^@/, '')}` : null },
+      url: toUrl(player.instagram, 'https://instagram.com/') },
     { key: 'tiktok',    icon: () => <span className="text-[10px] font-bold">TT</span>, label: 'TikTok', handle: player.tiktok, followers: player.followers_tiktok,
-      url: player.tiktok ? `https://tiktok.com/@${String(player.tiktok).replace(/^@/, '')}` : null },
+      url: toUrl(player.tiktok, 'https://tiktok.com/@') },
     { key: 'x',         icon: Twitter, label: 'X / Twitter', handle: player.x_handle, followers: player.followers_x,
-      url: player.x_handle ? `https://x.com/${String(player.x_handle).replace(/^@/, '')}` : null },
+      url: toUrl(player.x_handle, 'https://x.com/') },
     { key: 'twitch',    icon: Twitch, label: 'Twitch', handle: player.twitch, followers: player.followers_twitch,
-      url: player.twitch ? `https://twitch.tv/${player.twitch}` : null },
+      url: toUrl(player.twitch, 'https://twitch.tv/') },
     { key: 'youtube',   icon: Youtube, label: 'YouTube', handle: player.youtube, followers: player.followers_yt,
-      url: player.youtube ? `https://youtube.com/@${String(player.youtube).replace(/^@/, '')}` : null },
-    { key: 'kick',      icon: () => <span className="text-[10px] font-bold">K</span>, label: 'Kick', handle: player.kick, followers: 0,
-      url: player.kick ? `https://kick.com/${player.kick}` : null },
+      url: toUrl(player.youtube, 'https://youtube.com/@') },
+    { key: 'kick',      icon: () => <span className="text-[10px] font-bold">K</span>, label: 'Kick', handle: player.kick, followers: (player as any).followers_kick ?? 0,
+      url: toUrl(player.kick, 'https://kick.com/') },
+    { key: 'facebook',  icon: () => <span className="text-[10px] font-bold">FB</span>, label: 'Facebook', handle: (player as any).facebook, followers: player.followers_fb,
+      url: toUrl((player as any).facebook, 'https://facebook.com/') },
+    { key: 'snapchat',  icon: () => <span className="text-[10px] font-bold">SC</span>, label: 'Snapchat', handle: (player as any).snapchat, followers: player.followers_snap,
+      url: toUrl((player as any).snapchat, 'https://snapchat.com/add/') },
     { key: 'liquipedia', icon: () => <span className="text-[10px] font-bold">LP</span>, label: 'Liquipedia', handle: player.liquipedia_url ? player.liquipedia_url.replace(/.*liquipedia\.net\//,'').replace(/_/g,' ') : null, followers: 0,
       url: player.liquipedia_url || null },
   ].filter(s => s.handle) : [];
@@ -244,7 +266,7 @@ export function PlayerProfileModal({
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs uppercase tracking-wide text-label">{s.label}</div>
-                          <div className="text-sm font-medium text-ink truncate">@{String(s.handle).replace(/^@/, '')}</div>
+                          <div className="text-sm font-medium text-ink truncate">@{toDisplay(String(s.handle))}</div>
                         </div>
                         {(s.followers ?? 0) > 0 && (
                           <span className="text-xs text-greenDark font-semibold tabular-nums whitespace-nowrap">{fmtFollow(s.followers)}</span>
