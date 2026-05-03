@@ -112,6 +112,58 @@ export interface LineInput {
    * for non-stream lines. Defaults to 1.00.
    */
   streamActivity?: number;
+  // ── Migration 042 — World-class axes ─────────────────────────────────
+  /**
+   * Audience country mix vs target market (Migration 042).
+   * Aligned >70% (1.40×) / 40-70% (1.20×) / Crossover 20-40% (1.00×) /
+   * Mismatched <20% (0.70×). Brand-side ROI multiplier — what % of the
+   * talent's audience is in the brand's target country.
+   */
+  audCountryMix?: number;
+  /**
+   * Audience age demo. Premium 25-44 (1.20×) / Mainstream 18-34 (1.00×) /
+   * Youth 13-24 (0.85×). Banks/auto/finance pay premium for older.
+   */
+  audAgeDemo?: number;
+  /**
+   * Product integration depth. Passive 0.90× / Active 1.00× / Endorsement
+   * 1.20× / Long-term ambassador 1.45×. Distinct from content-type axis.
+   */
+  integrationDepth?: number;
+  /**
+   * First-look / launch exclusivity window. Standard 1.00× / 48h regional
+   * first 1.20× / 24h global first 1.40× / Launch-day exclusive 1.65×.
+   */
+  firstLook?: number;
+  /**
+   * Real-time / live moment. Standard 1.00× / Match-live 1.30× / Trophy
+   * moment 1.50×. Authenticity-driven, irreplaceable.
+   */
+  realTimeLive?: number;
+  /**
+   * Lifestyle context. Training facility 1.00× / At-home casual 0.95× /
+   * Lifestyle (gym/travel/event) 1.10×.
+   */
+  lifestyleContext?: number;
+  /**
+   * Brand safety score multiplier. Low <0.6 → 0.85× / Std 0.6-0.85 → 1.00× /
+   * Premium >0.85 → 1.10×. Family/kids brands threshold-gated.
+   */
+  brandSafety?: number;
+  /**
+   * Collab size — number of unique talents in this quote. Per-line discount:
+   *   1 (solo) 1.00× / 2 (duo) 0.85× / 3 (trio) 0.75× / 4+ (squad) 0.65×.
+   * Caller (QuoteBuilder) counts unique talent IDs and passes count to each
+   * line's computeLine call.
+   */
+  collabSize?: number;
+  /**
+   * Esports influencer specific axes (Migration 042). All optional, defaults
+   * to 1.00× when omitted.
+   */
+  streamingConsistency?: number;   // <3mo 0.90 / 3-12mo 1.00 / 12mo+ 1.10 / 24mo+ 1.20
+  chatHealth?: number;             // toxic 0.80 / mixed 0.95 / clean 1.05 / curated 1.15
+  crossGameVersatility?: number;   // single 0.95 / 2-game 1.00 / variety 1.10
 }
 
 /**
@@ -238,12 +290,34 @@ export function computeLine(p: LineInput): LineOutput {
 
   // Production style multiplier (Migration 039).
   const prodMult = p.productionStyleMultiplier ?? 1.0;
-  // Stream activity multiplier (Migration 040). Applies regardless of platform —
-  // UI should clamp to 1.00 for non-stream lines.
+  // Stream activity multiplier (Migration 040).
   const streamMult = p.streamActivity ?? 1.0;
+  // Migration 042 — world-class axes
+  const audCountryMixMult = p.audCountryMix ?? 1.0;
+  const audAgeMult        = p.audAgeDemo ?? 1.0;
+  const integrationMult   = p.integrationDepth ?? 1.0;
+  const firstLookMult     = p.firstLook ?? 1.0;
+  const realTimeLiveMult  = p.realTimeLive ?? 1.0;
+  const lifestyleMult     = p.lifestyleContext ?? 1.0;
+  const brandSafetyMult   = p.brandSafety ?? 1.0;
+  // Collab discount derived from collabSize (engine bakes in -15%/-25%/-35%)
+  const collabSize = Math.max(1, p.collabSize ?? 1);
+  const collabMult = collabSize === 1 ? 1.00
+                   : collabSize === 2 ? 0.85
+                   : collabSize === 3 ? 0.75
+                   : 0.65;
+  // Esports-influencer specific axes (default neutral when not passed)
+  const streamingConsistencyMult = p.streamingConsistency ?? 1.0;
+  const chatHealthMult           = p.chatHealth ?? 1.0;
+  const crossGameMult            = p.crossGameVersatility ?? 1.0;
 
   const socialPrice = Math.round(
-    effBaseFee * engGated * audGated * seasGated * ctype * lang * authGated * prodMult * streamMult
+    effBaseFee * engGated * audGated * seasGated * ctype * lang * authGated
+    * prodMult * streamMult
+    * audCountryMixMult * audAgeMult * integrationMult
+    * firstLookMult * realTimeLiveMult * lifestyleMult * brandSafetyMult
+    * collabMult
+    * streamingConsistencyMult * chatHealthMult * crossGameMult
   );
   // AuthorityFloor scales by achievement_decay so a 2019 Major winner
   // doesn't get the same protection as a 2025 Major winner.
@@ -393,6 +467,66 @@ export const AXIS_OPTIONS = {
     { label: 'Active (30–60 hr / 30d)',         factor: 1.10 },
     { label: 'Heavy streamer (60+ hr / 30d)',   factor: 1.25 },
     { label: 'Pro full-time (100+ hr / 30d)',   factor: 1.40 },
+  ],
+  // ── Migration 042 — World-class axes ─────────────────────────────────
+  // Audience country mix vs brand target market (% audience in target).
+  audCountryMix: [
+    { label: 'Mismatched <20% in target',       factor: 0.70 },
+    { label: 'Crossover 20–40%',                factor: 1.00 },
+    { label: 'Aligned 40–70%',                  factor: 1.20 },
+    { label: 'Strongly aligned >70%',           factor: 1.40 },
+  ],
+  audAgeDemo: [
+    { label: 'Youth-skewed 13–24',              factor: 0.85 },
+    { label: 'Mainstream 18–34',                factor: 1.00 },
+    { label: 'Premium 25–44 (high-spend)',      factor: 1.20 },
+  ],
+  integrationDepth: [
+    { label: 'Passive (logo visible)',          factor: 0.90 },
+    { label: 'Active (talent uses product)',    factor: 1.00 },
+    { label: 'Endorsement (talent vouches)',    factor: 1.20 },
+    { label: 'Long-term ambassador',            factor: 1.45 },
+  ],
+  firstLook: [
+    { label: 'Standard (no exclusivity)',       factor: 1.00 },
+    { label: '48h regional first',              factor: 1.20 },
+    { label: '24h global first',                factor: 1.40 },
+    { label: 'Launch-day exclusive (full day)', factor: 1.65 },
+  ],
+  realTimeLive: [
+    { label: 'Standard (recorded / scheduled)', factor: 1.00 },
+    { label: 'Live during talent\'s match',     factor: 1.30 },
+    { label: 'Trophy moment / win celebration', factor: 1.50 },
+  ],
+  lifestyleContext: [
+    { label: 'At-home casual',                  factor: 0.95 },
+    { label: 'Training facility (Falcons HQ)',  factor: 1.00 },
+    { label: 'Lifestyle (gym/travel/event)',    factor: 1.10 },
+  ],
+  brandSafety: [
+    { label: 'Low (<0.6) — risky for premium',  factor: 0.85 },
+    { label: 'Standard (0.6–0.85)',             factor: 1.00 },
+    { label: 'Premium (>0.85) — family-safe',   factor: 1.10 },
+  ],
+  collabSize: [
+    { label: 'Solo',                            factor: 1.00 },
+    { label: 'Duo (2 talents)',                 factor: 0.85 },
+    { label: 'Trio (3 talents)',                factor: 0.75 },
+    { label: 'Squad (4+ talents)',              factor: 0.65 },
+  ],
+  signatureAssetLock: [   // Stretch addon, not socialPrice multiplier — surfaced in addons UI
+    { label: 'None',                            factor: 0.00 },
+    { label: 'Asset lock — 30d',                factor: 0.30 },
+    { label: 'Asset lock — 90d',                factor: 0.60 },
+    { label: 'Asset lock — 6mo',                factor: 1.20 },
+    { label: 'Asset lock — 12mo',               factor: 2.00 },
+  ],
+  brandCategoryExclusivity: [   // Stretch addon
+    { label: 'None',                            factor: 0.00 },
+    { label: 'Category exclusive — 30d',        factor: 0.15 },
+    { label: 'Category exclusive — 90d',        factor: 0.35 },
+    { label: 'Category exclusive — 180d',       factor: 0.60 },
+    { label: 'Category exclusive — 12mo',       factor: 1.10 },
   ],
   // Production complexity (Migration 039). Mirrors the creator catalog
   // but with player-relevant labels (gameplay capture, on-site events).
@@ -610,6 +744,52 @@ export const ESPORTS_INFLUENCER_AXIS_OPTIONS = {
   production:      AXIS_OPTIONS.production,
   objective:       AXIS_OPTIONS.objective,
   streamActivity:  AXIS_OPTIONS.streamActivity,
+  // Migration 042 — shared world-class axes
+  audCountryMix:    AXIS_OPTIONS.audCountryMix,
+  audAgeDemo:       AXIS_OPTIONS.audAgeDemo,
+  integrationDepth: AXIS_OPTIONS.integrationDepth,
+  firstLook:        AXIS_OPTIONS.firstLook,
+  realTimeLive:     AXIS_OPTIONS.realTimeLive,
+  lifestyleContext: AXIS_OPTIONS.lifestyleContext,
+  brandSafety:      AXIS_OPTIONS.brandSafety,
+  collabSize:       AXIS_OPTIONS.collabSize,
+  signatureAssetLock:        AXIS_OPTIONS.signatureAssetLock,
+  brandCategoryExclusivity:  AXIS_OPTIONS.brandCategoryExclusivity,
+  // Esports-influencer specific (Migration 042)
+  streamingConsistency: [
+    { label: 'Inconsistent (<3 months)',      factor: 0.90 },
+    { label: 'Building (3–12 months)',        factor: 1.00 },
+    { label: 'Consistent (12+ months)',       factor: 1.10 },
+    { label: 'Veteran (24+ months)',          factor: 1.20 },
+  ],
+  chatHealth: [
+    { label: 'Toxic / unmoderated',           factor: 0.80 },
+    { label: 'Mixed',                         factor: 0.95 },
+    { label: 'Clean / well-moderated',        factor: 1.05 },
+    { label: 'Curated / premium-safe',        factor: 1.15 },
+  ],
+  subscriberBand: [   // Twitch/Kick subs (paying audience)
+    { label: '<500 subs',                     factor: 0.90 },
+    { label: '500–2k subs',                   factor: 1.00 },
+    { label: '2k–10k subs',                   factor: 1.15 },
+    { label: '10k+ subs',                     factor: 1.30 },
+  ],
+  crossGameVersatility: [
+    { label: 'Single-game specialist',        factor: 0.95 },
+    { label: '2-game streamer',               factor: 1.00 },
+    { label: 'Variety streamer (3+)',         factor: 1.10 },
+  ],
+  charityHistory: [
+    { label: 'No charity stream history',     factor: 1.00 },
+    { label: '1–3 charity streams',           factor: 1.05 },
+    { label: 'Regular charity / ESG-aligned', factor: 1.15 },
+  ],
+  communityHealth: [
+    { label: 'Low / inactive Discord',        factor: 0.95 },
+    { label: 'Average community',             factor: 1.00 },
+    { label: 'Active Discord / off-platform', factor: 1.08 },
+    { label: 'Thriving (10k+ active members)', factor: 1.18 },
+  ],
   dataCompleteness: AXIS_OPTIONS.dataCompleteness,
 };
 
