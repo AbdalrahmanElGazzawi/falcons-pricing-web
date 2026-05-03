@@ -101,6 +101,17 @@ export interface LineInput {
    * Defaults to 1.00 for back-compat with quotes prepared before Migration 035.
    */
   channelMultiplier?: number;
+  /**
+   * Stream activity multiplier (Migration 040). Applies to socialPrice when
+   * the deliverable is a stream-type (twitch_stream, kick_stream, watchparty,
+   * twitch_integ, kick_integ). Reflects last-30-day activity pulled from
+   * Kick/Twitch APIs:
+   *   inactive 0.70× / light 0.90× / regular 1.00× / active 1.10× /
+   *   heavy 1.25× / pro 1.40×.
+   * UI should show this dropdown only on stream lines and pass 1.00 (neutral)
+   * for non-stream lines. Defaults to 1.00.
+   */
+  streamActivity?: number;
 }
 
 /**
@@ -225,12 +236,14 @@ export function computeLine(p: LineInput): LineOutput {
 
   const confCap = gates.confCap;
 
-  // Production style multiplier (Migration 039). 1.00 = standard, 1.10 = scripted,
-  // 1.20 = on-ground/location, 1.35 = multi-day shoot. Defaults to 1.0 when omitted.
+  // Production style multiplier (Migration 039).
   const prodMult = p.productionStyleMultiplier ?? 1.0;
+  // Stream activity multiplier (Migration 040). Applies regardless of platform —
+  // UI should clamp to 1.00 for non-stream lines.
+  const streamMult = p.streamActivity ?? 1.0;
 
   const socialPrice = Math.round(
-    effBaseFee * engGated * audGated * seasGated * ctype * lang * authGated * prodMult
+    effBaseFee * engGated * audGated * seasGated * ctype * lang * authGated * prodMult * streamMult
   );
   // AuthorityFloor scales by achievement_decay so a 2019 Major winner
   // doesn't get the same protection as a 2025 Major winner.
@@ -310,36 +323,76 @@ export const DATA_STATE_META: Record<DataCompleteness, {
 /** Human-friendly axis option catalogues (label + factor). */
 export const AXIS_OPTIONS = {
   contentType: [
-    { label: 'Organic / Creator-led', factor: 0.85 },
-    { label: 'Integrated (Talent-led)', factor: 1.00 },
-    { label: 'Sponsored (Client script)', factor: 1.15 },
+    { label: 'Organic / Creator-led',           factor: 0.85 },
+    { label: 'Integrated (Talent-led)',         factor: 1.00 },
+    { label: 'Sponsored (Client script)',       factor: 1.15 },
+    { label: 'Co-created brand collab',         factor: 1.20 },  // NEW
+    { label: 'Gameplay / Playtest review',      factor: 1.25 },  // NEW (Xsolla-class)
+    { label: 'Educational / Tutorial',          factor: 1.10 },  // NEW
   ],
   engagement: [
-    { label: '<3% — Below baseline', factor: 0.90 },
-    { label: '3% – 5% — Baseline', factor: 1.00 },
-    { label: '5% – 7% — Above avg', factor: 1.10 },
-    { label: '≥7% — Elite', factor: 1.20 },
+    { label: '<2% — Below baseline',            factor: 0.85 },  // NEW (more granular)
+    { label: '2–3% — Baseline (low)',           factor: 0.95 },  // NEW
+    { label: '3–5% — Solid',                    factor: 1.00 },
+    { label: '5–7% — Above avg',                factor: 1.10 },
+    { label: '7–10% — Strong',                  factor: 1.20 },
+    { label: '10–15% — Elite',                  factor: 1.30 },  // NEW
+    { label: '>15% — Outlier (rare)',           factor: 1.45 },  // NEW
   ],
   audience: [
-    { label: 'Gaming-adjacent', factor: 1.00 },
-    { label: 'Gaming-core', factor: 1.15 },
-    { label: 'Elite brand-fit', factor: 1.25 },
+    { label: 'Gaming-adjacent',                 factor: 1.00 },
+    { label: 'Gaming-core',                     factor: 1.15 },
+    { label: 'Elite brand-fit',                 factor: 1.25 },
+    { label: 'KSA / Saudi mass',                factor: 1.20 },  // NEW
+    { label: 'MENA Arabic gaming',              factor: 1.18 },  // NEW
+    { label: 'GCC premium / affluent',          factor: 1.15 },  // NEW
+    { label: 'Tech-savvy / device buyers',      factor: 1.12 },  // NEW
+    { label: 'Family-friendly mass',            factor: 0.95 },  // NEW
   ],
+  // Seasonality (Migration 040). EWC + Ramadan + game-launch granular bands.
   seasonality: [
-    { label: 'Regular season', factor: 1.00 },
-    { label: 'Playoffs / Major', factor: 1.20 },
-    { label: 'Finals / Peak', factor: 1.35 },
+    { label: 'Off-season / dead window',        factor: 0.90 },  // NEW
+    { label: 'Regular season',                  factor: 1.00 },
+    { label: 'Pre-event hype window',           factor: 1.10 },  // NEW
+    { label: 'Brand peak (Black Friday etc)',   factor: 1.20 },  // NEW
+    { label: 'Ramadan window',                  factor: 1.25 },  // NEW
+    { label: 'Major / Worlds / Regional finals', factor: 1.30 },
+    { label: 'Game launch week',                factor: 1.35 },  // NEW
+    { label: 'Finals / Championship night',     factor: 1.45 },
+    { label: 'Esports World Cup (KSA-hosted)',  factor: 1.50 },  // NEW (the big one)
   ],
+  // Language (Migration 040). Dialect-aware. Khaleeji is the Saudi-resonant
+  // bump because mass-market Saudi brands prefer it over MSA.
   language: [
-    { label: 'English', factor: 1.00 },
-    { label: 'Arabic', factor: 1.10 },
-    { label: 'Bilingual (EN + AR)', factor: 1.20 },
+    { label: 'English',                         factor: 1.00 },
+    { label: 'Arabic — MSA',                    factor: 1.05 },
+    { label: 'Arabic — Khaleeji (Saudi/Gulf)',  factor: 1.20 },  // NEW
+    { label: 'Arabic — Egyptian',               factor: 1.10 },  // NEW
+    { label: 'Arabic — Levantine',              factor: 1.05 },  // NEW
+    { label: 'Bilingual (EN + AR)',             factor: 1.25 },
+    { label: 'Trilingual (EN + AR + EN-CC)',    factor: 1.30 },  // NEW
+    { label: 'Spanish',                         factor: 1.05 },
+    { label: 'Portuguese',                      factor: 1.05 },
+    { label: 'French',                          factor: 1.05 },
+    { label: 'Russian',                         factor: 1.00 },
+    { label: 'Korean',                          factor: 1.05 },
   ],
   authority: [
-    { label: 'Normal',                       factor: 1.00 },
-    { label: 'Proven / Established',         factor: 1.15 },
-    { label: 'Elite Contender',              factor: 1.30 },
-    { label: 'Global Star / Major Winner',   factor: 1.50 },
+    { label: 'Normal',                          factor: 1.00 },
+    { label: 'Proven / Established',            factor: 1.15 },
+    { label: 'Elite Contender',                 factor: 1.30 },
+    { label: 'Global Star / Major Winner',      factor: 1.50 },
+    { label: 'Iconic / Hall-of-Fame',           factor: 1.70 },  // NEW
+  ],
+  // Stream activity — last 30 days (Kick/Twitch). Migration 040.
+  // Apply only on stream-type deliverables; non-stream lines keep neutral.
+  streamActivity: [
+    { label: 'Inactive (0 hr / 30d)',           factor: 0.70 },
+    { label: 'Light (1–10 hr / 30d)',           factor: 0.90 },
+    { label: 'Regular (10–30 hr / 30d)',        factor: 1.00 },
+    { label: 'Active (30–60 hr / 30d)',         factor: 1.10 },
+    { label: 'Heavy streamer (60+ hr / 30d)',   factor: 1.25 },
+    { label: 'Pro full-time (100+ hr / 30d)',   factor: 1.40 },
   ],
   // Production complexity (Migration 039). Mirrors the creator catalog
   // but with player-relevant labels (gameplay capture, on-site events).
@@ -434,6 +487,60 @@ export const CREATOR_AXIS_OPTIONS = {
   ],
 };
 
+/** Player rights bundles (Migration 040). Same shape as creator catalog
+ * but tuned for player deliverables (longer usage, broader exclusivity). */
+export const PLAYER_RIGHTS_BUNDLES = [
+  { label: 'None',                          uplift: 0.00 },
+  { label: 'Organic repost — 30d',          uplift: 0.08 },
+  { label: 'Organic repost — 90d',          uplift: 0.15 },
+  { label: 'Organic repost — 180d',         uplift: 0.25 },
+  { label: 'Paid usage — 30d',              uplift: 0.30 },
+  { label: 'Paid usage — 90d',              uplift: 0.65 },
+  { label: 'Paid usage — 180d',             uplift: 1.10 },
+  { label: 'Paid usage — 12mo',             uplift: 1.80 },
+  { label: 'Whitelisting — 30d',            uplift: 0.40 },
+  { label: 'Whitelisting — 90d',            uplift: 1.00 },
+  { label: 'Cross-platform paid — 90d',     uplift: 0.85 },
+  { label: 'Cross-platform paid — 180d',    uplift: 1.40 },
+  { label: 'Owned channels (web/email)',    uplift: 0.10 },
+  { label: 'OOH / Print ad — 6mo',          uplift: 0.50 },
+  { label: 'OOH / Print ad — 12mo',         uplift: 1.00 },
+  { label: 'TV / Broadcast — single market', uplift: 1.20 },
+  { label: 'TV / Broadcast — global',       uplift: 2.50 },
+  { label: 'All owned + paid — 90d',        uplift: 1.30 },
+  { label: 'All owned + paid — 12mo',       uplift: 2.20 },
+];
+
+/** Player extra add-ons (Migration 040). Exclusivity, rush, co-brand, custom. */
+export const PLAYER_EXTRA_ADDONS = [
+  { label: 'None',                          uplift: 0.00 },
+  // Exclusivity windows
+  { label: 'Exclusivity — 30d',             uplift: 0.20 },
+  { label: 'Exclusivity — 90d',             uplift: 0.45 },
+  { label: 'Exclusivity — 180d',            uplift: 0.75 },
+  { label: 'Exclusivity — 12mo',            uplift: 1.30 },
+  { label: 'Category exclusive — 90d',      uplift: 0.30 },
+  { label: 'Category exclusive — 180d',     uplift: 0.55 },
+  // Rush
+  { label: 'Rush — 72h',                    uplift: 0.10 },
+  { label: 'Rush — 48h',                    uplift: 0.20 },
+  { label: 'Rush — 24h',                    uplift: 0.35 },
+  { label: 'Rush — same-day',               uplift: 0.50 },
+  // Co-brand
+  { label: 'Co-brand — minor (logo on)',    uplift: 0.10 },
+  { label: 'Co-brand — major (joint creative)', uplift: 0.25 },
+  { label: 'Co-brand — hero (talent + brand HQ)', uplift: 0.50 },
+  // Custom production
+  { label: 'Branded backdrop / set',        uplift: 0.15 },
+  { label: 'Product placement / hero shot', uplift: 0.20 },
+  { label: 'Scripted creative direction',   uplift: 0.10 },
+  { label: 'Raw footage delivered',         uplift: 0.15 },
+  { label: 'Extra cut-downs (3-5 versions)', uplift: 0.15 },
+  // Multi-talent / multi-shoot bundles
+  { label: 'Multi-talent campaign discount', uplift: -0.10 },
+  { label: 'Multi-month always-on',         uplift: -0.15 },
+];
+
 /** Creator rights bundles (separate from one-line "addons" used at quote level) */
 export const CREATOR_RIGHTS_BUNDLES = [
   { label: 'None',                  uplift: 0.00 },
@@ -470,9 +577,48 @@ export const CREATOR_BUNDLE_DISCOUNTS = [
   { label: 'Always-on custom',          discount: 0.15 },
 ];
 
+/** ──────────────────────────────────────────────────────────────────────────
+ * Esports Influencer axis catalog (Migration 040).
+ * Hybrid: borrows player Engagement/Seasonality/Language but uses creator-
+ * style Audience sectors and conversion-focused Authority. Shared catalog
+ * for esports influencers (game='Esports Influencers' or role='Influencer').
+ */
+export const ESPORTS_INFLUENCER_AXIS_OPTIONS = {
+  contentType: AXIS_OPTIONS.contentType,
+  engagement:  AXIS_OPTIONS.engagement,
+  audience: [
+    { label: 'Esports core',                   factor: 1.10 },
+    { label: 'Pro-team fan base',              factor: 1.15 },
+    { label: 'Casual gamer',                   factor: 1.00 },
+    { label: 'KSA / Saudi gaming mass',        factor: 1.20 },
+    { label: 'MENA Arabic gaming',             factor: 1.18 },
+    { label: 'GCC premium / affluent gamers',  factor: 1.15 },
+    { label: 'Tech / Devices crossover',       factor: 1.10 },
+    { label: 'Streaming-native (Twitch/Kick)', factor: 1.08 },
+    { label: 'Cross-vertical (variety)',       factor: 1.00 },
+    { label: 'Family-safe gaming',             factor: 1.05 },
+  ],
+  authority: [
+    { label: 'Standard influencer',            factor: 1.00 },
+    { label: 'Trusted niche voice',            factor: 1.10 },
+    { label: 'Community pillar',               factor: 1.20 },
+    { label: 'Category-defining hero',         factor: 1.35 },
+    { label: 'Gaming-mainstream icon',         factor: 1.50 },
+  ],
+  language:        AXIS_OPTIONS.language,
+  seasonality:     AXIS_OPTIONS.seasonality,
+  production:      AXIS_OPTIONS.production,
+  objective:       AXIS_OPTIONS.objective,
+  streamActivity:  AXIS_OPTIONS.streamActivity,
+  dataCompleteness: AXIS_OPTIONS.dataCompleteness,
+};
+
 /** Helper — pick the right axis catalog based on talent type */
-export function axisOptionsForTalent(kind: 'player' | 'creator') {
-  if (kind === 'creator') return CREATOR_AXIS_OPTIONS;
+export function axisOptionsForTalent(
+  kind: 'player' | 'creator' | 'esports_influencer',
+) {
+  if (kind === 'creator')           return CREATOR_AXIS_OPTIONS;
+  if (kind === 'esports_influencer') return ESPORTS_INFLUENCER_AXIS_OPTIONS;
   return AXIS_OPTIONS;
 }
 

@@ -235,6 +235,11 @@ export function PricingWizard({
       rightsPct: addonsUpliftPct,
       qty: draft.qty,
       isCompanion: !!draft.is_companion,
+      // Migration 035/039/040 — pass channel/production/streamActivity
+      // through if globals carries them. Defaults are neutral.
+      channelMultiplier: (globals as any).channelMultiplier,
+      productionStyleMultiplier: (globals as any).productionStyleMultiplier,
+      streamActivity: (globals as any).streamActivity,
     });
   }, [draft, globals, addonsUpliftPct]);
 
