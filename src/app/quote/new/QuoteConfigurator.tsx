@@ -93,8 +93,8 @@ function baseWhyFor(platformKey: string, talent: any, tierCode: string | null): 
   const m = map[platformKey];
   if (m) {
     const n = followersOf(m.field);
-    if (n > 0) return `Anchored to ${m.label} reach (${fmt(n)} followers) at MENA CPM.`;
-    return `Anchored to ${m.label} reach — no follower count on file.`;
+    const reach = n > 0 ? ` ${m.label} reach: ${fmt(n)} followers (context only).` : '';
+    return `Floor-First base — talent's defensible minimum for ${m.label}. Multipliers stack ABOVE this; engine never quotes below.${reach}`;
   }
   if (platformKey === 'rate_irl' || platformKey === 'rate_irl_event') {
     return `Tier-flat event fee${tierCode ? ` for ${tierCode}` : ''} — doesn't scale with followers.`;
@@ -1108,6 +1108,7 @@ function DeliverableGroups({
                         overrides={overrides}
                         axisOptions={axisOptions}
                         onAxisChange={onAxisChange}
+                        talent={selectedTalent}
                       />
                     )}
                     {checked && (
@@ -1256,11 +1257,74 @@ function SocialChips({ talent }: { talent: Player | Creator | null }) {
   );
 }
 
+// ─── TalentDataContext ──────────────────────────────────────────────────────
+// Top of the price popover. Surfaces the data signals that drive the
+// ConfidenceCap haircut and the AuthorityFloor decay scaling, so sales sees
+// WHY a price has been adjusted up or down — not just the number it landed at.
+function TalentDataContext({ talent, confCap }: { talent: any; confCap: number }) {
+  if (!talent) return null;
+  const hasSocials    = !!talent.has_social_data    || (Number(talent.followers_ig ?? 0) + Number(talent.followers_tiktok ?? 0) + Number(talent.followers_yt ?? 0) + Number(talent.followers_twitch ?? 0) + Number(talent.followers_x ?? 0)) > 0;
+  const hasTournament = !!talent.has_tournament_data || !!talent.liquipedia_url;
+  const hasAudience   = !!talent.has_audience_demo;
+  const decay = Number(talent.achievement_decay_factor ?? 1);
+  const state = (talent.data_completeness as string | undefined) ?? (
+    hasSocials && hasTournament ? 'full'
+    : hasSocials                ? 'socials_only'
+    : hasTournament             ? 'tournament_only'
+    : 'minimal'
+  );
+  const stateColor: Record<string, string> = {
+    full:            'bg-green/15 text-greenDark border-green/40',
+    socials_only:    'bg-amber-50 text-amber-700 border-amber-300',
+    tournament_only: 'bg-amber-50 text-amber-700 border-amber-300',
+    minimal:         'bg-red-50 text-red-700 border-red-200',
+  };
+  const Pill = ({ on, label }: { on: boolean; label: string }) => (
+    <span className={['inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[10px] font-semibold border whitespace-nowrap',
+      on ? 'bg-green/15 text-greenDark border-green/40' : 'bg-bg text-mute border-line line-through opacity-70'].join(' ')}>
+      {on ? '✓' : '✗'} {label}
+    </span>
+  );
+  return (
+    <div className="rounded-md border border-line bg-bg/50 px-2.5 py-2 space-y-1.5">
+      <div className="text-[9px] uppercase tracking-wider text-mute font-bold">Talent data state</div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Pill on={hasSocials}    label="Socials" />
+        <Pill on={hasTournament} label="Tournament" />
+        <Pill on={hasAudience}   label="Audience" />
+        <span className={['ml-auto inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-bold border whitespace-nowrap', stateColor[state] ?? stateColor.minimal].join(' ')}>
+          {state.replace('_', ' ')}
+        </span>
+      </div>
+      <div className="flex items-center justify-between text-[10px] text-mute font-mono tabular-nums pt-0.5">
+        <span>
+          Achievement decay <span className="text-ink">× {decay.toFixed(3)}</span>
+          {decay < 1 && <span className="ml-1 text-mute">(scaling Authority floor down)</span>}
+        </span>
+        <span>
+          ConfidenceCap <span className={confCap < 1 ? 'text-amber-700 font-semibold' : 'text-greenDark font-semibold'}>× {confCap.toFixed(2)}</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── PhaseHeader — section divider inside the price popover ─────────────────
+function PhaseHeader({ n, title }: { n: number; title: string }) {
+  return (
+    <div className="flex items-center gap-2 pt-1">
+      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-greenSoft text-greenDark text-[9px] font-bold tabular-nums">{n}</span>
+      <span className="text-[10px] uppercase tracking-wider text-label font-bold">{title}</span>
+      <span className="flex-1 h-px bg-line" />
+    </div>
+  );
+}
+
 // ─── PriceBreakdownChip ─────────────────────────────────────────────────────
 // Click the live SAR figure → popover that explains the multiplier chain.
 // Highlights any axis ≠ 1.0× so 'why is it 11,495' is answered at a glance.
 function PriceBreakdownChip({
-  line, currency, usdRate, overrides, axisOptions, onAxisChange,
+  line, currency, usdRate, overrides, axisOptions, onAxisChange, talent,
 }: {
   line: {
     finalAmount: number; finalUnit: number; qty: number; baseWhy: string;
@@ -1276,6 +1340,8 @@ function PriceBreakdownChip({
   overrides: { o_eng: number | null; o_aud: number | null; o_seas: number | null; o_lang: number | null; o_auth: number | null; o_ctype: number | null };
   axisOptions: any;
   onAxisChange: (key: 'o_eng' | 'o_aud' | 'o_seas' | 'o_lang' | 'o_auth', value: number | null) => void;
+  /** Talent record used to render the data-state context block at the top. */
+  talent: any;
 }) {
   const [open, setOpen] = useState(false);
   const m = line.mults;
@@ -1348,21 +1414,35 @@ function PriceBreakdownChip({
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 top-full mt-2 w-80 z-40 rounded-xl border-2 border-greenDark/30 bg-white shadow-2xl text-left p-4 space-y-2"
+            className="absolute right-0 top-full mt-2 w-[360px] z-40 rounded-xl border-2 border-greenDark/30 bg-white shadow-2xl text-left p-4 space-y-3"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-baseline justify-between">
               <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Why this price?</div>
               <button onClick={() => setOpen(false)} className="text-mute hover:text-ink">×</button>
             </div>
+
+            {/* ── Talent data context — explains ConfidenceCap + Authority floor scaling ── */}
+            <TalentDataContext talent={talent} confCap={line.confCap} />
+
             {line.baseWhy && (
               <div className="text-[11px] text-label leading-relaxed bg-bg/60 border border-line rounded-md px-2.5 py-1.5">
                 <span className="text-mute font-semibold uppercase tracking-wider text-[9px] block mb-0.5">Where the base comes from</span>
                 {line.baseWhy}
               </div>
             )}
+
+            {/* ── Phase 1 — Base ───────────────────────────────────── */}
+            <PhaseHeader n={1} title="Base" />
+            <div className="flex justify-between text-xs font-mono tabular-nums px-1">
+              <span className="text-label">{rows[0].k}</span>
+              <span className="font-bold text-ink">{fmtCurrency(line.mults.base, currency, usdRate)}</span>
+            </div>
+
+            {/* ── Phase 2 — Calibration → Social price ─────────────── */}
+            <PhaseHeader n={2} title="Calibration (multipliers stack above base)" />
             <div className="text-xs space-y-1 font-mono tabular-nums">
-              {rows.map((r, i) => (
+              {rows.slice(1).filter(r => r.k !== 'Confidence cap' && r.k !== 'Rights uplift' && r.k !== 'Companion').map((r, i) => (
                 <AxisPickRow
                   key={i}
                   r={r}
@@ -1371,25 +1451,70 @@ function PriceBreakdownChip({
                   onChange={(v) => r.axisKey && onAxisChange(r.axisKey, v)}
                 />
               ))}
-            </div>
-            <div className="border-t border-line pt-2 text-xs space-y-1">
-              <div className="flex justify-between"><span className="text-label">Social price</span><span className="font-mono tabular-nums">{fmtCurrency(line.socialPrice, currency, usdRate)}</span></div>
-              {line.floorPrice > 0 && (
-                <div className={`flex justify-between ${flooredByIRL ? 'text-amber-700 font-semibold' : 'text-mute'}`}>
-                  <span>IRL floor {flooredByIRL && '· winning'}</span>
-                  <span className="font-mono tabular-nums">{fmtCurrency(line.floorPrice, currency, usdRate)}</span>
-                </div>
-              )}
-              {line.qty > 1 && (
-                <div className="flex justify-between text-mute"><span>× Qty {line.qty}</span><span className="font-mono tabular-nums">per unit {fmtCurrency(line.finalUnit, currency, usdRate)}</span></div>
-              )}
-              <div className="flex justify-between border-t border-line pt-1 mt-1">
-                <span className="font-bold text-ink">Final</span>
-                <span className="font-mono font-extrabold tabular-nums text-greenDark">{fmtCurrency(line.finalAmount, currency, usdRate)}</span>
+              <div className="flex justify-between border-t border-line pt-1 mt-1 px-1">
+                <span className="text-label font-semibold">Social price</span>
+                <span className={['font-mono tabular-nums font-bold', flooredByIRL ? 'text-mute' : 'text-greenDark'].join(' ')}>
+                  {fmtCurrency(line.socialPrice, currency, usdRate)}
+                </span>
               </div>
             </div>
+
+            {/* ── Phase 3 — Authority floor (parallel calculation) ─── */}
+            {line.floorPrice > 0 && (
+              <>
+                <PhaseHeader n={3} title="Authority floor (parallel calc — pros)" />
+                <div className={['flex justify-between text-xs font-mono tabular-nums px-1', flooredByIRL ? 'text-amber-700 font-bold' : 'text-mute'].join(' ')}>
+                  <span>IRL × FloorShare × seas × lang × auth × decay</span>
+                  <span>{fmtCurrency(line.floorPrice, currency, usdRate)}</span>
+                </div>
+              </>
+            )}
+
+            {/* ── Phase 4 — MAX wins → Confidence cap ──────────────── */}
+            <PhaseHeader n={line.floorPrice > 0 ? 4 : 3} title={`MAX → Confidence cap${line.confCap < 1 ? ` × ${line.confCap.toFixed(2)}` : ' × 1.00'}`} />
+            <div className="flex justify-between text-xs font-mono tabular-nums px-1">
+              <span className="text-label">
+                {flooredByIRL ? 'Authority floor wins' : 'Social price wins'}
+                {line.confCap < 1 && <span className="text-amber-700 ml-1">· capped</span>}
+              </span>
+              <span className="font-bold text-ink">{fmtCurrency(Math.round(line.preAddOn * line.confCap), currency, usdRate)}</span>
+            </div>
+
+            {/* ── Phase 5 — Add-ons (only show if any apply) ──────── */}
+            {(line.mults.rightsPct > 0 || line.mults.isCompanion || line.qty > 1) && (
+              <>
+                <PhaseHeader n={line.floorPrice > 0 ? 5 : 4} title="Add-ons" />
+                <div className="text-xs space-y-1 font-mono tabular-nums px-1">
+                  {line.mults.rightsPct > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-label">Rights uplift</span>
+                      <span>+{Math.round(line.mults.rightsPct * 100)}%</span>
+                    </div>
+                  )}
+                  {line.mults.isCompanion && (
+                    <div className="flex justify-between">
+                      <span className="text-label">Companion (supporting role)</span>
+                      <span>× 0.5</span>
+                    </div>
+                  )}
+                  {line.qty > 1 && (
+                    <div className="flex justify-between text-mute">
+                      <span>Per unit · Qty {line.qty}</span>
+                      <span>{fmtCurrency(line.finalUnit, currency, usdRate)}</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* ── Final ────────────────────────────────────────────── */}
+            <div className="flex justify-between border-t-2 border-greenDark/40 pt-2 px-1">
+              <span className="font-bold text-ink uppercase text-[11px] tracking-wider">Final</span>
+              <span className="font-mono font-extrabold tabular-nums text-greenDark text-base">{fmtCurrency(line.finalAmount, currency, usdRate)}</span>
+            </div>
+
             <div className="text-[10px] text-mute italic leading-relaxed">
-              Highlighted rows are the multipliers actually moving the price away from base. Adjust them in the Campaign tab or the per-line axis overrides.
+              Click any multiplier to override it for this line. Adjust globally in the Campaign tab.
             </div>
           </div>
         </>
