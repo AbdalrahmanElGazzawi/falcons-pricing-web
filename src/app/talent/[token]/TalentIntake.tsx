@@ -2,11 +2,34 @@
 import { useMemo, useState } from 'react';
 import { Trophy, ShieldCheck, Send, CheckCircle2, AlertCircle, Lock, Info, Instagram, Music2, Youtube, Twitch, Users } from 'lucide-react';
 
-type Achievement = {
+type AchievementObj = {
   title?: string; year?: string | number; placement?: string; tier?: string;
   prize_usd?: number | string;
   [k: string]: unknown;
 };
+type Achievement = string | AchievementObj;
+
+// Pull the year(s) from a free-text achievement string and split it from
+// the rest. Examples handled:
+//   '2024 World Finals'                → { year: '2024',      rest: 'World Finals' }
+//   'EWC 2025 — 1st place'             → { year: '2025',      rest: 'EWC — 1st place' }
+//   'Multi-podium 2023–2025'           → { year: '2023–2025', rest: 'Multi-podium' }
+//   'Career winnings: $31,440+'        → { year: null,        rest: original }
+function splitYear(text: string): { rest: string; year: string | null } {
+  const range = text.match(/\b(20\d{2}\s*[–\-]\s*20\d{2})\b/);
+  if (range) return { year: range[1].replace(/\s+/g, ''), rest: text.replace(range[0], '').replace(/\s{2,}/g, ' ').trim() };
+  const single = text.match(/\b(20\d{2})\b/);
+  if (single) return { year: single[1], rest: text.replace(single[0], '').replace(/\s{2,}/g, ' ').trim() };
+  return { year: null, rest: text };
+}
+
+// Look for a leading placement-y prefix ('1st', 'Champion', 'Top 4', '2x') so
+// we can render it bolded.
+function leadingPlacement(text: string): { lead: string | null; rest: string } {
+  const m = text.match(/^(\d+(st|nd|rd|th)|top\s*\d+|champion|world\s+champion|gold|silver|bronze|\dx\s+\w+|\d+x\s+\w+)\b\s*[—\-:•]?\s*/i);
+  if (!m) return { lead: null, rest: text };
+  return { lead: m[1].trim(), rest: text.slice(m[0].length).trim() };
+}
 
 type PlayerInfo = {
   id: number;
@@ -208,16 +231,41 @@ export function TalentIntake({
                  className="text-[11px] text-mute hover:text-greenDark underline">View Liquipedia →</a>
             )}
           </div>
-          <ul className="space-y-1.5 text-xs max-h-44 overflow-auto pr-2">
-            {player.achievements.slice(0, 18).map((a, i) => (
-              <li key={i} className="flex items-baseline justify-between gap-3 border-b border-line/60 pb-1">
-                <span className="text-ink truncate">
-                  {a.placement ? <span className="font-semibold text-greenDark mr-1.5">{a.placement}</span> : null}
-                  {a.title || a.tier || 'Tournament'}
-                </span>
-                <span className="text-mute tabular-nums whitespace-nowrap">{a.year || ''}</span>
-              </li>
-            ))}
+          <ul className="space-y-1.5 text-xs max-h-72 overflow-auto pr-2">
+            {player.achievements.slice(0, 18).map((raw, i) => {
+              // Achievements can be either:
+              //   - free-text strings (current production data — text[] column)
+              //   - structured objects { title, placement, year, tier, ... }
+              const isStr = typeof raw === 'string';
+              if (isStr) {
+                const text = raw as string;
+                const { rest: noYear, year } = splitYear(text);
+                const { lead, rest } = leadingPlacement(noYear);
+                return (
+                  <li key={i} className="flex items-baseline justify-between gap-3 border-b border-line/60 pb-1">
+                    <span className="text-ink min-w-0">
+                      {lead && <span className="font-semibold text-greenDark mr-1.5">{lead}</span>}
+                      <span className="break-words">{rest || text}</span>
+                    </span>
+                    {year && <span className="text-mute tabular-nums whitespace-nowrap">{year}</span>}
+                  </li>
+                );
+              }
+              const a = raw as AchievementObj;
+              const label = a.title || a.tier || (typeof a.placement === 'string' ? a.placement : '') || 'Achievement';
+              return (
+                <li key={i} className="flex items-baseline justify-between gap-3 border-b border-line/60 pb-1">
+                  <span className="text-ink min-w-0">
+                    {a.placement && <span className="font-semibold text-greenDark mr-1.5">{a.placement}</span>}
+                    <span className="break-words">{label}</span>
+                    {typeof a.prize_usd === 'number' && a.prize_usd > 0 && (
+                      <span className="text-[11px] text-mute ml-1.5">· ${a.prize_usd.toLocaleString('en-US')}</span>
+                    )}
+                  </span>
+                  <span className="text-mute tabular-nums whitespace-nowrap">{a.year ?? ''}</span>
+                </li>
+              );
+            })}
           </ul>
           <p className="text-[11px] text-mute mt-2">
             If anything's missing or wrong, mention it in the notes box below — we'll update it.
