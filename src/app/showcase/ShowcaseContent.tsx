@@ -186,6 +186,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
   const [showRates, setShowRates] = useState(false);
   const [sort, setSort] = useState<'reach' | 'tier'>('reach');
   const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
+  const [openCreatorId, setOpenCreatorId] = useState<number | null>(null);
   // Deep-link from /roster, /admin, etc.: open detail modal directly
   // when ?focus=<playerId> is in the URL. Cleared after consumption so
   // a manual close doesn't re-open on re-render.
@@ -505,7 +506,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                         ) : (
                           <div>
                             <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Tier baseline</div>
-                            <div className="text-base font-bold text-label">{tierStyle.label}</div>
+                            <div className="text-base font-bold text-label">{p.tier_code || "—"}</div>
                           </div>
                         )}
 
@@ -606,168 +607,54 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                 return 'Emerging voice. Micro-community engagement; strong CPM-to-trust ratio.';
               })();
               return (
-                <div
+                <button
                   key={c.id}
+                  type="button"
+                  onClick={() => setOpenCreatorId(c.id)}
                   className={[
-                    'group relative rounded-2xl bg-white border border-line overflow-hidden transition-all hover:shadow-lift hover:-translate-y-0.5',
+                    'group relative rounded-2xl bg-white border border-line overflow-hidden transition-all hover:shadow-lift hover:-translate-y-0.5 text-left w-full focus:outline-none focus:ring-2 focus:ring-greenDark/40',
                     tierStyle.ring,
                   ].join(' ')}
                 >
                   {/* Tier-tinted gradient accent at the top */}
-                  <div className={`h-20 bg-gradient-to-br ${tierStyle.gradient} relative`}>
+                  <div className={`h-16 bg-gradient-to-br ${tierStyle.gradient} relative`}>
                     <div className="absolute inset-x-0 bottom-0 h-px bg-line" />
                     {c.tier_code && (
                       <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${tierStyle.chip}`}>
-                          {c.tier_code}
-                        </span>
-                        {!dataPending && (
-                          <span title="Verified data" className="px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-green/15 text-greenDark border border-green/30 inline-flex items-center gap-1">
-                            <ShieldCheck size={9} /> Verified
-                          </span>
-                        )}
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${tierStyle.chip}`}>{c.tier_code}</span>
+                      </div>
+                    )}
+                    {dataPending && (
+                      <div className="absolute top-3 left-3">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-300">data pending</span>
                       </div>
                     )}
                   </div>
-
-                  <div className="px-5 pb-5 -mt-10 relative">
+                  <div className="px-5 pb-5 -mt-8 relative">
                     <Avatar src={c.avatar_url} name={c.nickname} size="lg" />
-
-                    <div className="mt-3 flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h3 className="font-bold text-ink text-lg truncate">{c.nickname}</h3>
-                          {isAnchor && (
-                            <span title="Anchor creator — 10M+ reach" className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gold/15 text-gold border border-gold/40">
-                              <Crown size={9} /> Anchor
-                            </span>
-                          )}
-                          {!isAnchor && isPremium && (
-                            <span title="Premium reach (3M+)" className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[9px] font-bold uppercase tracking-wider bg-greenSoft text-greenDark border border-greenDark/30">
-                              <Flame size={9} /> Premium
-                            </span>
-                          )}
-                          {isSaudi && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[9px] font-bold uppercase tracking-wider bg-green/10 text-greenDark border border-green/30">KSA</span>
-                          )}
+                    <h3 className="font-bold text-ink text-lg truncate mt-3 flex items-center gap-1.5">
+                      {c.nickname}
+                      {isAnchor && <Crown size={13} className="text-gold" aria-label="Anchor" />}
+                      {!isAnchor && isPremium && <Flame size={12} className="text-greenDark" aria-label="Premium" />}
+                    </h3>
+                    {c.full_name && <div className="text-xs text-mute truncate">{c.full_name}</div>}
+                    <div className="text-xs text-label mt-1.5 flex items-center gap-1.5 flex-wrap">
+                      {c.nationality && <span className="flex items-center gap-1"><MapPin size={11} /> {c.nationality}</span>}
+                      {isSaudi && <span className="inline-flex items-center px-1.5 py-0 rounded-full text-[9px] font-bold uppercase tracking-wider bg-green/10 text-greenDark border border-green/30">KSA</span>}
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-line flex items-end justify-between gap-2">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Total reach</div>
+                        <div className="text-2xl font-extrabold text-ink tabular-nums leading-none">
+                          {dataPending ? '—' : fmtCount(totalReach)}
                         </div>
-                        {c.full_name && <div className="text-xs text-mute mt-0.5 truncate">{c.full_name}</div>}
-                        <div className="text-xs text-label mt-1.5 flex items-center gap-1.5 flex-wrap">
-                          <span className="font-medium">{tierStyle.label}</span>
-                          {c.nationality && <><span className="text-mute">·</span><span className="flex items-center gap-1"><MapPin size={11} /> {c.nationality}</span></>}
-                        </div>
+                      </div>
+                      <div className="text-[11px] text-greenDark font-semibold inline-flex items-center gap-1">
+                        View profile <ArrowUpRight size={12} />
                       </div>
                     </div>
-
-                    {/* Achievement chips */}
-                    {awards.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {awards.map(a => (
-                          <span key={a} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gold/10 text-gold border border-gold/30">
-                            <Trophy size={9} /> {a}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Hero stats */}
-                    <div className="mt-4 pt-4 border-t border-line space-y-2.5">
-                      {!dataPending ? (
-                        <div className="flex items-end justify-between gap-2">
-                          <div>
-                            <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Total reach</div>
-                            <div className="text-2xl font-extrabold text-ink tabular-nums leading-none">
-                              {fmtCount(totalReach)}
-                            </div>
-                          </div>
-                          {peak > 0 && (
-                            <div className="text-right">
-                              <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Top platform</div>
-                              <div className="text-sm font-bold text-greenDark tabular-nums">{fmtCount(peak)}</div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Tier baseline</div>
-                          <div className="text-base font-bold text-label">{tierStyle.label}</div>
-                        </div>
-                      )}
-
-                      {!dataPending && (
-                        <div className="grid grid-cols-5 gap-1">
-                          {reachItems.map(r => (
-                            <a
-                              key={r.label}
-                              href={r.handle || '#'}
-                              target="_blank" rel="noreferrer"
-                              className={`px-1.5 py-1 rounded border text-center transition ${r.handle ? 'border-line hover:border-greenDark hover:bg-greenSoft' : 'border-line opacity-70 cursor-default pointer-events-none'}`}
-                              onClick={e => { if (!r.handle) e.preventDefault(); }}
-                            >
-                              <div className="text-[8px] uppercase tracking-wider text-mute font-bold">{r.label}</div>
-                              <div className="text-[10px] font-bold text-ink tabular-nums">{fmtCount(r.value || 0)}</div>
-                            </a>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className={`mt-3 pt-3 border-t border-line text-xs leading-relaxed ${dataPending ? 'text-amber-700 italic' : 'text-label'}`}>
-                      {impact}
-                    </div>
-
-                    {c.notes && (
-                      <div className="mt-2 text-[10px] text-mute leading-relaxed line-clamp-3">{c.notes}</div>
-                    )}
-
-                    {/* Past campaigns — proof of brand partnership */}
-                    {c.past_campaigns && c.past_campaigns.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-line">
-                        <div className="text-[9px] uppercase tracking-wider text-gold font-bold mb-1.5">Past brand campaigns</div>
-                        <div className="flex flex-wrap gap-1">
-                          {c.past_campaigns.slice(0, 6).map((pc, i) => (
-                            <span key={i} title={[pc.deliverable, pc.year, pc.conversion_signal].filter(Boolean).join(' · ')}
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-navy/5 text-navy border border-navy/15">
-                              {pc.brand}{pc.year ? ` '${String(pc.year).slice(-2)}` : ''}
-                            </span>
-                          ))}
-                          {c.past_campaigns.length > 6 && (
-                            <span className="text-[9px] text-mute">+{c.past_campaigns.length - 6} more</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Delivered KPIs — track record */}
-                    {c.delivered_kpis && c.delivered_kpis.length > 0 && (
-                      <div className="mt-2">
-                        <div className="text-[9px] uppercase tracking-wider text-greenDark font-bold mb-1">Delivered KPIs</div>
-                        <div className="space-y-0.5">
-                          {c.delivered_kpis.slice(0, 3).map((k, i) => (
-                            <div key={i} className="text-[10px] text-label flex items-baseline justify-between">
-                              <span>{k.kpi}</span>
-                              <span className="font-bold text-ink tabular-nums">{k.value}{k.unit ? ` ${k.unit}` : ''}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {showRates && c.rate_ig_reels > 0 && (
-                      <div className="mt-3 pt-3 border-t border-dashed border-line flex items-center justify-between"
-                        title={c.pricing_rationale || undefined}>
-                        <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Starts at (IG Reel)</div>
-                        <div className="text-sm font-bold text-greenDark tabular-nums">SAR {c.rate_ig_reels.toLocaleString('en-US')}</div>
-                      </div>
-                    )}
-                    {showRates && c.pricing_rationale && (
-                      <div className="text-[10px] text-mute italic leading-snug line-clamp-2"
-                        title={c.pricing_rationale}>
-                        {c.pricing_rationale}
-                      </div>
-                    )}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -1068,6 +955,230 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                     Tier {p.tier_code?.replace('Tier ', '')} {p.measurement_confidence === 'exact' ? '· verified data' : '· estimated'}
                   </span>
                 </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ─── Creator detail modal ──────────────────────────────────────── */}
+      {openCreatorId !== null && (() => {
+        const c = creators.find(cc => cc.id === openCreatorId);
+        if (!c) return null;
+        const tierStyle = TIER_STYLES[c.tier_code || ''] ?? TIER_STYLES['Tier 1'];
+        const reachItems = [
+          { label: 'YouTube',  short: 'YT',   value: c.followers_yt,     handle: c.handle_yt,     icon: 'youtube' },
+          { label: 'TikTok',   short: 'TT',   value: c.followers_tiktok, handle: c.handle_tiktok, icon: 'tiktok' },
+          { label: 'Instagram',short: 'IG',   value: c.followers_ig,     handle: c.handle_ig,     icon: 'instagram' },
+          { label: 'X / Twitter', short: 'X', value: c.followers_x,      handle: c.handle_x,      icon: 'x' },
+          { label: 'Twitch',   short: 'TWCH', value: c.followers_twitch, handle: c.handle_twitch, icon: 'twitch' },
+          { label: 'Kick',     short: 'KICK', value: (c as any).followers_kick, handle: (c as any).handle_kick, icon: 'kick' },
+        ].filter(r => r.value && r.value > 0);
+        const totalReach = reachItems.reduce((s, r) => s + (r.value || 0), 0);
+        const peakItem = reachItems.reduce((best: any, r: any) => (r.value > (best?.value ?? 0) ? r : best), null as any);
+        const dataPending = totalReach === 0;
+        const isAnchor = totalReach >= 10_000_000;
+        const isPremium = totalReach >= 3_000_000;
+        const isSaudi = (c.nationality || '').toLowerCase().startsWith('saudi');
+        const awards = CREATOR_AWARDS[c.nickname] || [];
+        const usp = (() => {
+          if (dataPending) return 'Data pending — handles + follower counts being verified.';
+          if (totalReach >= 10_000_000) return 'Anchor creator. Top-tier brand association vehicle for nationwide MENA campaigns.';
+          if (totalReach >= 3_000_000) return 'Premium voice. Drives brand authority + conversion across the Saudi gaming demographic.';
+          if (totalReach >= 1_000_000) return 'Established creator. Strong fit for cultural-fit briefs + product launches.';
+          if (totalReach >= 250_000) return 'Mid-tier creator. Best for vertical/niche briefs and community-led product seeding.';
+          return 'Emerging voice. Micro-community engagement; strong CPM-to-trust ratio.';
+        })();
+        const platformLink = (h: string | null, kind: string) => {
+          if (!h) return null;
+          const handle = String(h).replace(/^https?:\/\/[^/]+\//, '').replace(/^@/, '');
+          if (kind === 'youtube')   return `https://youtube.com/${handle.startsWith('@') ? '' : '@'}${handle}`;
+          if (kind === 'tiktok')    return `https://tiktok.com/@${handle}`;
+          if (kind === 'instagram') return `https://instagram.com/${handle}`;
+          if (kind === 'x')         return `https://x.com/${handle}`;
+          if (kind === 'twitch')    return `https://twitch.tv/${handle}`;
+          if (kind === 'kick')      return `https://kick.com/${handle}`;
+          return null;
+        };
+        const productionStyle = (c as any).production_style_default as string | undefined;
+        const audienceMarket = (c as any).audience_market as string | undefined;
+        return (
+          <div
+            className="fixed inset-0 z-50 bg-navy/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-6 overflow-y-auto"
+            onClick={() => setOpenCreatorId(null)}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-lift w-full max-w-3xl my-4 overflow-hidden flex flex-col max-h-[95vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header strip with gradient + close button */}
+              <div className={`relative bg-gradient-to-br ${tierStyle.gradient}`}>
+                <button
+                  onClick={() => setOpenCreatorId(null)}
+                  className="absolute top-3 right-3 z-10 w-8 h-8 inline-flex items-center justify-center rounded-full bg-white/80 backdrop-blur text-ink hover:bg-white"
+                  aria-label="Close"
+                >
+                  <XIcon size={16} />
+                </button>
+                <div className="px-6 pt-6 pb-4 flex items-end gap-4">
+                  <Avatar src={c.avatar_url} name={c.nickname} size="lg" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                      {c.tier_code && (
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${tierStyle.chip}`}>{c.tier_code}</span>
+                      )}
+                      {isAnchor && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gold/15 text-gold border border-gold/40">
+                          <Crown size={9} /> Anchor
+                        </span>
+                      )}
+                      {!isAnchor && isPremium && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-greenSoft text-greenDark border border-greenDark/30">
+                          <Flame size={9} /> Premium
+                        </span>
+                      )}
+                      {isSaudi && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-green/10 text-greenDark border border-green/30">KSA</span>
+                      )}
+                    </div>
+                    <h2 className="text-2xl font-extrabold text-ink truncate">{c.nickname}</h2>
+                    {c.full_name && <div className="text-sm text-mute truncate">{c.full_name}</div>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Body — scrollable */}
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                {/* USP — the one-liner pitch */}
+                <div className="rounded-xl bg-greenSoft/40 border border-greenDark/30 px-4 py-3">
+                  <div className="text-[10px] uppercase tracking-wider text-greenDark font-bold mb-1">Why this creator</div>
+                  <div className="text-sm text-ink leading-relaxed">{usp}</div>
+                </div>
+
+                {/* Reach hero */}
+                {!dataPending && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="rounded-xl border border-line p-3">
+                      <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Total reach</div>
+                      <div className="text-2xl font-extrabold text-ink tabular-nums">{fmtCount(totalReach)}</div>
+                    </div>
+                    {peakItem && (
+                      <div className="rounded-xl border border-line p-3">
+                        <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Top platform</div>
+                        <div className="text-2xl font-extrabold text-greenDark tabular-nums">{fmtCount(peakItem.value)}</div>
+                        <div className="text-[10px] text-mute">{peakItem.label}</div>
+                      </div>
+                    )}
+                    <div className="rounded-xl border border-line p-3">
+                      <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Audience market</div>
+                      <div className="text-base font-bold text-ink">{audienceMarket || c.nationality || '—'}</div>
+                    </div>
+                    <div className="rounded-xl border border-line p-3">
+                      <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Production</div>
+                      <div className="text-base font-bold text-ink capitalize">{productionStyle?.replace(/_/g, ' ') || 'Mixed'}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Per-platform breakdown */}
+                {!dataPending && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-mute font-bold mb-2">Per-platform reach</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {reachItems.map(r => {
+                        const url = platformLink(r.handle as any, r.icon);
+                        const inner = (
+                          <>
+                            <div className="text-[10px] uppercase tracking-wider text-mute font-bold">{r.label}</div>
+                            <div className="flex items-baseline justify-between gap-2 mt-0.5">
+                              <div className="text-base font-bold text-ink tabular-nums">{fmtCount(r.value || 0)}</div>
+                              {r.handle && <div className="text-[10px] text-greenDark truncate">@{String(r.handle).replace(/^@/, '')}</div>}
+                            </div>
+                          </>
+                        );
+                        return url
+                          ? <a key={r.label} href={url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-line hover:border-greenDark hover:bg-greenSoft/30 px-3 py-2 transition">{inner}</a>
+                          : <div key={r.label} className="rounded-lg border border-line px-3 py-2">{inner}</div>;
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Achievements */}
+                {awards.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-gold font-bold mb-2">Achievements</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {awards.map(a => (
+                        <span key={a} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gold/10 text-gold border border-gold/30">
+                          <Trophy size={10} /> {a}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Past campaigns */}
+                {c.past_campaigns && c.past_campaigns.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-navy font-bold mb-2">Past brand partnerships</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {c.past_campaigns.map((pc, i) => (
+                        <span key={i} title={[pc.deliverable, pc.year, pc.conversion_signal].filter(Boolean).join(' · ')}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-navy/5 text-navy border border-navy/15">
+                          {pc.brand}{pc.year ? ` ${String(pc.year).slice(-2)}` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Delivered KPIs */}
+                {c.delivered_kpis && c.delivered_kpis.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-greenDark font-bold mb-2">Delivered for past clients</div>
+                    <div className="space-y-1">
+                      {c.delivered_kpis.map((k, i) => (
+                        <div key={i} className="flex items-baseline justify-between gap-2 text-xs border-b border-line/60 pb-1">
+                          <span className="text-label">{k.kpi}{k.source ? <span className="text-mute italic"> · {k.source}</span> : ''}</span>
+                          <span className="font-bold text-ink tabular-nums">{k.value}{k.unit ? ` ${k.unit}` : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes / pitch */}
+                {c.notes && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-mute font-bold mb-1">Notes</div>
+                    <div className="text-xs text-label leading-relaxed">{c.notes}</div>
+                  </div>
+                )}
+
+                {/* Internal — rates only when showRates is on */}
+                {showRates && (
+                  <div className="rounded-xl border border-greenDark/30 bg-greenSoft/20 p-4">
+                    <div className="text-[10px] uppercase tracking-wider text-greenDark font-bold mb-2">Internal — starting from</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                      {[
+                        { label: 'IG Reel',     v: c.rate_ig_reels },
+                        { label: 'TikTok',      v: c.rate_tiktok_ours },
+                        { label: 'YT Full',     v: c.rate_yt_full },
+                        { label: 'YT Short',    v: c.rate_yt_shorts },
+                        { label: 'Twitch/Kick', v: c.rate_twitch_kick_live },
+                      ].filter(r => r.v && r.v > 0).map(r => (
+                        <div key={r.label} className="flex justify-between bg-white border border-line rounded-md px-2 py-1.5">
+                          <span className="text-label">{r.label}</span>
+                          <span className="font-bold text-greenDark tabular-nums">SAR {r.v.toLocaleString('en-US')}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {c.pricing_rationale && (
+                      <div className="text-[10px] text-mute italic mt-2 leading-snug">{c.pricing_rationale}</div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
