@@ -92,6 +92,53 @@ export interface LineInput {
    * that need to dip below floor (variance register logs them).
    */
   enforceFloor?: boolean;
+  /**
+   * Channel multiplier (Migration 035). Scales `baseFee` and `irl` BEFORE
+   * axes apply, so each sales channel has its own floor:
+   *   • direct_brand        = 1.00  (full engine number)
+   *   • agency_brokered     = 0.65 / 0.50 / 0.35  (light / standard / heavy)
+   *   • strategic_account   = 0.65  (top-5 repeat brand, private rate)
+   * Defaults to 1.00 for back-compat with quotes prepared before Migration 035.
+   */
+  channelMultiplier?: number;
+}
+
+/**
+ * Channel preset table (Migration 035). Keep client-side copy in sync with
+ * the seed data in `public.channel_multipliers`. Used by the quote builder
+ * to look up the multiplier for a chosen (channel, intensity) pair.
+ */
+export const CHANNEL_PRESETS = [
+  { channel: 'direct_brand',       intensity: null,        multiplier: 1.00,
+    label: 'Direct brand',
+    description: 'Brand contacts Falcons directly. Full engine floor applies.' },
+  { channel: 'agency_brokered',    intensity: 'light',     multiplier: 0.65,
+    label: 'Agency-brokered (Light)',
+    description: 'Agency facilitates a brand-requested deal. Light handling.' },
+  { channel: 'agency_brokered',    intensity: 'standard',  multiplier: 0.50,
+    label: 'Agency-brokered (Standard)',
+    description: 'Standard MENA agency margin. Creative + reporting + brand liaison.' },
+  { channel: 'agency_brokered',    intensity: 'heavy',     multiplier: 0.35,
+    label: 'Agency-brokered (Heavy)',
+    description: 'Agency owns brand relationship end-to-end. Falcons supplies talent only.' },
+  { channel: 'strategic_account',  intensity: null,        multiplier: 0.65,
+    label: 'Strategic account',
+    description: 'Top-5 repeat brand with 90-day exclusivity. Private rate.' },
+] as const;
+
+export type SalesChannel = 'direct_brand' | 'agency_brokered' | 'strategic_account';
+export type ChannelIntensity = 'light' | 'standard' | 'heavy';
+
+/** Resolve channel multiplier from a (channel, intensity) pair. */
+export function resolveChannelMultiplier(
+  channel: SalesChannel,
+  intensity?: ChannelIntensity | null,
+): number {
+  const match = CHANNEL_PRESETS.find(p =>
+    p.channel === channel &&
+    ((p.intensity ?? null) === (intensity ?? null))
+  );
+  return match?.multiplier ?? 1.00;
 }
 
 export interface LineOutput {
@@ -161,6 +208,13 @@ export function computeLine(p: LineInput): LineOutput {
   const qty = p.qty ?? 1;
   const decay = p.achievementDecay ?? 1.0;
 
+  // Channel multiplier (Migration 035): scales baseFee + IRL before axes.
+  // Each sales channel has its own floor — multipliers can never push below
+  // the channel-adjusted baseFee. Defaults to 1.00 (direct_brand).
+  const channelMult = p.channelMultiplier ?? 1.0;
+  const effBaseFee = p.baseFee * channelMult;
+  const effIrl = (p.irl ?? 0) * channelMult;
+
   const authRaw = 1 + obj * (auth - 1);
 
   // Apply state-driven caps
@@ -172,12 +226,12 @@ export function computeLine(p: LineInput): LineOutput {
   const confCap = gates.confCap;
 
   const socialPrice = Math.round(
-    p.baseFee * engGated * audGated * seasGated * ctype * lang * authGated
+    effBaseFee * engGated * audGated * seasGated * ctype * lang * authGated
   );
   // AuthorityFloor scales by achievement_decay so a 2019 Major winner
   // doesn't get the same protection as a 2025 Major winner.
   const floorPrice = Math.round(
-    (p.irl ?? 0) * floorShare * seasGated * lang * authGated * decay
+    effIrl * floorShare * seasGated * lang * authGated * decay
   );
 
   const preAddOn = Math.max(socialPrice, floorPrice);
@@ -190,10 +244,10 @@ export function computeLine(p: LineInput): LineOutput {
   let finalUnit = rawUnit;
   let floorHit = false;
   let floorDelta = 0;
-  if (enforceFloor && p.baseFee > 0 && rawUnit < p.baseFee) {
+  if (enforceFloor && effBaseFee > 0 && rawUnit < effBaseFee) {
     floorHit = true;
-    floorDelta = p.baseFee - rawUnit;
-    finalUnit = p.baseFee;
+    floorDelta = Math.round(effBaseFee - rawUnit);
+    finalUnit = Math.round(effBaseFee);
   }
 
   const finalAmount = Math.round(finalUnit * qty);

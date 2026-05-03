@@ -2,7 +2,7 @@
 import { useLocale } from '@/lib/i18n/Locale';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { computeLine, computeQuoteTotals, AXIS_OPTIONS, CREATOR_AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
+import { computeLine, computeQuoteTotals, AXIS_OPTIONS, CREATOR_AXIS_OPTIONS, CHANNEL_PRESETS, resolveChannelMultiplier, type MeasurementConfidence, type SalesChannel, type ChannelIntensity } from '@/lib/pricing';
 import { fmtMoney, fmtPct, fmtCurrency } from '@/lib/utils';
 import {
   PLAYER_PLATFORMS, CREATOR_PLATFORMS,
@@ -192,6 +192,12 @@ export function QuoteBuilder({
   const [clientCountry, setClientCountry] = useState('Saudi Arabia');
   const [expiresAt, setExpiresAt] = useState<string>(''); // ISO yyyy-mm-dd
   const [paymentTerms, setPaymentTerms] = useState('Immediate Payment');
+  // ── Channel (Migration 035). Defaults to direct_brand. When agency_brokered,
+  // intensity must be set; intermediary_name names the agency (e.g. 'Arabhardware').
+  const [channel, setChannel] = useState<SalesChannel>('direct_brand');
+  const [channelIntensity, setChannelIntensity] = useState<ChannelIntensity | null>(null);
+  const [intermediaryName, setIntermediaryName] = useState('');
+  const channelMultiplier = resolveChannelMultiplier(channel, channelIntensity);
   // Designated approver — pick from the team or type a custom name. This pre-fills
   // approved_by_name so the PDF carries the approver's identity even before the
   // admin formally clicks "Approve" on /quote/[id].
@@ -440,6 +446,7 @@ export function QuoteBuilder({
           const ps = (creatorRec as any)?.production_style_default;
           return ps === 'raw' ? 0.9 : ps === 'scripted' ? 1.20 : ps === 'full_studio' ? 1.40 : 1.0;
         })(),
+        channelMultiplier,
       });
       return { ...l, ...r };
     });
@@ -449,7 +456,7 @@ export function QuoteBuilder({
       vatRate,
     });
     return { rows: out, totals };
-  }, [lines, eng, aud, seas, ctype, lang, auth, obj, conf, addonsUpliftPct, vatRate]);
+  }, [lines, eng, aud, seas, ctype, lang, auth, obj, conf, addonsUpliftPct, vatRate, channelMultiplier]);
 
   async function save(status: 'draft' | 'pending_approval') {
     setError(null);
@@ -486,6 +493,10 @@ export function QuoteBuilder({
             currency,
             vat_rate: vatRate,
             usd_rate: usdRate,
+            channel,
+            channel_intensity: channelIntensity,
+            channel_multiplier: channelMultiplier,
+            intermediary_name: intermediaryName.trim() || null,
             eng_factor: eng, audience_factor: aud, seasonality_factor: seas,
             content_type_factor: ctype, language_factor: lang, authority_factor: auth,
             objective_weight: obj, measurement_confidence: conf,
@@ -589,6 +600,10 @@ export function QuoteBuilder({
       setPreparedByName(h.prepared_by_name ?? ownerName ?? '');
       setPreparedByTitle(h.prepared_by_title ?? '');
       setPreparedByEmail(h.prepared_by_email ?? ownerEmail ?? '');
+      // Channel (Migration 035) — back-compat: old quotes load as direct_brand.
+      setChannel((h.channel as SalesChannel) ?? 'direct_brand');
+      setChannelIntensity((h.channel_intensity as ChannelIntensity) ?? null);
+      setIntermediaryName(h.intermediary_name ?? '');
       setClientAddress(h.client_address ?? '');
       setClientVatNumber(h.client_vat_number ?? '');
       setClientCountry(h.client_country ?? 'Saudi Arabia');
@@ -789,6 +804,79 @@ export function QuoteBuilder({
                 className="input"
               />
               <p className="text-[10px] text-mute mt-1">Default 3.75 (Saudi peg). All SAR values divide by this.</p>
+            </div>
+          )}
+        </div>
+        {/* ── Channel (Migration 035) ─────────────────────────────────── */}
+        <div className="mt-6 pt-6 border-t border-line">
+          <div className="flex items-baseline justify-between mb-3">
+            <h3 className="font-semibold text-sm">Sales channel</h3>
+            <span className="text-xs text-mute tabular-nums">
+              Multiplier: <strong className={channelMultiplier === 1 ? 'text-ink' : 'text-amber'}>{channelMultiplier.toFixed(2)}×</strong>
+            </span>
+          </div>
+          <p className="text-xs text-label mb-3">
+            How is this deal flowing to the brand? Direct contact = full engine number. Agency-brokered = engine number scaled down to reflect the agency margin in the chain. Strategic-account = private rate for repeat top-5 brands.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label className="label">Channel</label>
+              <select
+                value={channel}
+                onChange={e => {
+                  const v = e.target.value as SalesChannel;
+                  setChannel(v);
+                  // Reset intensity when leaving agency_brokered.
+                  if (v !== 'agency_brokered') setChannelIntensity(null);
+                  else if (channelIntensity == null) setChannelIntensity('standard');
+                }}
+                className="input"
+              >
+                <option value="direct_brand">Direct brand</option>
+                <option value="agency_brokered">Agency-brokered</option>
+                <option value="strategic_account">Strategic account</option>
+              </select>
+              <p className="text-[10px] text-mute mt-1">
+                {channel === 'direct_brand' && 'Brand contacted Falcons directly.'}
+                {channel === 'agency_brokered' && 'Sold through an agency intermediary.'}
+                {channel === 'strategic_account' && 'Top-5 repeat brand with private rate.'}
+              </p>
+            </div>
+            {channel === 'agency_brokered' && (
+              <>
+                <div>
+                  <label className="label">Intensity *</label>
+                  <select
+                    value={channelIntensity ?? 'standard'}
+                    onChange={e => setChannelIntensity(e.target.value as ChannelIntensity)}
+                    className="input"
+                  >
+                    <option value="light">Light (0.65×) — agency facilitates only</option>
+                    <option value="standard">Standard (0.50×) — typical MENA agency</option>
+                    <option value="heavy">Heavy (0.35×) — agency owns brand relationship</option>
+                  </select>
+                  <p className="text-[10px] text-mute mt-1">
+                    {(channelIntensity ?? 'standard') === 'light' && 'Brand chose Falcons; agency handles paperwork.'}
+                    {(channelIntensity ?? 'standard') === 'standard' && 'Creative direction + reporting + brand liaison.'}
+                    {(channelIntensity ?? 'standard') === 'heavy' && 'Agency owns the relationship end-to-end.'}
+                  </p>
+                </div>
+                <div>
+                  <label className="label">Intermediary name</label>
+                  <input
+                    value={intermediaryName}
+                    onChange={e => setIntermediaryName(e.target.value)}
+                    className="input"
+                    placeholder="e.g. Arabhardware"
+                  />
+                  <p className="text-[10px] text-mute mt-1">Captured for closed-deal-history attribution.</p>
+                </div>
+              </>
+            )}
+          </div>
+          {channelMultiplier < 1 && (
+            <div className="mt-3 text-xs px-3 py-2 rounded bg-amber/10 border border-amber/30 text-amber-900 dark:text-amber">
+              <strong>Floor adjusted:</strong> talent baseFee × {channelMultiplier.toFixed(2)} applies before any axis multiplier. Each line’s &quot;Why this price?&quot; popover will show the channel as one of the floor sources.
             </div>
           )}
         </div>
