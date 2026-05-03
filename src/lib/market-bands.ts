@@ -16,7 +16,10 @@ export type MarketBandSource =
   | 'peer_rate_card'
   | 'methodology_v2_baseline'
   | 'closed_deal_history'
-  | 'manual_override';
+  | 'manual_override'
+  // Migration 033: rows derived programmatically from existing parents
+  | 'derived_from_v015_ratio'   // rate_ig_repost = 0.35 × rate_ig_static, etc.
+  | 'derived_alias';            // rate_ig_static aliased from rate_ig_post
 
 export interface MarketBand {
   id: string;
@@ -33,6 +36,17 @@ export interface MarketBand {
   effective_from: string;
   effective_to: string | null;
   notes: string | null;
+  /**
+   * Derivation provenance (Migration 033). Always populated for rows created
+   * after migration 033. Older rows may have an empty object.
+   *
+   * Shapes:
+   *   { method: 'sot_v1_baseline',     note, version }
+   *   { method: 'manual_peer_card',    note, version }
+   *   { method: 'platform_alias',      aliased_from: 'rate_ig_post', note, version }
+   *   { method: 'ratio_from_parent',   parent_platform: 'rate_ig_static', ratio: 0.35, origin: 'migration_015', version }
+   */
+  derivation?: Record<string, any> | null;
 }
 
 export interface BandQuery {
@@ -125,6 +139,23 @@ export function sourceLabel(s: string | null | undefined): string {
     case 'methodology_v2_baseline':return 'Methodology v2';
     case 'closed_deal_history':    return 'Closed-deal history';
     case 'manual_override':        return 'Manual override';
+    case 'derived_from_v015_ratio':return 'Ratio-derived';
+    case 'derived_alias':          return 'Platform alias';
     default: return s ?? '—';
   }
 }
+
+/**
+ * Generate a human-readable explanation from a band's `derivation` jsonb.
+ * Returns null if no derivation info is available.
+ */
+export function derivationLabel(d: Record<string, any> | null | undefined): string | null {
+  if (!d || Object.keys(d).length === 0) return null;
+  const m = d.method;
+  if (m === 'sot_v1_baseline')   return `SOT v1 baseline. ${d.note ?? ''}`.trim();
+  if (m === 'manual_peer_card')  return `Manual peer-card calibration. ${d.note ?? ''}`.trim();
+  if (m === 'platform_alias')    return `Aliased from ${d.aliased_from} (same concept, different column name).`;
+  if (m === 'ratio_from_parent') return `${d.ratio} × ${d.parent_platform} (origin: ${d.origin ?? 'documented ratio'}).`;
+  return d.note ?? `${m ?? 'unknown'} derivation`;
+}
+

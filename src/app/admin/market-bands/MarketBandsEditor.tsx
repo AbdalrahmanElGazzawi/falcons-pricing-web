@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { MarketBand } from '@/lib/market-bands';
-import { sourceLabel } from '@/lib/market-bands';
+import { sourceLabel, derivationLabel } from '@/lib/market-bands';
 import { fmtCurrency, tierClass } from '@/lib/utils';
 import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { CurrencyPill } from '@/components/CurrencyPill';
@@ -10,26 +10,35 @@ import { useToast } from '@/components/Toast';
 import { SearchInput } from '@/components/SearchInput';
 import { EmptyState } from '@/components/EmptyState';
 import {
-  Database, Plus, Save, Trash2, X as XIcon, AlertTriangle, Globe, Edit3, BookOpen,
+  Database, Plus, Save, Trash2, X as XIcon, AlertTriangle, Globe, Edit3, BookOpen, Info,
 } from 'lucide-react';
 
 const PLATFORMS = [
-  { key: 'rate_ig_reel',      label: 'IG Reel'    },
-  { key: 'rate_ig_post',      label: 'IG Post'    },
-  { key: 'rate_ig_story',     label: 'IG Story'   },
-  { key: 'rate_tiktok_video', label: 'TikTok'     },
-  { key: 'rate_yt_full',      label: 'YT Full'    },
-  { key: 'rate_yt_short',     label: 'YT Short'   },
-  { key: 'rate_twitch_stream',label: 'Twitch'     },
-  { key: 'rate_x_post',       label: 'X Post'     },
-  { key: 'rate_irl',          label: 'IRL Event'  },
+  // Primary (parents)
+  { key: 'rate_ig_reel',         label: 'IG Reel'    },
+  { key: 'rate_ig_post',         label: 'IG Post (creator)' },
+  { key: 'rate_ig_static',       label: 'IG Static (player)' },
+  { key: 'rate_ig_story',        label: 'IG Story'   },
+  { key: 'rate_tiktok_video',    label: 'TikTok'     },
+  { key: 'rate_yt_full',         label: 'YT Full'    },
+  { key: 'rate_yt_short',        label: 'YT Short'   },
+  { key: 'rate_twitch_stream',   label: 'Twitch'     },
+  { key: 'rate_x_post',          label: 'X Post'     },
+  { key: 'rate_irl',             label: 'IRL Event'  },
+  // Derived siblings (Migration 015 ratios — auto-computed via 033)
+  { key: 'rate_ig_repost',       label: 'IG Repost'       },
+  { key: 'rate_tiktok_repost',   label: 'TikTok Repost'   },
+  { key: 'rate_tiktok_share',    label: 'TikTok Stitch'   },
+  { key: 'rate_yt_short_repost', label: 'YT Short Repost' },
 ];
-const MARKETS = ['KSA', 'MENA', 'GCC', 'Global'];
+const MARKETS = ['KSA', 'MENA', 'GLOBAL'];  // matches player constraint after Migration 033
 const SOURCES = [
   { value: 'peer_rate_card',         label: 'Peer rate card' },
-  { value: 'methodology_v2_baseline',label: 'Methodology v2' },
+  { value: 'methodology_v2_baseline',label: 'Methodology v2 baseline' },
   { value: 'closed_deal_history',    label: 'Closed-deal history' },
-  { value: 'manual_override',        label: 'Manual override' },
+  { value: 'manual_override',        label: 'Manual override (peer-calibrated)' },
+  { value: 'derived_from_v015_ratio',label: 'Ratio-derived (auto)' },
+  { value: 'derived_alias',          label: 'Platform alias (auto)' },
 ];
 
 export function MarketBandsEditor({
@@ -206,7 +215,7 @@ export function MarketBandsEditor({
                     <td className="text-right text-ink font-semibold whitespace-nowrap tabular-nums">{fmtCurrency(b.median_sar, ccy, 3.75)}</td>
                     <td className="text-right text-mute whitespace-nowrap tabular-nums">{fmtCurrency(b.max_sar, ccy, 3.75)}</td>
                     <td>
-                      <SourceChip source={b.source} url={b.source_url} notes={b.source_notes} />
+                      <SourceChip source={b.source} url={b.source_url} notes={b.source_notes} derivation={b.derivation} />
                     </td>
                     <td className="text-right">
                       <div className="inline-flex items-center gap-1">
@@ -234,17 +243,23 @@ export function MarketBandsEditor({
   );
 }
 
-function SourceChip({ source, url, notes }: { source: string; url?: string | null; notes?: string | null }) {
+function SourceChip({ source, url, notes, derivation }: { source: string; url?: string | null; notes?: string | null; derivation?: Record<string, any> | null }) {
   const tone =
     source === 'peer_rate_card'         ? 'bg-green/10 text-greenDark dark:text-green border-green/30' :
     source === 'closed_deal_history'    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700/50' :
     source === 'manual_override'        ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700/50' :
+    source === 'derived_from_v015_ratio'? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700/50' :
+    source === 'derived_alias'          ? 'bg-slate-100 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600/50' :
                                           'bg-bg dark:bg-card text-mute border-line';
+  // Compose tooltip: derivation explanation + notes
+  const derivExpl = derivationLabel(derivation ?? null);
+  const tooltip = [derivExpl, notes].filter(Boolean).join(' — ') || sourceLabel(source);
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-semibold ${tone}`}
-          title={notes ?? sourceLabel(source)}>
+          title={tooltip}>
       <BookOpen size={10} />
       {sourceLabel(source)}
+      {derivExpl && <Info size={10} className="opacity-70" />}
       {url && <a href={url} target="_blank" rel="noreferrer" className="ml-0.5 text-mute hover:text-greenDark" onClick={e => e.stopPropagation()}>↗</a>}
     </span>
   );
