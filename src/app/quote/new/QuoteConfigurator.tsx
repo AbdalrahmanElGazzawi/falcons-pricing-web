@@ -1347,6 +1347,38 @@ function PriceBreakdownChip({
   talent: any;
 }) {
   const [open, setOpen] = useState(false);
+  const chipRef = useRef<HTMLDivElement>(null);
+  const [popPos, setPopPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+  // Re-compute position when popover opens / on viewport resize.
+  useEffect(() => {
+    if (!open) return;
+    function place() {
+      const el = chipRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const POP_W = 360;
+      // Default: anchor right edge = chip right edge, drop below the chip.
+      let right = window.innerWidth - r.right;
+      let top = r.bottom + 8;
+      // If popover would extend past the left viewport edge, anchor to chip's left instead.
+      if (r.right - POP_W < 8) {
+        right = Math.max(8, window.innerWidth - r.left - POP_W);
+      }
+      // If popover would extend past the bottom of the viewport, anchor above the chip.
+      const POP_H_ESTIMATE = 480;
+      if (top + POP_H_ESTIMATE > window.innerHeight) {
+        top = Math.max(8, r.top - POP_H_ESTIMATE - 8);
+      }
+      setPopPos({ top, right });
+    }
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open]);
   const m = line.mults;
   // The actual axis multipliers applied (with state-driven gating)
   // Interactive axis rows — clicking opens a small picker that calls onAxisChange.
@@ -1399,7 +1431,7 @@ function PriceBreakdownChip({
   if (m.isCompanion)      rows.push({ k: 'Companion', v: 0.5, note: '50% — supporting role' });
   const flooredByIRL = line.floorPrice > line.socialPrice;
   return (
-    <div className="relative text-right mr-1 hidden sm:block">
+    <div ref={chipRef} className="relative text-right mr-1 hidden sm:block">
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(v => !v); }}
@@ -1415,9 +1447,12 @@ function PriceBreakdownChip({
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-[60]" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 top-full mt-2 w-[360px] z-40 rounded-xl border-2 border-greenDark/30 bg-white shadow-2xl text-left p-4 space-y-3"
+            // Fixed-position popover: escapes any parent overflow:hidden.
+            // Coords computed from chip's bounding rect on open + scroll.
+            style={{ position: 'fixed', top: popPos.top, right: popPos.right, width: 360 }}
+            className="z-[70] rounded-xl border-2 border-greenDark/30 bg-white shadow-2xl text-left p-4 space-y-3 max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-baseline justify-between">
