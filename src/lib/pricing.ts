@@ -225,8 +225,12 @@ export function computeLine(p: LineInput): LineOutput {
 
   const confCap = gates.confCap;
 
+  // Production style multiplier (Migration 039). 1.00 = standard, 1.10 = scripted,
+  // 1.20 = on-ground/location, 1.35 = multi-day shoot. Defaults to 1.0 when omitted.
+  const prodMult = p.productionStyleMultiplier ?? 1.0;
+
   const socialPrice = Math.round(
-    effBaseFee * engGated * audGated * seasGated * ctype * lang * authGated
+    effBaseFee * engGated * audGated * seasGated * ctype * lang * authGated * prodMult
   );
   // AuthorityFloor scales by achievement_decay so a 2019 Major winner
   // doesn't get the same protection as a 2025 Major winner.
@@ -336,6 +340,14 @@ export const AXIS_OPTIONS = {
     { label: 'Proven / Established',         factor: 1.15 },
     { label: 'Elite Contender',              factor: 1.30 },
     { label: 'Global Star / Major Winner',   factor: 1.50 },
+  ],
+  // Production complexity (Migration 039). Mirrors the creator catalog
+  // but with player-relevant labels (gameplay capture, on-site events).
+  production: [
+    { label: 'Standard creation',          factor: 1.00 },
+    { label: 'Scripted / extra revisions', factor: 1.10 },
+    { label: 'Location / on-ground shoot', factor: 1.20 },
+    { label: 'Multi-day / production-heavy', factor: 1.35 },
   ],
   objective: [
     { label: 'Awareness (Wt 0.2)', weight: 0.2 },
