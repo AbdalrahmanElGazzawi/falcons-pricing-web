@@ -743,6 +743,7 @@ export function QuoteConfigurator({
                     onToggle={togglePick}
                     onQty={setRowQty}
                     onRate={setRowRate}
+                    talent={selectedTalent}
                   />
                 )}
               </div>
@@ -1045,11 +1046,13 @@ export function QuoteConfigurator({
 const GROUP_ORDER = ['Social Media', 'Live & Stream', 'Continuity & Rights', 'On-Ground & Events', 'Other'];
 
 function DeliverableGroups({
-  deliverables, picks, currency, usdRate, previewLines, overrides, axisOptions, onAxisChange, onToggle, onQty, onRate,
+  deliverables, picks, currency, usdRate, previewLines, overrides, axisOptions, onAxisChange, onToggle, onQty, onRate, talent,
 }: {
   overrides: { o_eng: number | null; o_aud: number | null; o_seas: number | null; o_lang: number | null; o_auth: number | null; o_ctype: number | null };
   axisOptions: any;
   onAxisChange: (key: 'o_eng' | 'o_aud' | 'o_seas' | 'o_lang' | 'o_auth', value: number | null) => void;
+  /** Talent record threaded through to PriceBreakdownChip for the data-context block. */
+  talent: any;
   deliverables: Array<{ key: string; label: string; rate: number; group: string; manual: boolean; suggestedRange: [number, number] | null }>;
   picks: Record<string, RowSel>;
   currency: string;
@@ -1108,7 +1111,7 @@ function DeliverableGroups({
                         overrides={overrides}
                         axisOptions={axisOptions}
                         onAxisChange={onAxisChange}
-                        talent={selectedTalent}
+                        talent={talent}
                       />
                     )}
                     {checked && (
