@@ -35,7 +35,7 @@ export default async function PricingLogicPage() {
   ] = await Promise.all([
     supabase
       .from('players')
-      .select('id, nickname, role, game, team, nationality, tier_code, rate_ig_reel, rate_irl, authority_factor, measurement_confidence')
+      .select('id, nickname, role, game, team, nationality, tier_code, rate_ig_reel, rate_irl, authority_factor, measurement_confidence, liquipedia_url, prize_money_24mo_usd')
       .eq('is_active', true),
     supabase
       .from('creators')

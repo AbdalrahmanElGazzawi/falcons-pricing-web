@@ -32,10 +32,24 @@ export function PricingLogicContent({
   players, creators, tiers,
 }: { players: Player[]; creators: Creator[]; tiers: Tier[] }) {
   // ── Tier breakdown
+  // Computes live min/median/max IG Reel from the actual roster instead of
+  // showing the legacy 'tier range' band, which has drifted out of sync with
+  // the locked CPM × reach methodology.
   const tierStats = tiers.map(t => {
     const inTier = players.filter(p => p.tier_code === t.code);
-    const avgIg = inTier.length ? Math.round(inTier.reduce((s, p) => s + (p.rate_ig_reel || 0), 0) / inTier.length) : 0;
-    return { ...t, count: inTier.length, avg_ig_reel: avgIg };
+    const ratesNonZero = inTier
+      .map(p => Number(p.rate_ig_reel || 0))
+      .filter(n => n > 0)
+      .sort((a, b) => a - b);
+    const avgIg = ratesNonZero.length
+      ? Math.round(ratesNonZero.reduce((s, n) => s + n, 0) / ratesNonZero.length)
+      : 0;
+    const minIg = ratesNonZero.length ? ratesNonZero[0] : 0;
+    const maxIg = ratesNonZero.length ? ratesNonZero[ratesNonZero.length - 1] : 0;
+    const medIg = ratesNonZero.length
+      ? ratesNonZero[Math.floor(ratesNonZero.length / 2)]
+      : 0;
+    return { ...t, count: inTier.length, avg_ig_reel: avgIg, min_ig_reel: minIg, med_ig_reel: medIg, max_ig_reel: maxIg };
   });
 
   // ── Game breakdown (top 12 by count)
@@ -92,6 +106,10 @@ export function PricingLogicContent({
     confidenceCounts[c] = (confidenceCounts[c] || 0) + 1;
   });
   const championAuthorityCount = players.filter(p => (p.authority_factor || 1) > 1.0).length;
+  // Liquipedia coverage — more meaningful than the dead authority_factor stat
+  // since the engine no longer uses per-player authority (it's a campaign axis).
+  const liquipediaWithUrlCount = players.filter(p => !!(p as any).liquipedia_url).length;
+  const liquipediaSyncedCount  = players.filter(p => Number((p as any).prize_money_24mo_usd ?? 0) > 0).length;
 
   const fmtSar = (n: number) => `SAR ${Math.round(n).toLocaleString('en-US')}`;
   const fmtUsd = (n: number) => `$${Math.round(n / 3.75).toLocaleString('en-US')}`;
@@ -132,7 +150,7 @@ export function PricingLogicContent({
           { label: 'Active talent',     value: players.length.toString(),                  hint: 'Players + influencers + staff' },
           { label: 'Creators',          value: creators.length.toString(),                  hint: 'Separate rate engine' },
           { label: 'Distinct games',    value: games.length.toString(),                     hint: 'Across MLBB, CS2, CoD …' },
-          { label: 'Champion-tier authority', value: championAuthorityCount.toString(),     hint: 'authority_factor > 1.0' },
+          { label: 'Liquipedia-synced',     value: liquipediaSyncedCount.toString(),     hint: `${liquipediaWithUrlCount} have URL · ${liquipediaSyncedCount} have prize-money data` },
         ].map(s => (
           <div key={s.label} className="card card-p">
             <div className="text-[11px] uppercase tracking-wider text-mute font-semibold">{s.label}</div>
@@ -166,7 +184,14 @@ export function PricingLogicContent({
               </div>
               <div className="text-[10px] uppercase tracking-wider text-mute mt-0.5">avg IG Reel today</div>
               <div className="mt-3 pt-3 border-t border-line text-[11px] text-label">
-                Tier range <strong className="text-ink">{fmtSar(t.base_fee_min)}–{fmtSar(t.base_fee_max)}</strong>
+                {t.min_ig_reel > 0 ? (
+                  <>Today's range <strong className="text-ink">{fmtSar(t.min_ig_reel)}–{fmtSar(t.max_ig_reel)}</strong></>
+                ) : (
+                  <span className="italic text-mute">No live IG Reel rates yet</span>
+                )}
+              </div>
+              <div className="text-[11px] text-mute">
+                Median <strong className="text-label">{t.med_ig_reel > 0 ? fmtSar(t.med_ig_reel) : '—'}</strong>
               </div>
               <div className="text-[11px] text-label">Floor share <strong className="text-ink">{Math.round(t.floor_share * 100)}%</strong> of IRL</div>
               <div className="text-[11px] text-label mt-1">
