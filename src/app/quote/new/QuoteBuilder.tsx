@@ -1067,7 +1067,7 @@ export function QuoteBuilder({
         creators={creators}
         tiers={tiers}
         addons={addons}
-        globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
+        globals={{ eng, aud, seas, ctype, lang, auth, obj, conf, channelMultiplier }}
         currency={currency}
         usdRate={usdRate}
         addonsUpliftPct={addonsUpliftPct}

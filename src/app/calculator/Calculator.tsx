@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { computeLine, computeQuoteTotals, AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
+import { computeLine, computeQuoteTotals, AXIS_OPTIONS, resolveChannelMultiplier, type MeasurementConfidence, type SalesChannel, type ChannelIntensity } from '@/lib/pricing';
 import { fmtMoney, fmtPct, fmtCurrency } from '@/lib/utils';
 import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { type Player, type Creator, type Tier, type Addon } from '@/lib/types';
@@ -38,6 +38,10 @@ export function Calculator({
   const [auth, setAuth] = useState(AXIS_OPTIONS.authority[0].factor);
   const [obj, setObj]   = useState(AXIS_OPTIONS.objective[1].weight);
   const [conf]          = useState<MeasurementConfidence>('exact');
+  // Channel-aware pricing (Migration 035/037)
+  const [channel, setChannel]                   = useState<SalesChannel>('direct_brand');
+  const [channelIntensity, setChannelIntensity] = useState<ChannelIntensity | null>(null);
+  const channelMultiplier = resolveChannelMultiplier(channel, channelIntensity);
 
   const [addonMonths, setAddonMonths] = useState<Record<number, number>>({});
   const addonIds = useMemo(() => new Set(Object.keys(addonMonths).map(Number)), [addonMonths]);
@@ -76,6 +80,7 @@ export function Calculator({
         floorShare: l.floorShare,
         rightsPct: addonsUpliftPct,
         qty: l.qty,
+        channelMultiplier,
       });
       return { ...l, ...r };
     });
@@ -85,7 +90,7 @@ export function Calculator({
       vatRate: 0.15,
     });
     return { rows: out, totals };
-  }, [lines, eng, aud, seas, ctype, lang, auth, obj, conf, addonsUpliftPct]);
+  }, [lines, eng, aud, seas, ctype, lang, auth, obj, conf, addonsUpliftPct, channelMultiplier]);
 
   function addDrafts(drafts: LineDraft[]) {
     setLines(ls => [...ls, ...drafts]);
@@ -148,7 +153,7 @@ export function Calculator({
           creators={creators}
           tiers={tiers}
           addons={addons}
-          globals={{ eng, aud, seas, ctype, lang, auth, obj, conf }}
+          globals={{ eng, aud, seas, ctype, lang, auth, obj, conf, channelMultiplier }}
           currency={currency}
           usdRate={usdRate}
           addonsUpliftPct={addonsUpliftPct}

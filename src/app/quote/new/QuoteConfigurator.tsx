@@ -25,6 +25,8 @@ import { Avatar } from '@/components/Avatar';
 type Globals = {
   eng: number; aud: number; seas: number; ctype: number; lang: number; auth: number;
   obj: number; conf: MeasurementConfidence;
+  // Channel multiplier (Migration 035/037). Defaults to 1.00 when omitted.
+  channelMultiplier?: number;
 };
 
 type RowSel = { qty: number; manualRate?: number };
@@ -375,6 +377,7 @@ export function QuoteConfigurator({
           lang: overrides.o_lang  ?? globals.lang,
           auth: overrides.o_auth  ?? globals.auth,
           obj: globals.obj, conf: globals.conf,
+          channelMultiplier: globals.channelMultiplier,
           floorShare, rightsPct: lineAddonsUpliftPct, qty: sel.qty,
           // Creator-multiplier preview (override → creator default → neutral)
           brandLoyaltyPct: creatorMults.o_brand_loyalty
