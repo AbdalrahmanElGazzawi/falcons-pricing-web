@@ -51,8 +51,22 @@ export function TalentIntake({
   market: 'KSA' | 'MENA' | 'Global';
   deliverables: Deliverable[];
 }) {
-  // Per-deliverable input state. Default to existing submission (resubmit)
-  // or the band median (gentle suggestion) — clearly editable.
+  // ── Currency display toggle (SAR ↔ USD)
+  // Talent picks either; we always STORE in SAR for the engine but display
+  // and accept input in whichever currency the talent prefers.
+  const SAR_PER_USD = 3.75;
+  const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
+  const fmtMoney = (sar: number) => {
+    const n = currency === 'USD' ? Math.round(sar / SAR_PER_USD) : Math.round(sar);
+    return `${currency} ${n.toLocaleString('en-US')}`;
+  };
+  // Convert a number typed by the talent (in their displayed currency) into SAR
+  const toSar = (typed: number) => currency === 'USD' ? Math.round(typed * SAR_PER_USD) : Math.round(typed);
+  // Convert a SAR amount → the input value the talent should see (their currency)
+  const fromSar = (sar: number) => currency === 'USD' ? Math.round(sar / SAR_PER_USD) : Math.round(sar);
+
+  // Per-deliverable input state. Always stored as SAR strings. Display layer
+  // converts via fromSar/toSar.
   const [mins, setMins] = useState<Record<string, string>>(() => {
     const m: Record<string, string> = {};
     for (const d of deliverables) {
@@ -149,6 +163,26 @@ export function TalentIntake({
                 {player.tier_code || 'Tier 3'} · {player.nationality || 'Region unspecified'} · benchmarks shown for {market}
               </div>
             </div>
+            <div className="ml-auto self-start">
+              <div className="inline-flex items-center rounded-lg border border-white/30 bg-white/10 overflow-hidden text-xs font-semibold">
+                {(['SAR', 'USD'] as const).map((c, i) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCurrency(c)}
+                    className={[
+                      'px-3 py-1.5 transition',
+                      i > 0 ? 'border-l border-white/30' : '',
+                      currency === c ? 'bg-white text-greenDark' : 'text-white/90 hover:bg-white/10',
+                    ].join(' ')}
+                    title={`Show prices in ${c}`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+              <div className="text-[10px] text-white/70 mt-1 text-right">@ 3.75 SAR/USD</div>
+            </div>
           </div>
         </div>
 
@@ -196,7 +230,7 @@ export function TalentIntake({
         <div className="flex items-center gap-2 mb-1.5 font-semibold text-greenDark">
           <Info size={14} /> How this works
         </div>
-        For each deliverable below, set the <strong>minimum SAR you'll accept</strong> per single posting.
+        For each deliverable below, set the <strong>minimum {currency} you'll accept</strong> per single posting.
         The benchmark column shows what {market} talent at your tier typically charges (Min / Median / Max).
         Sales will never quote a brand below your minimum without coming back to you first.
         Leave blank to skip a deliverable you don't want to do.
@@ -215,6 +249,10 @@ export function TalentIntake({
                   key={d.key}
                   d={d}
                   value={mins[d.key] ?? ''}
+                  currency={currency}
+                  fmtMoney={fmtMoney}
+                  toSar={toSar}
+                  fromSar={fromSar}
                   onChange={v => setMins(s => ({ ...s, [d.key]: v }))}
                 />
               ))}
@@ -276,10 +314,22 @@ function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: st
 }
 
 function DeliverableRow({
-  d, value, onChange,
+  d, value, currency, fmtMoney, toSar, fromSar, onChange,
 }: {
-  d: Deliverable; value: string; onChange: (v: string) => void;
+  d: Deliverable; value: string;
+  currency: 'SAR' | 'USD';
+  fmtMoney: (sar: number) => string;
+  toSar: (typed: number) => number;
+  fromSar: (sar: number) => number;
+  onChange: (v: string) => void;
 }) {
+  // Convert stored SAR string ↔ displayed currency for the input field
+  const displayValue = value === '' ? '' : String(fromSar(Number(value) || 0));
+  const handleInput = (raw: string) => {
+    const cleaned = raw.replace(/[^\d]/g, '');
+    if (cleaned === '') { onChange(''); return; }
+    onChange(String(toSar(Number(cleaned))));
+  };
   return (
     <div className="px-4 py-3.5 grid grid-cols-12 gap-3 items-center">
       <div className="col-span-12 sm:col-span-4">
@@ -294,9 +344,9 @@ function DeliverableRow({
               {d.band.audience_market} benchmark
             </div>
             <div className="grid grid-cols-3 gap-2 text-ink">
-              <div><span className="text-mute">Min</span> <span className="font-semibold">SAR {fmt(Number(d.band.min_sar))}</span></div>
-              <div><span className="text-mute">Med</span> <span className="font-semibold text-greenDark">SAR {fmt(Number(d.band.median_sar))}</span></div>
-              <div><span className="text-mute">Max</span> <span className="font-semibold">SAR {fmt(Number(d.band.max_sar))}</span></div>
+              <div><span className="text-mute">Min</span> <span className="font-semibold">{fmtMoney(Number(d.band.min_sar))}</span></div>
+              <div><span className="text-mute">Med</span> <span className="font-semibold text-greenDark">{fmtMoney(Number(d.band.median_sar))}</span></div>
+              <div><span className="text-mute">Max</span> <span className="font-semibold">{fmtMoney(Number(d.band.max_sar))}</span></div>
             </div>
           </div>
         ) : (
@@ -306,14 +356,14 @@ function DeliverableRow({
 
       <div className="col-span-5 sm:col-span-3">
         <label className="text-[10px] uppercase tracking-wider text-mute font-bold flex items-center gap-1 mb-1">
-          <ShieldCheck size={11} /> Your minimum (SAR)
+          <ShieldCheck size={11} /> Your minimum ({currency})
         </label>
         <input
           type="text"
           inputMode="numeric"
-          value={value}
-          onChange={e => onChange(e.target.value.replace(/[^\d]/g, ''))}
-          placeholder="e.g. 8000"
+          value={displayValue}
+          onChange={e => handleInput(e.target.value)}
+          placeholder={currency === 'USD' ? 'e.g. 2000' : 'e.g. 8000'}
           className="w-full text-right text-sm font-semibold tabular-nums border border-line rounded-lg px-2.5 py-1.5 bg-card focus:outline-none focus:ring-2 focus:ring-greenDark/40"
         />
       </div>
