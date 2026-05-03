@@ -196,7 +196,7 @@ export function QuoteBuilder({
   // approved_by_name so the PDF carries the approver's identity even before the
   // admin formally clicks "Approve" on /quote/[id].
   const APPROVERS = [
-    { name: 'Ronza Mariam', email: 'ronza@falcons.sa' },
+    { name: 'Ronza',        email: 'ronza@falcons.sa' },
     { name: 'Jordan',       email: 'jordan@falcons.sa' },
   ];
   const [approverName, setApproverName] = useState('');
@@ -709,20 +709,6 @@ export function QuoteBuilder({
             <label className="label">Campaign</label>
             <input value={campaign} onChange={e => setCampaign(e.target.value)} className="input" placeholder="e.g. Ramadan 2026" />
           </div>
-          <div className="sm:col-span-2 lg:col-span-3">
-            <label className="label">Client billing address</label>
-            <textarea
-              value={clientAddress}
-              onChange={e => setClientAddress(e.target.value)}
-              className="input min-h-[68px] font-mono text-xs"
-              placeholder="e.g. Khalid Bin Al Walid 208\nAl Hamra, Riyadh 13216\n7350"
-            />
-            <p className="text-[10px] text-mute mt-1">Multiline. Renders in the BILL TO block on the PDF.</p>
-          </div>
-          <div>
-            <label className="label">Client VAT number</label>
-            <input value={clientVatNumber} onChange={e => setClientVatNumber(e.target.value)} className="input" placeholder="e.g. 310482538300003" />
-          </div>
           <div>
             <label className="label">Client country</label>
             <input value={clientCountry} onChange={e => setClientCountry(e.target.value)} className="input" placeholder="e.g. Saudi Arabia" />
@@ -731,10 +717,6 @@ export function QuoteBuilder({
             <label className="label">Expiration date</label>
             <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} className="input" />
             <p className="text-[10px] text-mute mt-1">Defaults to issue date + 9 days on PDF if blank.</p>
-          </div>
-          <div>
-            <label className="label">Payment terms</label>
-            <input value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} className="input" placeholder="Immediate Payment" />
           </div>
           <div>
             <label className="label">Designated approver</label>
