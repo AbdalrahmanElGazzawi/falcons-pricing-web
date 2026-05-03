@@ -18,6 +18,7 @@ type Player = {
   followers_ig: number | null; followers_twitch: number | null; followers_yt: number | null;
   followers_tiktok: number | null; followers_x: number | null; followers_fb: number | null; followers_snap: number | null;
   instagram: string | null; twitch: string | null; youtube: string | null; tiktok: string | null; x_handle: string | null;
+  kick: string | null; facebook: string | null; liquipedia_url: string | null;
   kick: string | null; facebook: string | null;
   bio: string | null; achievements: string[] | null;
   date_of_birth: string | null; ingame_role: string | null;
@@ -821,6 +822,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
         add('X / Twitter', p.x_handle);
         add('Kick', p.kick);
         add('Facebook', p.facebook);
+        add('Liquipedia', p.liquipedia_url);
 
         const platforms: { label: string; n: number }[] = [
           { label: 'Instagram', n: p.followers_ig || 0 },

@@ -31,6 +31,7 @@ interface PlayerDetail {
   facebook?: string | null;
   snapchat?: string | null;
   link_in_bio?: string | null;
+  liquipedia_url?: string | null;
   // Followers
   followers_ig?: number;
   followers_twitch?: number;
@@ -112,6 +113,8 @@ export function PlayerProfileModal({
       url: player.youtube ? `https://youtube.com/@${String(player.youtube).replace(/^@/, '')}` : null },
     { key: 'kick',      icon: () => <span className="text-[10px] font-bold">K</span>, label: 'Kick', handle: player.kick, followers: 0,
       url: player.kick ? `https://kick.com/${player.kick}` : null },
+    { key: 'liquipedia', icon: () => <span className="text-[10px] font-bold">LP</span>, label: 'Liquipedia', handle: player.liquipedia_url ? player.liquipedia_url.replace(/.*liquipedia\.net\//,'').replace(/_/g,' ') : null, followers: 0,
+      url: player.liquipedia_url || null },
   ].filter(s => s.handle) : [];
 
   const totalReach = player ? (

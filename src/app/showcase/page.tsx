@@ -29,7 +29,7 @@ export default async function ShowcasePage() {
               'rate_ig_reel, rate_irl, authority_factor, measurement_confidence, ' +
               'followers_ig, followers_twitch, followers_yt, followers_tiktok, followers_x, followers_fb, followers_snap, ' +
               'instagram, twitch, youtube, tiktok, x_handle, kick, facebook, ' +
-              'bio, achievements, date_of_birth, ingame_role, pricing_rationale')
+              'bio, achievements, date_of_birth, ingame_role, pricing_rationale, liquipedia_url')
       .eq('is_active', true)
       // Hide brand-account placeholders (e.g. "Team Falcons GG") from the showcase
       .not('role', 'in', '("Brand","Brand Account")'),
