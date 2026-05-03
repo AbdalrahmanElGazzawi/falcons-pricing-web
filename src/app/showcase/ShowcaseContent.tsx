@@ -19,7 +19,6 @@ type Player = {
   followers_tiktok: number | null; followers_x: number | null; followers_fb: number | null; followers_snap: number | null;
   instagram: string | null; twitch: string | null; youtube: string | null; tiktok: string | null; x_handle: string | null;
   kick: string | null; facebook: string | null; liquipedia_url: string | null;
-  kick: string | null; facebook: string | null;
   bio: string | null; achievements: string[] | null;
   date_of_birth: string | null; ingame_role: string | null;
 };
