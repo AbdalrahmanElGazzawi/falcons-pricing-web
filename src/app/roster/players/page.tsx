@@ -25,6 +25,7 @@ export default async function RosterPage() {
         action={
           <div className="flex items-center gap-2">
             <Link href="/roster/audit" className="btn btn-ghost text-xs" title="Per-player rate audit vs methodology">Audit pricing</Link>
+            <Link href="/admin/data-audit" className="btn btn-ghost text-xs" title="Liquipedia coverage + achievement weighting per player">Data audit</Link>
             {profile.role === 'admin' && (
               <Link href="/admin/players/new" className="btn btn-primary">+ Add roster member</Link>
             )}
