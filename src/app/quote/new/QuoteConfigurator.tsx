@@ -919,7 +919,7 @@ export function QuoteConfigurator({
                             value={overrides.o_lang} globalVal={globals.lang}
                             onChange={v => setOverrideManual('o_lang', v)}
                             options={opts.language.map(e => e.factor)}
-                            labels={opts.language.map(e => e.label.split(' ')[0])}
+                            labels={opts.language.map(e => e.label.replace(/\s*\(.*\)\s*$/, '').trim())}
                             auto={autoOverrides.has('o_lang')}
                             intrinsic={readTalentDefaults(selectedTalent).o_lang}
                             talentName={(selectedTalent as any)?.nickname || ''} />
