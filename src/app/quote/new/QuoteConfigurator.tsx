@@ -94,7 +94,7 @@ function baseWhyFor(platformKey: string, talent: any, tierCode: string | null): 
   if (m) {
     const n = followersOf(m.field);
     const reach = n > 0 ? ` ${m.label} reach: ${fmt(n)} followers (context only).` : '';
-    return `Floor-First base — talent's defensible minimum for ${m.label}. Multipliers stack ABOVE this; engine never quotes below.${reach}`;
+    return `Per-platform base for ${m.label}. The engine then takes the MAX of (base × multipliers) and a parallel authority-floor calc, so the final price never falls below the talent's defensible minimum.${reach}`;
   }
   if (platformKey === 'rate_irl' || platformKey === 'rate_irl_event') {
     return `Tier-flat event fee${tierCode ? ` for ${tierCode}` : ''} — doesn't scale with followers.`;
@@ -1359,7 +1359,7 @@ function PriceBreakdownChip({
     isOverridden?: boolean;
   };
   const rows: AxisRow[] = [
-    { k: 'Floor', v: m.base, note: 'Floor SAR — defensible minimum, multipliers stack above' },
+    { k: 'Base',  v: m.base, note: 'Per-platform anchor — calibration multipliers apply next' },
     {
       k: 'Engagement', v: line.engGated, axisKey: 'o_eng',
       options: axisOptions.engagement.map((e: any) => e.factor),
@@ -1436,7 +1436,7 @@ function PriceBreakdownChip({
             )}
 
             {/* ── Phase 1 — Base ───────────────────────────────────── */}
-            <PhaseHeader n={1} title="Floor — talent’s defensible minimum" />
+            <PhaseHeader n={1} title="Base — per-platform anchor" />
             <div className="flex justify-between text-xs font-mono tabular-nums px-1">
               <span className="text-label">{rows[0].k}</span>
               <span className="font-bold text-ink">{fmtCurrency(line.mults.base, currency, usdRate)}</span>
@@ -1454,10 +1454,18 @@ function PriceBreakdownChip({
                   onChange={(v) => r.axisKey && onAxisChange(r.axisKey, v)}
                 />
               ))}
-              <div className="flex justify-between border-t border-line pt-1 mt-1 px-1">
+              <div className="flex justify-between items-baseline border-t border-line pt-1 mt-1 px-1 gap-2">
                 <span className="text-label font-semibold">Social price</span>
-                <span className={['font-mono tabular-nums font-bold', flooredByIRL ? 'text-mute' : 'text-greenDark'].join(' ')}>
-                  {fmtCurrency(line.socialPrice, currency, usdRate)}
+                <span className="flex items-baseline gap-1.5">
+                  {line.socialPrice < line.mults.base && (
+                    <span className="text-[9px] uppercase tracking-wider text-amber-700 font-semibold whitespace-nowrap"
+                          title="Multipliers landed below the per-platform base — the parallel authority floor will win in the next step.">
+                      below base
+                    </span>
+                  )}
+                  <span className={['font-mono tabular-nums font-bold', flooredByIRL ? 'text-mute line-through decoration-amber-500/60' : 'text-greenDark'].join(' ')}>
+                    {fmtCurrency(line.socialPrice, currency, usdRate)}
+                  </span>
                 </span>
               </div>
             </div>
