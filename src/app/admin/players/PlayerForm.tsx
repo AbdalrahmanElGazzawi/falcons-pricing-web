@@ -4,18 +4,22 @@ import { useRouter } from 'next/navigation';
 import type { Player } from '@/lib/types';
 import { PLAYER_PLATFORMS } from '@/lib/types';
 import { DATA_STATE_META, type DataCompleteness } from '@/lib/pricing';
-import { Save, Trash2, Trophy, RefreshCw, ExternalLink } from 'lucide-react';
+import { Save, Trash2, Trophy, RefreshCw, ExternalLink, Info, ChevronDown, AlertCircle } from 'lucide-react';
+import { tierBaseline, fmtBaseline } from '@/lib/floor-baselines';
 
 const DATA_STATES: DataCompleteness[] = ['full', 'socials_only', 'tournament_only', 'minimal'];
 const PEAK_TIERS = ['S', 'A', 'B', 'C', 'unrated'] as const;
 
 const blank: any = {
-  nickname: '', full_name: '', role: '', game: '', team: '', nationality: '', tier_code: 'Tier 3',
+  nickname: '', full_name: '', role: '', game: '', team: '', nationality: '', tier_code: '',
   avatar_url: '', date_of_birth: '', ingame_role: '',
   rate_ig_reel: 0, rate_ig_static: 0, rate_ig_story: 0, rate_tiktok_video: 0,
   rate_yt_short: 0, rate_x_post: 0, rate_fb_post: 0, rate_twitch_stream: 0,
   rate_twitch_integ: 0, rate_irl: 0,
-  commission: 0.2, markup: 0.15, floor_share: 0.5,
+  // Internal cost basis (commission/markup) intentionally left null —
+  // forces a deliberate choice in the disclosure card. Pre-filled values
+  // would screen-share commercial structure to anyone watching the form.
+  commission: null, markup: null, floor_share: 0.5,
   authority_factor: 1.0, default_seasonality: 1.0, default_language: 1.0,
   // Data-state fields default to "minimal" — admin promotes as data lands.
   has_social_data: false, has_tournament_data: false, has_audience_demo: false,
@@ -44,6 +48,7 @@ export function PlayerForm({
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   function set<K extends keyof Player>(k: K, val: any) {
     setV((s: any) => {
@@ -89,7 +94,7 @@ export function PlayerForm({
   }
 
   async function save() {
-    setErr(null); setSaving(true);
+    setErr(null); setFieldErrors({}); setSaving(true);
     try {
       const isEdit = !!player;
       const res = await fetch(isEdit ? `/api/admin/players/${player!.id}` : `/api/admin/players`, {
@@ -99,6 +104,13 @@ export function PlayerForm({
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
+        if (j.fieldErrors && typeof j.fieldErrors === 'object') {
+          setFieldErrors(j.fieldErrors);
+        } else {
+          // Best-effort: parse "field 'X' is invalid" patterns into field map.
+          const m = (j.error || '').match(/['"](\w+)['"]/);
+          if (m) setFieldErrors({ [m[1]]: j.error });
+        }
         throw new Error(j.error || 'Save failed');
       }
       router.push('/roster/players');
@@ -140,7 +152,12 @@ export function PlayerForm({
       <div className="card card-p">
         <h2 className="font-semibold mb-4">Identity</h2>
         <div className="grid grid-cols-3 gap-4">
-          <Field label="Nickname *" v={v.nickname} on={x => set('nickname', x)} />
+          <div>
+            <label className="label">Nickname <span className="text-rose-600">*</span></label>
+            <input value={v.nickname ?? ''} onChange={e => set('nickname', e.target.value)}
+              className="input" required />
+            {fieldErrors.nickname && <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1"><AlertCircle size={11}/>{fieldErrors.nickname}</p>}
+          </div>
           <Field label="Full name" v={v.full_name} on={x => set('full_name', x)} />
           <Field label="Role" v={v.role} on={x => set('role', x)} />
           <Field label="In-game role" v={v.ingame_role} on={x => set('ingame_role' as any, x)} />
@@ -154,10 +171,13 @@ export function PlayerForm({
           </div>
           <Field label="Avatar URL or filename" v={v.avatar_url} on={x => set('avatar_url' as any, x)} />
           <div>
-            <label className="label">Tier</label>
-            <select value={v.tier_code} onChange={e => set('tier_code', e.target.value)} className="input">
+            <label className="label">Tier <span className="text-rose-600">*</span></label>
+            <select value={v.tier_code ?? ''} onChange={e => set('tier_code', e.target.value)} className="input" required>
+              <option value="" disabled>— Choose a tier —</option>
               {tiers.map(t => <option key={t.code} value={t.code}>{t.code} — {t.label}</option>)}
             </select>
+            {fieldErrors.tier_code && <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1"><AlertCircle size={11}/>{fieldErrors.tier_code}</p>}
+            <p className="text-[11px] text-mute mt-1">Drives the floor — tier × game × platform_ratio.</p>
           </div>
         </div>
       </div>
@@ -254,30 +274,66 @@ export function PlayerForm({
       </div>
 
       <div className="card card-p">
-        <h2 className="font-semibold mb-4">Platform rates ({v.currency || 'SAR'})</h2>
-        <div className="grid grid-cols-3 gap-4">
-          {PLAYER_PLATFORMS.map(p => (
-            <div key={p.key}>
-              <label className="label">{p.label}</label>
-              <input type="number" min={0} value={v[p.key] ?? 0}
-                onChange={e => set(p.key as any, parseFloat(e.target.value) || 0)}
-                className="input" />
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="font-semibold">Platform rates ({v.currency || 'SAR'})</h2>
+          {v.tier_code ? (
+            <span className="text-[11px] text-mute">Baseline shown per row — tier × game × platform ratio (Floor v3)</span>
+          ) : (
+            <span className="text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded">Pick a tier above to see baseline hints</span>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-4 mt-3">
+          {PLAYER_PLATFORMS.map(p => {
+            const baseline = tierBaseline(v.tier_code, v.game, p.key);
+            const current = Number(v[p.key] ?? 0);
+            const offBy = baseline && current > 0
+              ? ((current - baseline) / baseline) * 100
+              : null;
+            const tone = offBy == null ? 'text-mute'
+              : Math.abs(offBy) < 10 ? 'text-emerald-700'
+              : Math.abs(offBy) < 30 ? 'text-amber-700'
+              : 'text-rose-700';
+            return (
+              <div key={p.key}>
+                <label className="label">{p.label}</label>
+                <input type="number" min={0} value={v[p.key] ?? 0}
+                  onChange={e => set(p.key as any, parseFloat(e.target.value) || 0)}
+                  className="input" />
+                {baseline ? (
+                  <p className={`text-[11px] mt-1 ${tone}`}>
+                    Baseline: SAR {fmtBaseline(baseline)}
+                    {current > 0 && offBy != null && (
+                      <span className="ml-1 opacity-80">({offBy >= 0 ? '+' : ''}{offBy.toFixed(0)}%)</span>
+                    )}
+                  </p>
+                ) : null}
+                {fieldErrors[p.key] && <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1"><AlertCircle size={11}/>{fieldErrors[p.key]}</p>}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div className="card card-p">
-        <h2 className="font-semibold mb-4">Pricing factors</h2>
-        <div className="grid grid-cols-4 gap-4">
-          <Num label="Commission" v={v.commission} on={x => set('commission', x)} step={0.01} />
-          <Num label="Markup" v={v.markup} on={x => set('markup', x)} step={0.01} />
-          <Num label="Floor share" v={v.floor_share} on={x => set('floor_share', x)} step={0.05} />
-          <Num label="Authority factor" v={v.authority_factor} on={x => set('authority_factor', x)} step={0.05} />
-          <Num label="Default seasonality" v={v.default_seasonality} on={x => set('default_seasonality', x)} step={0.05} />
-          <Num label="Default language" v={v.default_language} on={x => set('default_language', x)} step={0.05} />
+      <details className="card card-p group">
+        <summary className="font-semibold cursor-pointer flex items-center justify-between list-none">
+          <span className="flex items-center gap-2">
+            Internal cost basis &amp; pricing factors
+            <span className="text-[10px] uppercase tracking-wider bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold">Internal · do not screen-share</span>
+          </span>
+          <ChevronDown size={16} className="transition-transform group-open:rotate-180 text-mute" />
+        </summary>
+        <p className="text-[11px] text-mute mt-2 leading-relaxed">
+          Commission and markup are Falcons internal cost structure — never visible to brands. Floor share, authority factor, and default multipliers feed the SOT engine; multipliers can be overridden per-quote by sales.
+        </p>
+        <div className="grid grid-cols-4 gap-4 mt-4">
+          <NumWithHint label="Commission" hint="Falcons take as fraction (0.30 = 30%). Talent cut = 1 − commission. Internal only." v={v.commission} on={x => set('commission', x)} step={0.01} placeholder="(blank)" />
+          <NumWithHint label="Markup" hint="Falcons margin uplift on top of talent cost. Internal only." v={v.markup} on={x => set('markup', x)} step={0.01} placeholder="(blank)" />
+          <NumWithHint label="Floor share" hint="Authority floor multiplier. IRL × floor_share = guaranteed pro-player line minimum. Range 0–1." v={v.floor_share} on={x => set('floor_share', x)} step={0.05} />
+          <NumWithHint label="Authority factor" hint="Pro-player authority multiplier. 1.00 = none, 1.30 = elite contender, 1.50 = global star / major winner." v={v.authority_factor} on={x => set('authority_factor', x)} step={0.05} />
+          <NumWithHint label="Default seasonality" hint="Default tournament-cycle multiplier. 1.00 = regular season, 1.20 = playoffs, 1.35 = finals/peak. Reps override per-quote." v={v.default_seasonality} on={x => set('default_seasonality', x)} step={0.05} />
+          <NumWithHint label="Default language" hint="Default language multiplier. 1.00 = English, 1.10 = Arabic, 1.20 = Bilingual EN+AR. Reps override per-quote." v={v.default_language} on={x => set('default_language', x)} step={0.05} />
         </div>
-      </div>
+      </details>
 
       <div className="card card-p">
         <h2 className="font-semibold mb-4">Socials & followers</h2>
@@ -303,21 +359,54 @@ export function PlayerForm({
       <div className="card card-p">
         <label className="label">Notes</label>
         <textarea value={v.notes ?? ''} onChange={e => set('notes' as any, e.target.value)}
-          rows={3} className="input resize-none" />
+          rows={3} className="input resize-none"
+          placeholder="Internal context — agency, contract dates, anything sales should know." />
+        <p className="text-[11px] text-mute mt-1">Internal only — do not include sensitive agent negotiations or client-facing language.</p>
       </div>
 
-      {err && <div className="text-sm text-red-600">{err}</div>}
+      {/* Spacer so sticky footer doesn't overlap the last card on small viewports */}
+      <div className="h-20"></div>
 
-      <div className="flex items-center justify-between">
-        <button onClick={save} disabled={saving} className="btn btn-primary">
-          <Save size={14} /> {saving ? 'Saving…' : (player ? 'Save changes' : 'Create player')}
-        </button>
-        {player && (
-          <button onClick={deactivate} disabled={saving} className="btn btn-ghost text-red-600">
-            <Trash2 size={14} /> Deactivate
-          </button>
+      <div className="sticky bottom-0 left-0 right-0 -mx-4 sm:-mx-6 lg:-mx-8 bg-card/95 backdrop-blur border-t border-line px-4 sm:px-6 lg:px-8 py-3 z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
+        {err && (
+          <div className="text-sm text-rose-600 mb-2 flex items-center gap-2">
+            <AlertCircle size={14} />
+            {err}
+            {Object.keys(fieldErrors).length > 0 && (
+              <span className="text-mute">— scroll up: highlighted fields need attention.</span>
+            )}
+          </div>
         )}
+        <div className="flex items-center justify-between gap-3">
+          <button onClick={save} disabled={saving || !v.nickname || !v.tier_code} className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" title={!v.nickname || !v.tier_code ? 'Nickname and Tier are required' : ''}>
+            <Save size={14} /> {saving ? 'Saving…' : (player ? 'Save changes' : 'Create player')}
+          </button>
+          {player && (
+            <button onClick={deactivate} disabled={saving} className="btn btn-ghost text-rose-600">
+              <Trash2 size={14} /> Deactivate
+            </button>
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+/** Number input with a tooltip-style hint. Used for SOT-internal terms. */
+function NumWithHint({ label, hint, v, on, step = 1, placeholder }: {
+  label: string; hint: string; v: number | null | undefined; on: (x: number) => void; step?: number; placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className="label flex items-center gap-1">
+        {label}
+        <span title={hint} className="text-mute hover:text-ink cursor-help">
+          <Info size={11} />
+        </span>
+      </label>
+      <input type="number" step={step} value={v ?? ''}
+        onChange={e => on(parseFloat(e.target.value) || 0)} className="input"
+        placeholder={placeholder} />
     </div>
   );
 }

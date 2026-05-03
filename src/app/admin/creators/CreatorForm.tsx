@@ -2,10 +2,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Creator } from '@/lib/types';
-import { Save, Trash2 } from 'lucide-react';
+import { Save, Trash2, Info, AlertCircle } from 'lucide-react';
+import { tierBaseline, fmtBaseline } from '@/lib/floor-baselines';
 
 const blank: Partial<Creator> = {
-  nickname: '', full_name: '', nationality: '', tier_code: 'Tier 3', score: 30,
+  nickname: '', full_name: '', nationality: '', tier_code: '', score: 0,
   link: '', notes: '', avatar_url: '',
   brand_loyalty_default_pct: 0, exclusivity_premium_pct: 0,
   cross_vertical_multiplier: 1.0, engagement_quality_modifier: 1.0,
@@ -28,13 +29,14 @@ export function CreatorForm({
   const [v, setV] = useState<any>(creator ?? blank);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   function set<K extends keyof Creator>(k: K, val: any) {
     setV((s: any) => ({ ...s, [k]: val }));
   }
 
   async function save() {
-    setErr(null); setSaving(true);
+    setErr(null); setFieldErrors({}); setSaving(true);
     try {
       const isEdit = !!creator;
       const res = await fetch(isEdit ? `/api/admin/creators/${creator!.id}` : `/api/admin/creators`, {
@@ -44,6 +46,12 @@ export function CreatorForm({
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
+        if (j.fieldErrors && typeof j.fieldErrors === 'object') {
+          setFieldErrors(j.fieldErrors);
+        } else {
+          const m = (j.error || '').match(/['"](\w+)['"]/);
+          if (m) setFieldErrors({ [m[1]]: j.error });
+        }
         throw new Error(j.error || 'Save failed');
       }
       router.push('/roster/creators');
@@ -69,14 +77,21 @@ export function CreatorForm({
       <div className="card card-p">
         <h2 className="font-semibold mb-4">Identity</h2>
         <div className="grid grid-cols-3 gap-4">
-          <Field label="Nickname *" v={v.nickname} on={x => set('nickname', x)} />
+          <div>
+            <label className="label">Nickname <span className="text-rose-600">*</span></label>
+            <input value={v.nickname ?? ''} onChange={e => set('nickname', e.target.value)}
+              className="input" required />
+            {fieldErrors.nickname && <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1"><AlertCircle size={11}/>{fieldErrors.nickname}</p>}
+          </div>
           <Field label="Full name" v={v.full_name} on={x => set('full_name' as any, x)} />
           <Field label="Nationality" v={v.nationality} on={x => set('nationality' as any, x)} />
           <div>
-            <label className="label">Tier</label>
-            <select value={v.tier_code} onChange={e => set('tier_code', e.target.value)} className="input">
+            <label className="label">Tier <span className="text-rose-600">*</span></label>
+            <select value={v.tier_code ?? ''} onChange={e => set('tier_code', e.target.value)} className="input" required>
+              <option value="" disabled>— Choose a tier —</option>
               {tiers.map(t => <option key={t.code} value={t.code}>{t.code} — {t.label}</option>)}
             </select>
+            {fieldErrors.tier_code && <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1"><AlertCircle size={11}/>{fieldErrors.tier_code}</p>}
           </div>
           <Num label="Score (0-100)" v={v.score} on={x => set('score' as any, x)} step={1} />
           <Field label="Link / Profile URL" v={v.link} on={x => set('link' as any, x)} />
@@ -110,49 +125,56 @@ export function CreatorForm({
 
       {/* RATES — all platforms */}
       <div className="card card-p">
-        <h2 className="font-semibold mb-1">Rate card (SAR)</h2>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="font-semibold">Rate card (SAR)</h2>
+          {v.tier_code ? (
+            <span className="text-[11px] text-mute">Baseline shown per row — tier × creator-game × platform ratio</span>
+          ) : (
+            <span className="text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded">Pick a tier above to see baseline hints</span>
+          )}
+        </div>
         <p className="text-xs text-mute mb-4">Per-deliverable base rate. The Configurator's axes layer on top per-quote.</p>
 
         <h3 className="text-xs uppercase tracking-wider text-mute font-bold mb-2">Instagram</h3>
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <Num label="IG Reels" v={v.rate_ig_reels} on={x => set('rate_ig_reels', x)} step={500} />
-          <Num label="IG Post"  v={v.rate_ig_post}  on={x => set('rate_ig_post',  x)} step={500} />
-          <Num label="IG Story" v={v.rate_ig_story} on={x => set('rate_ig_story', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_ig_reels" label="IG Reels" v={v.rate_ig_reels} on={x => set('rate_ig_reels', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_ig_post" label="IG Post" v={v.rate_ig_post} on={x => set('rate_ig_post', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_ig_story" label="IG Story" v={v.rate_ig_story} on={x => set('rate_ig_story', x)} step={500} />
         </div>
 
         <h3 className="text-xs uppercase tracking-wider text-mute font-bold mb-2">TikTok</h3>
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <Num label="TikTok – Falcons account (Ours)" v={v.rate_tiktok_ours}   on={x => set('rate_tiktok_ours', x)}   step={500} />
-          <Num label="TikTok – Client account (Theirs)" v={v.rate_tiktok_client} on={x => set('rate_tiktok_client', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_tiktok_ours" label="TikTok – Falcons account (Ours)" v={v.rate_tiktok_ours} on={x => set('rate_tiktok_ours', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_tiktok_client" label="TikTok – Client account (Theirs)" v={v.rate_tiktok_client} on={x => set('rate_tiktok_client', x)} step={500} />
         </div>
 
         <h3 className="text-xs uppercase tracking-wider text-mute font-bold mb-2">YouTube</h3>
         <div className="grid grid-cols-4 gap-3 mb-4">
-          <Num label="YT Full Video" v={v.rate_yt_full}    on={x => set('rate_yt_full', x)}    step={1000} />
-          <Num label="YT Pre-roll"   v={v.rate_yt_preroll} on={x => set('rate_yt_preroll', x)} step={500} />
-          <Num label="YT Short"      v={v.rate_yt_shorts}  on={x => set('rate_yt_shorts', x)}  step={500} />
-          <Num label="YT Short Repost" v={v.rate_yt_shorts_repost ?? 0} on={x => set('rate_yt_shorts_repost' as any, x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_yt_full" label="YT Full Video" v={v.rate_yt_full} on={x => set('rate_yt_full', x)} step={1000} />
+          <RateNum tier={v.tier_code} platformKey="rate_yt_preroll" label="YT Pre-roll" v={v.rate_yt_preroll} on={x => set('rate_yt_preroll', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_yt_shorts" label="YT Short" v={v.rate_yt_shorts} on={x => set('rate_yt_shorts', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_yt_shorts_repost" label="YT Short Repost" v={v.rate_yt_shorts_repost ?? 0} on={x => set('rate_yt_shorts_repost' as any, x)} step={500} />
         </div>
 
         <h3 className="text-xs uppercase tracking-wider text-mute font-bold mb-2">X / Snapchat / Telegram</h3>
         <div className="grid grid-cols-4 gap-3 mb-4">
-          <Num label="X Post / Quote" v={v.rate_x_post_quote} on={x => set('rate_x_post_quote', x)} step={250} />
-          <Num label="X Repost"       v={v.rate_x_repost}     on={x => set('rate_x_repost', x)}     step={250} />
-          <Num label="Snapchat"       v={v.rate_snapchat}     on={x => set('rate_snapchat', x)}     step={500} />
-          <Num label="Telegram"       v={v.rate_telegram}     on={x => set('rate_telegram', x)}     step={250} />
+          <RateNum tier={v.tier_code} platformKey="rate_x_post_quote" label="X Post / Quote" v={v.rate_x_post_quote} on={x => set('rate_x_post_quote', x)} step={250} />
+          <RateNum tier={v.tier_code} platformKey="rate_x_repost" label="X Repost" v={v.rate_x_repost} on={x => set('rate_x_repost', x)} step={250} />
+          <RateNum tier={v.tier_code} platformKey="rate_snapchat" label="Snapchat" v={v.rate_snapchat} on={x => set('rate_snapchat', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_telegram" label="Telegram" v={v.rate_telegram} on={x => set('rate_telegram', x)} step={250} />
         </div>
 
         <h3 className="text-xs uppercase tracking-wider text-mute font-bold mb-2">Live &amp; events</h3>
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <Num label="Twitch / Kick Live Stream" v={v.rate_twitch_kick_live} on={x => set('rate_twitch_kick_live', x)} step={1000} />
-          <Num label="Kick IRL / Event"          v={v.rate_kick_irl}         on={x => set('rate_kick_irl', x)}         step={1000} />
-          <Num label="Event + Snap Coverage"     v={v.rate_event_snap}       on={x => set('rate_event_snap', x)}       step={1000} />
+          <RateNum tier={v.tier_code} platformKey="rate_twitch_kick_live" label="Twitch / Kick Live Stream" v={v.rate_twitch_kick_live} on={x => set('rate_twitch_kick_live', x)} step={1000} />
+          <RateNum tier={v.tier_code} platformKey="rate_kick_irl" label="Kick IRL / Event" v={v.rate_kick_irl} on={x => set('rate_kick_irl', x)} step={1000} />
+          <RateNum tier={v.tier_code} platformKey="rate_event_snap" label="Event + Snap Coverage" v={v.rate_event_snap} on={x => set('rate_event_snap', x)} step={1000} />
         </div>
 
         <h3 className="text-xs uppercase tracking-wider text-mute font-bold mb-2">Monthly rights</h3>
         <div className="grid grid-cols-2 gap-3">
-          <Num label="Usage Rights / month" v={v.rate_usage_monthly} on={x => set('rate_usage_monthly', x)} step={500} />
-          <Num label="Promo / month"        v={v.rate_promo_monthly} on={x => set('rate_promo_monthly', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_usage_monthly" label="Usage Rights / month" v={v.rate_usage_monthly} on={x => set('rate_usage_monthly', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_promo_monthly" label="Promo / month" v={v.rate_promo_monthly} on={x => set('rate_promo_monthly', x)} step={500} />
         </div>
       </div>
 
@@ -321,17 +343,28 @@ export function CreatorForm({
           placeholder="Audience demos, achievements, vertical positioning, anything sales should know" />
       </div>
 
-      {err && <div className="text-sm text-red-600">{err}</div>}
+            <div className="h-20"></div>
 
-      <div className="flex items-center justify-between">
-        <button onClick={save} disabled={saving} className="btn btn-primary">
-          <Save size={14} /> {saving ? 'Saving…' : (creator ? 'Save changes' : 'Create creator')}
-        </button>
-        {creator && (
-          <button onClick={deactivate} disabled={saving} className="btn btn-ghost text-red-600">
-            <Trash2 size={14} /> Deactivate
-          </button>
+      <div className="sticky bottom-0 left-0 right-0 -mx-4 sm:-mx-6 lg:-mx-8 bg-card/95 backdrop-blur border-t border-line px-4 sm:px-6 lg:px-8 py-3 z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
+        {err && (
+          <div className="text-sm text-rose-600 mb-2 flex items-center gap-2">
+            <AlertCircle size={14} />
+            {err}
+            {Object.keys(fieldErrors).length > 0 && (
+              <span className="text-mute">— scroll up: highlighted fields need attention.</span>
+            )}
+          </div>
         )}
+        <div className="flex items-center justify-between gap-3">
+          <button onClick={save} disabled={saving || !v.nickname || !v.tier_code} className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" title={!v.nickname || !v.tier_code ? 'Nickname and Tier are required' : ''}>
+            <Save size={14}/> {saving ? 'Saving…' : creator ? 'Save changes' : 'Create creator'}
+          </button>
+          {creator && (
+            <button onClick={deactivate} disabled={saving} className="btn btn-ghost text-rose-600">
+              <Trash2 size={14}/> Deactivate
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -345,6 +378,34 @@ function Field({ label, v, on }: { label: string; v: any; on: (x: string) => voi
     </div>
   );
 }
+/** Rate-input with tier × platform baseline hint. Used for every rate_* field. */
+function RateNum({ tier, platformKey, label, v, on, step = 1 }: {
+  tier?: string | null; platformKey: string; label: string; v: number | null | undefined; on: (x: number) => void; step?: number;
+}) {
+  const baseline = tierBaseline(tier, 'Esports Influencers', platformKey);
+  const current = Number(v ?? 0);
+  const offBy = baseline && current > 0 ? ((current - baseline) / baseline) * 100 : null;
+  const tone = offBy == null ? 'text-mute'
+    : Math.abs(offBy) < 10 ? 'text-emerald-700'
+    : Math.abs(offBy) < 30 ? 'text-amber-700'
+    : 'text-rose-700';
+  return (
+    <div>
+      <label className="label">{label}</label>
+      <input type="number" min={0} step={step} value={v ?? 0}
+        onChange={e => on(parseFloat(e.target.value) || 0)} className="input" />
+      {baseline ? (
+        <p className={`text-[11px] mt-1 ${tone}`}>
+          Baseline: SAR {fmtBaseline(baseline)}
+          {current > 0 && offBy != null && (
+            <span className="ml-1 opacity-80">({offBy >= 0 ? '+' : ''}{offBy.toFixed(0)}%)</span>
+          )}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function Num({ label, v, on, step }: { label: string; v: any; on: (x: number) => void; step?: number }) {
   return (
     <div>
