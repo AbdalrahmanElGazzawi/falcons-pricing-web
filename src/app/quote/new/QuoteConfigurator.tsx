@@ -188,6 +188,13 @@ export function QuoteConfigurator({
   // and prevents the auto-seed effect from clobbering manual edits.
   type OverrideKey = 'o_eng' | 'o_aud' | 'o_seas' | 'o_lang' | 'o_auth';
   const [autoOverrides, setAutoOverrides] = useState<Set<OverrideKey>>(new Set());
+  // ── Migration 042/043 — Per-talent world-class axes (UI lives in this card).
+  // Sales picks for THIS talent; resets when the talent changes. Auto-seed
+  // from talent attributes if the player record carries defaults.
+  const [wcAxes, setWcAxes] = useState({
+    audCountryMix: 1.00, audAgeDemo: 1.00, integrationDepth: 1.00,
+    firstLook: 1.00, realTimeLive: 1.00, lifestyleContext: 1.00, brandSafety: 1.00,
+  });
 
   // Wrap setOverrides for the AxisRow callbacks so a manual change clears
   // the auto badge for that axis.
@@ -223,6 +230,32 @@ export function QuoteConfigurator({
   useEffect(() => {
     if (!isEditing) setPicks({});
   }, [selectedId, talentKind, isEditing]);
+
+  // ── Migration 043: auto-seed wcAxes from talent attributes when picked.
+  useEffect(() => {
+    const p: any = selectedPlayer ?? selectedCreator ?? {};
+    const country = (v?: string | null) =>
+      v === 'strongly_aligned' ? 1.40
+      : v === 'aligned' ? 1.20
+      : v === 'crossover' ? 1.00
+      : v === 'mismatched' ? 0.70
+      : 1.00;
+    const age = (v?: string | null) =>
+      v === 'premium' ? 1.20 : v === 'youth' ? 0.85 : 1.00;
+    const lifestyle = (v?: string | null) =>
+      v === 'lifestyle' ? 1.10 : v === 'at_home' ? 0.95 : 1.00;
+    const safety = (s?: number | null) =>
+      s == null ? 1.00 : s < 0.6 ? 0.85 : s > 0.85 ? 1.10 : 1.00;
+    setWcAxes({
+      audCountryMix:    country(p.default_audience_country_mix),
+      audAgeDemo:       age(p.default_audience_age_demo),
+      integrationDepth: 1.00,
+      firstLook:        1.00,
+      realTimeLive:     1.00,
+      lifestyleContext: lifestyle(p.default_lifestyle_context),
+      brandSafety:      safety(p.brand_safety_score),
+    });
+  }, [selectedId, talentKind]);
 
   // ── Auto-seed per-line overrides from the talent's intrinsic data when a
   //    new line is being assembled. Skipped when editing an existing line so
@@ -387,15 +420,15 @@ export function QuoteConfigurator({
           auth: overrides.o_auth  ?? globals.auth,
           obj: globals.obj, conf: globals.conf,
           channelMultiplier: globals.channelMultiplier,
-          // Migration 042 — world-class axes
-          audCountryMix: globals.audCountryMix,
-          audAgeDemo: globals.audAgeDemo,
-          integrationDepth: globals.integrationDepth,
-          firstLook: globals.firstLook,
-          realTimeLive: globals.realTimeLive,
-          lifestyleContext: globals.lifestyleContext,
-          brandSafety: globals.brandSafety,
-          collabSize: globals.collabSize,
+          // Migration 042 — world-class axes (now per-talent local state)
+          audCountryMix:    wcAxes.audCountryMix,
+          audAgeDemo:       wcAxes.audAgeDemo,
+          integrationDepth: wcAxes.integrationDepth,
+          firstLook:        wcAxes.firstLook,
+          realTimeLive:     wcAxes.realTimeLive,
+          lifestyleContext: wcAxes.lifestyleContext,
+          brandSafety:      wcAxes.brandSafety,
+          collabSize:       globals.collabSize,
           floorShare, rightsPct: lineAddonsUpliftPct, qty: sel.qty,
           // Creator-multiplier preview (override → creator default → neutral)
           brandLoyaltyPct: creatorMults.o_brand_loyalty
@@ -433,7 +466,7 @@ export function QuoteConfigurator({
           ...r,
         };
       });
-  }, [picks, deliverables, selectedTalent, selectedPlayer, selectedCreator, tierMap, overrides, globals, addonsUpliftPct, lineAddonsUpliftPct, isCompanion, creatorMults]);
+  }, [picks, deliverables, selectedTalent, selectedPlayer, selectedCreator, tierMap, overrides, globals, addonsUpliftPct, lineAddonsUpliftPct, isCompanion, creatorMults, wcAxes]);
 
   const previewTotal = previewLines.reduce((s, l) => s + l.finalAmount, 0);
   const selectedCount = previewLines.length;
@@ -1015,6 +1048,114 @@ export function QuoteConfigurator({
                       <span className={isCompanion ? 'inline-block w-2 h-2 rounded-full bg-orange-500' : 'inline-block w-2 h-2 rounded-full border border-mute'} />
                       {isCompanion ? 'Companion role · 50% applied to this player' : 'Mark as companion (50%)'}
                     </button>
+                  </div>
+                </div>
+              </details>
+
+              {/* ── Migration 042/043 — World-class premium axes (per-talent) ── */}
+              <details className="rounded-lg border border-amber/40 bg-amber/5 group" open>
+                <summary className="cursor-pointer px-4 py-2.5 flex items-center justify-between text-sm font-medium text-ink select-none">
+                  <span className="flex items-center gap-2">
+                    World-class premium axes
+                    <span className="text-[9px] uppercase tracking-wider font-bold bg-green/15 text-greenDark px-1.5 py-0.5 rounded">new</span>
+                    <span className="text-mute font-normal text-xs">— per-talent</span>
+                  </span>
+                  <ChevronDown size={14} className="group-open:rotate-180 transition-transform text-mute" />
+                </summary>
+                <div className="p-4 space-y-3 border-t border-amber/30 bg-white">
+                  <p className="text-[11px] text-label">
+                    These axes are <strong>per this talent</strong>, not the campaign. FaZe / T1 / Cloud9 use them to defend premium pricing. Defaults seed from the talent record when set. Each is multiplicative on top of the standard axes.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">Audience country mix</label>
+                      <select className="input text-sm h-9"
+                        value={String(wcAxes.audCountryMix)}
+                        onChange={e => setWcAxes(s => ({ ...s, audCountryMix: parseFloat(e.target.value) }))}>
+                        <option value="0.70">Mismatched &lt;20% in target (0.70×)</option>
+                        <option value="1.00">Crossover 20–40% (1.00×)</option>
+                        <option value="1.20">Aligned 40–70% (1.20×)</option>
+                        <option value="1.40">Strongly aligned &gt;70% (1.40×)</option>
+                      </select>
+                      <p className="text-[10px] text-mute mt-1">% of {(selectedTalent as any)?.nickname || 'talent'}'s audience in brand's target country.</p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">Audience age demo</label>
+                      <select className="input text-sm h-9"
+                        value={String(wcAxes.audAgeDemo)}
+                        onChange={e => setWcAxes(s => ({ ...s, audAgeDemo: parseFloat(e.target.value) }))}>
+                        <option value="0.85">Youth-skewed 13–24 (0.85×)</option>
+                        <option value="1.00">Mainstream 18–34 (1.00×)</option>
+                        <option value="1.20">Premium 25–44 high-spend (1.20×)</option>
+                      </select>
+                      <p className="text-[10px] text-mute mt-1">Banks/auto/finance pay premium for older demos.</p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">Integration depth</label>
+                      <select className="input text-sm h-9"
+                        value={String(wcAxes.integrationDepth)}
+                        onChange={e => setWcAxes(s => ({ ...s, integrationDepth: parseFloat(e.target.value) }))}>
+                        <option value="0.90">Passive (logo visible) — 0.90×</option>
+                        <option value="1.00">Active (talent uses product) — 1.00×</option>
+                        <option value="1.20">Endorsement (talent vouches) — 1.20×</option>
+                        <option value="1.45">Long-term ambassador — 1.45×</option>
+                      </select>
+                      <p className="text-[10px] text-mute mt-1">How prominently the brand sits in this talent's content.</p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">First-look exclusivity</label>
+                      <select className="input text-sm h-9"
+                        value={String(wcAxes.firstLook)}
+                        onChange={e => setWcAxes(s => ({ ...s, firstLook: parseFloat(e.target.value) }))}>
+                        <option value="1.00">Standard (no exclusivity) — 1.00×</option>
+                        <option value="1.20">48h regional first — 1.20×</option>
+                        <option value="1.40">24h global first — 1.40×</option>
+                        <option value="1.65">Launch-day exclusive — 1.65×</option>
+                      </select>
+                      <p className="text-[10px] text-mute mt-1">Talent is first to post about product launch.</p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">Real-time / live moment</label>
+                      <select className="input text-sm h-9"
+                        value={String(wcAxes.realTimeLive)}
+                        onChange={e => setWcAxes(s => ({ ...s, realTimeLive: parseFloat(e.target.value) }))}>
+                        <option value="1.00">Standard (recorded) — 1.00×</option>
+                        <option value="1.30">Live during talent's match — 1.30×</option>
+                        <option value="1.50">Trophy moment / win celebration — 1.50×</option>
+                      </select>
+                      <p className="text-[10px] text-mute mt-1">Authenticity-driven, irreplaceable.</p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">Lifestyle context</label>
+                      <select className="input text-sm h-9"
+                        value={String(wcAxes.lifestyleContext)}
+                        onChange={e => setWcAxes(s => ({ ...s, lifestyleContext: parseFloat(e.target.value) }))}>
+                        <option value="0.95">At-home casual (0.95×)</option>
+                        <option value="1.00">Training facility / Falcons HQ (1.00×)</option>
+                        <option value="1.10">Lifestyle (gym/travel/event) (1.10×)</option>
+                      </select>
+                      <p className="text-[10px] text-mute mt-1">Where is the talent shown — context shifts price.</p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1 block">Brand safety score</label>
+                      <select className="input text-sm h-9"
+                        value={String(wcAxes.brandSafety)}
+                        onChange={e => setWcAxes(s => ({ ...s, brandSafety: parseFloat(e.target.value) }))}>
+                        <option value="0.85">Low (&lt;0.6) — risky for premium (0.85×)</option>
+                        <option value="1.00">Standard (0.6–0.85) — 1.00×</option>
+                        <option value="1.10">Premium (&gt;0.85) — family-safe (1.10×)</option>
+                      </select>
+                      <p className="text-[10px] text-mute mt-1">{(selectedTalent as any)?.nickname || 'Talent'}'s sentiment / brand-safety score.</p>
+                    </div>
+                    <div className="rounded border border-line/60 bg-bg/40 p-2 text-xs">
+                      <div className="font-semibold uppercase tracking-wider text-[10px] text-label mb-1">Stack multiplier (this talent)</div>
+                      <div className="text-ink text-base font-bold tabular-nums">
+                        {(wcAxes.audCountryMix * wcAxes.audAgeDemo * wcAxes.integrationDepth
+                          * wcAxes.firstLook * wcAxes.realTimeLive * wcAxes.lifestyleContext
+                          * wcAxes.brandSafety).toFixed(2)}×
+                      </div>
+                      <p className="text-[10px] text-mute mt-1">Combined effect of the 7 axes above on this talent's lines.</p>
+                    </div>
                   </div>
                 </div>
               </details>

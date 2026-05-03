@@ -53,6 +53,47 @@ export interface Player {
   rate_usage_monthly: number;
   rate_promo_monthly: number;
   rate_irl: number;
+  // ── Migration 040 — Watch Party + Snapchat suite ─────────────────────
+  rate_watchparty?: number;
+  rate_snapchat?: number;
+  rate_snap_repost?: number;
+  rate_snap_coverage?: number;
+  rate_snap_takeover?: number;
+  rate_snap_discover?: number;
+  rate_event_snap?: number;
+  // ── Migration 042 — Game Ad deliverables ─────────────────────────────
+  rate_game_playthrough_full?: number;
+  rate_game_preview_demo?: number;
+  rate_game_tutorial?: number;
+  rate_game_speedrun_challenge?: number;
+  rate_game_reaction_video?: number;
+  rate_game_clip_series_short?: number;
+  rate_game_branded_skin_use?: number;
+  rate_game_sponsored_match?: number;
+  rate_game_launch_event_irl?: number;
+  rate_game_beta_first_access?: number;
+  rate_game_review_long_form?: number;
+  rate_game_dev_co_stream?: number;
+  // ── Migration 043 — More Live & Stream ───────────────────────────────
+  rate_twitch_raid?: number;
+  rate_watch_along?: number;
+  rate_irl_stream?: number;
+  rate_charity_stream?: number;
+  rate_podcast_guest_live?: number;
+  rate_debate_panel?: number;
+  rate_hostraid_train?: number;
+  rate_subathon_block?: number;
+  rate_24h_stream?: number;
+  rate_first_play_premiere?: number;
+  // Talent-attribute defaults (Migration 043)
+  default_lifestyle_context?: string | null;
+  default_audience_country_mix?: string | null;
+  default_audience_age_demo?: string | null;
+  // World-class talent-attributes (Migration 042)
+  audience_country_mix?: Record<string, number> | null;
+  audience_age_distribution?: Record<string, number> | null;
+  brand_safety_score?: number | null;
+  reach_multiplier?: number;
   commission: number;
   markup: number;
   floor_share: number;
@@ -291,6 +332,17 @@ export const PLAYER_PLATFORMS = [
   { key: 'rate_game_beta_first_access',  label: 'Game: First-Access Beta (24h)',     group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_game_review_long_form',   label: 'Game: Long-Form Review',             group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_game_dev_co_stream',      label: 'Game: Dev Co-Stream',                group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  // ── Migration 043 — More Live & Stream ───────────────────────────
+  { key: 'rate_twitch_raid',         label: 'Twitch Raid / Shoutout',         group: 'Live & Stream' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_watch_along',         label: 'Watch-Along Stream',             group: 'Live & Stream' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_irl_stream',          label: 'IRL Handheld Stream',            group: 'Live & Stream' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_charity_stream',      label: 'Charity Stream (ESG)',           group: 'Live & Stream' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_podcast_guest_live',  label: 'Podcast Guest (Live)',           group: 'Live & Stream' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_debate_panel',        label: 'Debate Panel / Discussion',      group: 'Live & Stream' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_hostraid_train',      label: 'Host / Raid Train (multi-talent)', group: 'Live & Stream' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_subathon_block',      label: 'Subathon Block (2-4h)',          group: 'Live & Stream' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_24h_stream',          label: '24-Hour Stream Marathon',        group: 'Live & Stream' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_first_play_premiere', label: 'First-Play Premiere',            group: 'Live & Stream' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
   // Manual entries — suggestedRange is the SAR range to anchor sales when typing.
   // Sourced from v7 methodology hourly-cost tables + the Falcons Rate Cards.
   { key: 'manual_podcast',     label: 'Podcast Guesting',    group: 'On-Ground & Events' as PlatformGroup, manual: true, suggestedRange: [2000, 8000]   as [number, number] },
