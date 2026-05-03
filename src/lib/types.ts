@@ -237,7 +237,7 @@ export interface QuoteLine {
   is_companion?: boolean;
 }
 
-export type PlatformGroup = 'Social Media' | 'Live & Stream' | 'On-Ground & Events' | 'Continuity & Rights' | 'Other' | 'Campaign Archetypes';
+export type PlatformGroup = 'Social Media' | 'Live & Stream' | 'On-Ground & Events' | 'Continuity & Rights' | 'Other' | 'Campaign Archetypes' | 'Game Ad' | 'Snapchat';
 
 /**
  * Player deliverables. `manual: true` means there's no fixed per-player rate
@@ -270,6 +270,27 @@ export const PLAYER_PLATFORMS = [
   // Continuity & Rights — qty = number of months. Per-talent rate. Sales sets months as the quantity.
   { key: 'rate_usage_monthly', label: '1-Month Usage Rights', group: 'Continuity & Rights' as PlatformGroup,  manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_promo_monthly', label: '1-Month Promotion (channel rotation)', group: 'Continuity & Rights' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  // ── Migration 040 — Watch Party + Snapchat suite ───────────────────
+  { key: 'rate_watchparty',     label: 'Watch Party (Hosted)',         group: 'Live & Stream' as PlatformGroup,       manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_snapchat',       label: 'Snapchat Post',                group: 'Snapchat' as PlatformGroup,             manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_snap_repost',    label: 'Snap Repost (brand asset)',    group: 'Snapchat' as PlatformGroup,             manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_snap_coverage',  label: 'Snap Coverage (1-day series)', group: 'Snapchat' as PlatformGroup,             manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_snap_takeover',  label: 'Snap Account Takeover (full day)', group: 'Snapchat' as PlatformGroup,             manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_snap_discover',  label: 'Snap Discover (premium story)', group: 'Snapchat' as PlatformGroup,             manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_event_snap',     label: 'Event Snap (on-site)',         group: 'On-Ground & Events' as PlatformGroup,  manual: false, suggestedRange: null as null | [number, number] },
+  // ── Migration 042 — Game-Ad deliverables (Xsolla-class) ────────────
+  { key: 'rate_game_playthrough_full',   label: 'Game: Full Playthrough (4-8h)',     group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_game_preview_demo',       label: 'Game: Pre-release / Beta Demo',     group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_game_tutorial',           label: 'Game: How-to-Play Tutorial',         group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_game_speedrun_challenge', label: 'Game: Speedrun / Branded Challenge', group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_game_reaction_video',     label: 'Game: Reaction Video (short)',      group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_game_clip_series_short',  label: 'Game: Clip Series (per clip)',       group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_game_branded_skin_use',   label: 'Game: Branded Skin / Character Use', group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_game_sponsored_match',    label: 'Game: Sponsored Match (competitive)', group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_game_launch_event_irl',   label: 'Game: Launch Event (IRL)',           group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_game_beta_first_access',  label: 'Game: First-Access Beta (24h)',     group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_game_review_long_form',   label: 'Game: Long-Form Review',             group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_game_dev_co_stream',      label: 'Game: Dev Co-Stream',                group: 'Game Ad' as PlatformGroup, manual: false, suggestedRange: null as null | [number, number] },
   // Manual entries — suggestedRange is the SAR range to anchor sales when typing.
   // Sourced from v7 methodology hourly-cost tables + the Falcons Rate Cards.
   { key: 'manual_podcast',     label: 'Podcast Guesting',    group: 'On-Ground & Events' as PlatformGroup, manual: true, suggestedRange: [2000, 8000]   as [number, number] },
