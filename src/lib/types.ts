@@ -88,6 +88,7 @@ export interface Player {
   has_tournament_data?: boolean;
   has_audience_demo?: boolean;
   data_completeness?: 'full' | 'socials_only' | 'tournament_only' | 'minimal';
+  rate_card_historical?: Record<string, number | string> | null;
   // ── Liquipedia / tournament fields (Migration 022) ─────────────────────
   liquipedia_url?: string | null;
   liquipedia_synced_at?: string | null;
@@ -157,6 +158,7 @@ export interface Creator {
   data_completeness?: 'full' | 'socials_only' | 'minimal';
   audience_market?: string | null;
   rate_source?: string | null;
+  rate_card_historical?: Record<string, number | string> | null;
 }
 
 export interface Tier {

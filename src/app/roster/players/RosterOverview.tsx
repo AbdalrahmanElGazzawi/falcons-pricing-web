@@ -19,6 +19,7 @@ import { SearchInput } from '@/components/SearchInput';
 import { PlayerQuickView } from '@/components/QuickViewDrawer';
 import { CutChip } from '@/components/CutChip';
 import { LiquipediaChip } from '@/components/LiquipediaChip';
+import { RateCellWithHistory } from '@/components/RateCardDeltaChip';
 import { LiquipediaCoverageBanner } from './LiquipediaCoverageBanner';
 
 type Density = 'compact' | 'comfortable' | 'spacious';
@@ -468,20 +469,22 @@ function RosterRow({
       <td><FollowerCluster p={p} /></td>
       <td className="text-right text-ink whitespace-nowrap">{totalReach(p) > 0 ? fmtFollowers(totalReach(p)) : '—'}</td>
       <td className="text-right whitespace-nowrap" title={p.pricing_rationale || undefined}>
-        {p.rate_ig_reel ? (
-          <div className="flex flex-col items-end leading-tight tabular-nums">
-            <span className="text-ink font-medium">{fmtCurrency(p.rate_ig_reel, ccy, 3.75)}</span>
-            <span className="text-[10px] text-mute">{fmtCurrency(p.rate_ig_reel, ccy === 'SAR' ? 'USD' : 'SAR', 3.75)}</span>
-          </div>
-        ) : '—'}
+        <RateCellWithHistory
+          sar={p.rate_ig_reel}
+          historicalSar={Number((p.rate_card_historical as any)?.['rate_ig_reel']) || null}
+          ccy={ccy}
+          source={(p.rate_card_historical as any)?.source}
+          captureDate={(p.rate_card_historical as any)?.captured_at}
+        />
       </td>
       <td className="text-right whitespace-nowrap" title={p.pricing_rationale || undefined}>
-        {p.rate_irl ? (
-          <div className="flex flex-col items-end leading-tight tabular-nums">
-            <span className="text-ink font-medium">{fmtCurrency(p.rate_irl, ccy, 3.75)}</span>
-            <span className="text-[10px] text-mute">{fmtCurrency(p.rate_irl, ccy === 'SAR' ? 'USD' : 'SAR', 3.75)}</span>
-          </div>
-        ) : '—'}
+        <RateCellWithHistory
+          sar={p.rate_irl}
+          historicalSar={Number((p.rate_card_historical as any)?.['rate_irl']) || null}
+          ccy={ccy}
+          source={(p.rate_card_historical as any)?.source}
+          captureDate={(p.rate_card_historical as any)?.captured_at}
+        />
       </td>
       {isAdmin && (
         <td>
