@@ -1,5 +1,6 @@
 'use client';
 import { ExternalLink, Trophy, AlertCircle, CircleDashed } from 'lucide-react';
+import { useLocale } from '@/lib/i18n/Locale';
 
 type Player = {
   liquipedia_url?: string | null;
@@ -38,6 +39,7 @@ function urlLabel(url: string): string {
  *                 stale (>30d)= amber
  */
 export function LiquipediaChip({ p, size = 'md' }: { p: Player; size?: 'sm' | 'md' }) {
+  const { t } = useLocale();
   const text = size === 'sm' ? 'text-[10px]' : 'text-[11px]';
   const ic = size === 'sm' ? 9 : 11;
 
@@ -45,9 +47,9 @@ export function LiquipediaChip({ p, size = 'md' }: { p: Player; size?: 'sm' | 'm
     return (
       <span
         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700/50 font-semibold whitespace-nowrap ${text}`}
-        title="No Liquipedia URL set — add it from the player's full editor"
+        title={t('liqui.no_link.tip')}
       >
-        <CircleDashed size={ic} /> no link
+        <CircleDashed size={ic} /> {t('liqui.no_link')}
       </span>
     );
   }
@@ -69,12 +71,18 @@ export function LiquipediaChip({ p, size = 'md' }: { p: Player; size?: 'sm' | 'm
         ? 'bg-green/10 text-greenDark border-green/30 hover:bg-green/15'
         : 'bg-bg text-ink border-line hover:bg-bg/80 dark:bg-card dark:hover:bg-cardHover';
 
+  const ageLine = !synced
+    ? t('liqui.unsynced.tip')
+    : (ageDays === 0
+        ? t('liqui.synced_today')
+        : t('liqui.synced_n_days').replace('{{n}}', String(ageDays))) +
+      (stale ? ' (' + t('liqui.stale') + ')' : '');
   const titleLines = [
-    !synced ? 'URL set, not synced yet' : `Synced ${ageDays === 0 ? 'today' : `${ageDays}d ago`}${stale ? ' (stale — re-sync)' : ''}`,
-    synced && prize > 0 ? `Prize money 24mo: $${prize.toLocaleString('en-US')}` : null,
-    synced && tier && tier !== 'UNRATED' ? `Peak tier: ${tier}` : null,
+    ageLine,
+    synced && prize > 0 ? t('liqui.prize_24mo').replace('{{n}}', prize.toLocaleString('en-US')) : null,
+    synced && tier && tier !== 'UNRATED' ? t('liqui.peak_tier').replace('{{t}}', tier) : null,
     synced && p.last_major_placement && p.last_major_finish_date
-      ? `Last major: ${p.last_major_placement} on ${p.last_major_finish_date}`
+      ? t('liqui.last_major').replace('{{p}}', p.last_major_placement).replace('{{d}}', p.last_major_finish_date)
       : null,
   ].filter(Boolean).join(' · ');
 

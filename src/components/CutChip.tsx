@@ -1,5 +1,6 @@
 'use client';
 import { Coins } from 'lucide-react';
+import { useLocale } from '@/lib/i18n/Locale';
 
 /**
  * Player-cut chip — surfaces what fraction of a deal the talent keeps.
@@ -14,6 +15,7 @@ import { Coins } from 'lucide-react';
  *   < 30%  → red     (Falcons-heavy, watch carefully)
  */
 export function CutChip({ commission, size = 'md' }: { commission?: number | null; size?: 'sm' | 'md' }) {
+  const { t } = useLocale();
   if (commission == null) return <span className="text-mute text-xs">—</span>;
 
   const pct = Math.max(0, Math.min(1, Number(commission)));
@@ -31,13 +33,13 @@ export function CutChip({ commission, size = 'md' }: { commission?: number | nul
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full border font-semibold tabular-nums whitespace-nowrap ${tone} ${px}`}
-      title={`Talent keeps ${playerPct}% · Falcons commission ${falconsPct}%`}
+      title={t('cut.tooltip').replace('{{p}}', String(playerPct)).replace('{{f}}', String(falconsPct))}
     >
       <Coins size={size === 'sm' ? 9 : 11} />
-      <span className="opacity-60 font-normal">T</span>
+      <span className="opacity-60 font-normal">{t('cut.t_short')}</span>
       {playerPct}%
       <span className="opacity-50 font-normal">/</span>
-      <span className="opacity-70 font-normal">F {falconsPct}%</span>
+      <span className="opacity-70 font-normal">{t('cut.f_short')} {falconsPct}%</span>
     </span>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 import { Trophy, AlertTriangle, Link2, Clock, DollarSign } from 'lucide-react';
 import { liquipediaStats } from '@/components/LiquipediaChip';
+import { useLocale } from '@/lib/i18n/Locale';
 
 type Player = Parameters<typeof liquipediaStats>[0][number];
 
@@ -23,6 +24,7 @@ export function LiquipediaCoverageBanner({
   filter: '' | 'missing_url' | 'has_url_unsynced' | 'synced' | 'stale';
   onFilter: (f: '' | 'missing_url' | 'has_url_unsynced' | 'synced' | 'stale') => void;
 }) {
+  const { t } = useLocale();
   const s = liquipediaStats(players);
   if (s.total === 0) return null;
 
@@ -77,10 +79,10 @@ export function LiquipediaCoverageBanner({
         <div>
           <div className="font-semibold text-ink inline-flex items-center gap-2">
             <Trophy size={14} className="text-greenDark" />
-            Liquipedia coverage
+            {t('liqcov.title')}
           </div>
           <div className="text-xs text-mute mt-0.5">
-            Click a tile to filter. Sync all from the &ldquo;Sync all Liquipedia&rdquo; button at the top of the page (admin-only, ~5 min).
+            {t('liqcov.hint')}
           </div>
         </div>
         {filter && (
@@ -89,49 +91,49 @@ export function LiquipediaCoverageBanner({
             onClick={() => onFilter('')}
             className="text-xs text-mute hover:text-ink underline-offset-2 hover:underline"
           >
-            Clear filter
+            {t('liqcov.clear_filter')}
           </button>
         )}
       </div>
       <div className="flex flex-wrap gap-2">
         <Stat
-          label="With URL"
+          label={t('liqcov.with_url')}
           value={`${s.hasUrl} / ${s.total}`}
-          sub={`${Math.round((s.hasUrl / s.total) * 100)}% coverage`}
+          sub={t('liqcov.coverage_pct').replace('{{n}}', String(Math.round((s.hasUrl / s.total) * 100)))}
           tone="green"
           icon={Link2}
         />
         <Stat
-          label="Synced"
+          label={t('liqcov.synced')}
           value={s.synced}
-          sub={s.stale > 0 ? `${s.stale} stale (>30d)` : 'data fresh'}
+          sub={s.stale > 0 ? t('liqcov.stale_n').replace('{{n}}', String(s.stale)) : t('liqcov.fresh')}
           tone={s.stale > 0 ? 'orange' : 'green'}
           icon={Trophy}
           active={filter === 'synced'}
           onClick={() => onFilter(filter === 'synced' ? '' : 'synced')}
         />
         <Stat
-          label="Needs sync"
+          label={t('liqcov.needs_sync')}
           value={s.hasUrlUnsynced}
-          sub={s.hasUrlUnsynced > 0 ? 'URL set, run scraper' : 'all caught up'}
+          sub={s.hasUrlUnsynced > 0 ? t('liqcov.run_scraper') : t('liqcov.all_caught_up')}
           tone={s.hasUrlUnsynced > 0 ? 'orange' : 'mute'}
           icon={Clock}
           active={filter === 'has_url_unsynced'}
           onClick={() => onFilter(filter === 'has_url_unsynced' ? '' : 'has_url_unsynced')}
         />
         <Stat
-          label="Missing URL"
+          label={t('liqcov.missing_url')}
           value={s.missingUrl}
-          sub={s.missingUrl > 0 ? 'add via player editor' : 'fully populated'}
+          sub={s.missingUrl > 0 ? t('liqcov.add_via_editor') : t('liqcov.fully_populated')}
           tone={s.missingUrl > 0 ? 'red' : 'mute'}
           icon={AlertTriangle}
           active={filter === 'missing_url'}
           onClick={() => onFilter(filter === 'missing_url' ? '' : 'missing_url')}
         />
         <Stat
-          label="Tracked prize"
+          label={t('liqcov.tracked_prize')}
           value={totalPrizeStr}
-          sub={`${s.withPrize} player${s.withPrize === 1 ? '' : 's'} with hits`}
+          sub={t('liqcov.with_hits').replace('{{n}}', String(s.withPrize))}
           tone="gold"
           icon={DollarSign}
         />

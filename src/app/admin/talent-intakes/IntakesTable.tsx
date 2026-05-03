@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import { Copy, ExternalLink, Check, Search, RefreshCw, Sparkles, Globe, ChevronDown, ChevronRight } from 'lucide-react';
 import { resolveTalentPhoto, isAuto, audienceMarketFor } from '@/lib/talent-photo';
+import { useLocale } from '@/lib/i18n/Locale';
 import { fmtCurrency } from '@/lib/utils';
 
 type P = {
@@ -63,6 +64,7 @@ export function IntakesTable({ players }: { players: P[] }) {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [marketFilter, setMarketFilter] = useState<'' | 'KSA' | 'MENA' | 'Global'>('');
   const [photoFilter, setPhotoFilter] = useState<'' | 'missing' | 'auto' | 'uploaded'>('');
+  const { t } = useLocale();
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -104,7 +106,7 @@ export function IntakesTable({ players }: { players: P[] }) {
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mute" />
           <input
             type="search"
-            placeholder="Search nickname, team, game, nationality…"
+            placeholder={t('ti.search_ph')}
             value={q}
             onChange={e => setQ(e.target.value)}
             className="w-full pl-8 pr-3 py-2 text-sm border border-line rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-greenDark/30"
@@ -115,12 +117,12 @@ export function IntakesTable({ players }: { players: P[] }) {
           onChange={e => setStatusFilter(e.target.value)}
           className="text-xs border border-line rounded-lg px-2 py-2 bg-card"
         >
-          <option value="">All statuses</option>
-          <option value="not_started">Not started</option>
-          <option value="sent">Link opened</option>
-          <option value="submitted">Submitted</option>
-          <option value="revised">Revised</option>
-          <option value="approved">Approved</option>
+          <option value="">{t('ti.status.all')}</option>
+          <option value="not_started">{t('ti.status.not_started')}</option>
+          <option value="sent">{t('ti.status.sent')}</option>
+          <option value="submitted">{t('ti.status.submitted')}</option>
+          <option value="revised">{t('ti.status.revised')}</option>
+          <option value="approved">{t('ti.status.approved')}</option>
         </select>
         <select
           value={marketFilter}
@@ -128,10 +130,10 @@ export function IntakesTable({ players }: { players: P[] }) {
           className="text-xs border border-line rounded-lg px-2 py-2 bg-card"
           title="Audience market — drives currency display (KSA/MENA = SAR primary, Global = USD primary)"
         >
-          <option value="">All markets</option>
+          <option value="">{t('ti.market.all')}</option>
           <option value="KSA">KSA</option>
           <option value="MENA">MENA</option>
-          <option value="Global">Global (USD)</option>
+          <option value="Global">{t('ti.market.global_usd')}</option>
         </select>
         <select
           value={photoFilter}
@@ -139,10 +141,10 @@ export function IntakesTable({ players }: { players: P[] }) {
           className="text-xs border border-line rounded-lg px-2 py-2 bg-card"
           title="Photo source"
         >
-          <option value="">All photos</option>
-          <option value="uploaded">Uploaded</option>
-          <option value="auto">Auto (from social)</option>
-          <option value="missing">Missing</option>
+          <option value="">{t('ti.photo.all')}</option>
+          <option value="uploaded">{t('ti.photo.uploaded')}</option>
+          <option value="auto">{t('ti.photo.auto')}</option>
+          <option value="missing">{t('ti.photo.missing')}</option>
         </select>
         <span className="text-[11px] text-mute">{filtered.length} of {players.length}</span>
       </div>
@@ -152,14 +154,14 @@ export function IntakesTable({ players }: { players: P[] }) {
           <thead className="bg-bg/60 border-b border-line">
             <tr className="text-[10px] uppercase tracking-wider text-label">
               <th className="text-left px-3 py-2 w-[8px]"></th>
-              <th className="text-left px-3 py-2">Player</th>
-              <th className="text-left px-3 py-2">Tier</th>
-              <th className="text-left px-3 py-2">Market</th>
-              <th className="text-left px-3 py-2">Status</th>
-              <th className="text-left px-3 py-2">Last activity</th>
-              <th className="text-right px-3 py-2">Floors set</th>
-              <th className="text-right px-3 py-2">Floor total</th>
-              <th className="text-right px-3 py-2">Link</th>
+              <th className="text-left px-3 py-2">{t('ti.col.player')}</th>
+              <th className="text-left px-3 py-2">{t('ti.col.tier')}</th>
+              <th className="text-left px-3 py-2">{t('ti.col.market')}</th>
+              <th className="text-left px-3 py-2">{t('ti.col.status')}</th>
+              <th className="text-left px-3 py-2">{t('ti.col.last_activity')}</th>
+              <th className="text-right px-3 py-2">{t('ti.col.floors_set')}</th>
+              <th className="text-right px-3 py-2">{t('ti.col.floor_total')}</th>
+              <th className="text-right px-3 py-2">{t('ti.col.link')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -174,7 +176,7 @@ export function IntakesTable({ players }: { players: P[] }) {
               const totalUsd = totalSar / SAR_PER_USD;
               const lastTs = p.intake_submitted_at ?? p.intake_sent_at ?? null;
               const lastLabel = lastTs ? new Date(lastTs).toLocaleDateString('en-GB', { day:'2-digit', month:'short' }) : '—';
-              const lastWhat = p.intake_submitted_at ? 'submitted' : (p.intake_sent_at ? 'opened' : '');
+              const lastWhat = p.intake_submitted_at ? t('ti.submitted_label') : (p.intake_sent_at ? t('ti.opened_label') : '');
               const url = p.intake_token ? `${origin}/talent/${p.intake_token}` : null;
               const isExpanded = expandedId === p.id;
               const canExpand = setCount > 0;
@@ -270,7 +272,7 @@ export function IntakesTable({ players }: { players: P[] }) {
                             className="text-xs text-greenDark hover:underline inline-flex items-center gap-1"
                             title="Copy link to clipboard"
                           >
-                            {copiedId === p.id ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
+                            {copiedId === p.id ? <><Check size={12} /> {t('ti.copied')}</> : <><Copy size={12} /> {t('ti.copy')}</>}
                           </button>
                           <a
                             href={url}
@@ -282,7 +284,7 @@ export function IntakesTable({ players }: { players: P[] }) {
                             <ExternalLink size={12} />
                           </a>
                         </div>
-                      ) : <span className="text-[11px] text-mute italic">No token</span>}
+                      ) : <span className="text-[11px] text-mute italic">{t('ti.no_token')}</span>}
                     </td>
                   </tr>
                   {isExpanded && p.min_rates && (
@@ -324,7 +326,7 @@ export function IntakesTable({ players }: { players: P[] }) {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={9} className="px-4 py-10 text-center text-sm text-mute">
-                  Nobody matches that filter.
+                  {t('ti.no_match')}
                 </td>
               </tr>
             )}
@@ -333,9 +335,9 @@ export function IntakesTable({ players }: { players: P[] }) {
       </div>
 
       <div className="text-[11px] text-mute flex items-center gap-1.5 flex-wrap">
-        <RefreshCw size={11} /> Same link stays valid forever — talent revises minimums anytime.
-        <span className="ml-3 inline-flex items-center gap-1"><Sparkles size={11} className="text-orange-600" /> auto photo from social handle</span>
-        <span className="ml-3 inline-flex items-center gap-1"><Globe size={11} className="text-blue-600" /> global talent → USD primary</span>
+        <RefreshCw size={11} /> {t('ti.link_forever')}
+        <span className="ml-3 inline-flex items-center gap-1"><Sparkles size={11} className="text-orange-600" /> {t('ti.legend_auto')}</span>
+        <span className="ml-3 inline-flex items-center gap-1"><Globe size={11} className="text-blue-600" /> {t('ti.legend_global')}</span>
       </div>
     </div>
   );
