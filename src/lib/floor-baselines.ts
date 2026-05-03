@@ -87,8 +87,8 @@ export function tierBaseline(
   if (!tierCode) return null;
   const anchor = TIER_IG_REEL_ANCHOR[tierCode];
   if (!anchor) return null;
-  const gMult = (game && GAME_BASE_MULTIPLIER[game]) ?? 1.0;
-  const pRatio = (platformKey && PLATFORM_RATIO[platformKey]) ?? 1.0;
+  const gMult: number = game ? (GAME_BASE_MULTIPLIER[game] ?? 1.0) : 1.0;
+  const pRatio: number = platformKey ? (PLATFORM_RATIO[platformKey] ?? 1.0) : 1.0;
   return Math.round(anchor * gMult * pRatio);
 }
 
