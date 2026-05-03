@@ -31,9 +31,9 @@ type Creator = {
   pricing_rationale?: string | null;
   rate_tiktok_ours: number; rate_twitch_kick_live: number;
   handle_ig: string | null; handle_x: string | null;
-  handle_yt: string | null; handle_tiktok: string | null; handle_twitch: string | null;
+  handle_yt: string | null; handle_tiktok: string | null; handle_twitch: string | null; handle_kick?: string | null; handle_snap?: string | null;
   followers_ig: number | null; followers_x: number | null;
-  followers_yt: number | null; followers_tiktok: number | null; followers_twitch: number | null;
+  followers_yt: number | null; followers_tiktok: number | null; followers_twitch: number | null; followers_kick?: number | null; followers_snap?: number | null;
   notes: string | null; link: string | null;
   past_campaigns?: Array<{ brand: string; year?: number; deliverable?: string; conversion_signal?: string; link?: string; notes?: string }> | null;
   delivered_kpis?: Array<{ kpi: string; value: string; unit?: string; source?: string; captured_at?: string }> | null;
@@ -175,6 +175,28 @@ const TIER_STYLES: Record<string, { ring: string; chip: string; gradient: string
   },
 };
 
+
+// ─── Inline filter-pills group used in showcase filter bars ────────────────
+function FilterPills({
+  label, value, onChange, options,
+}: {
+  label: string; value: string;
+  onChange: (v: string) => void;
+  options: Array<{ v: string; label: string }>;
+}) {
+  return (
+    <div className="inline-flex items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider text-mute font-bold mr-1">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="text-xs border border-line rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-greenDark/30"
+      >
+        {options.map(o => <option key={o.v || '__all__'} value={o.v}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+}
 export function ShowcaseContent({ players, creators }: { players: Player[]; creators: Creator[] }) {
   const [tab, setTab] = useState<'players' | 'creators'>('players');
   const [q, setQ] = useState('');
@@ -187,6 +209,11 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
   const [sort, setSort] = useState<'reach' | 'tier'>('reach');
   const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
   const [openCreatorId, setOpenCreatorId] = useState<number | null>(null);
+  // Creator-tab filters
+  const [crTier, setCrTier]   = useState<string>(''); // '', 'Tier S', 'Tier 1'
+  const [crReach, setCrReach] = useState<string>(''); // '', 'anchor', 'premium', 'established', 'mid', 'emerging'
+  const [crMarket, setCrMarket] = useState<string>(''); // '', 'KSA', 'MENA', 'Global'
+  const [crQ, setCrQ] = useState('');
   // Deep-link from /roster, /admin, etc.: open detail modal directly
   // when ?focus=<playerId> is in the URL. Cleared after consumption so
   // a manual close doesn't re-open on re-render.
@@ -567,29 +594,100 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
         </>
       )}
 
-      {tab === 'creators' && (
+      {tab === 'creators' && (() => {
+        // Compute reach + filter the grid based on the filter bar state
+        const reachOf = (c: Creator) =>
+          (c.followers_yt || 0) + (c.followers_tiktok || 0) + (c.followers_ig || 0) +
+          (c.followers_x || 0) + ((c as any).followers_kick || 0) + ((c as any).followers_snap || 0);
+        const reachTierOf = (n: number): 'anchor' | 'premium' | 'established' | 'mid' | 'emerging' =>
+          n >= 10_000_000 ? 'anchor' :
+          n >= 3_000_000  ? 'premium' :
+          n >= 1_000_000  ? 'established' :
+          n >= 250_000    ? 'mid' : 'emerging';
+        const sCr = crQ.trim().toLowerCase();
+        const filtered = creators.filter(c => {
+          if (crTier && c.tier_code !== crTier) return false;
+          const r = reachOf(c);
+          if (crReach && reachTierOf(r) !== crReach) return false;
+          if (crMarket) {
+            const market = (c as any).audience_market as string | undefined;
+            if (market !== crMarket) return false;
+          }
+          if (sCr) {
+            const hay = [c.nickname, c.full_name, c.notes].filter(Boolean).join(' ').toLowerCase();
+            if (!hay.includes(sCr)) return false;
+          }
+          return true;
+        });
+        return (
         <div className="card card-p">
           <div className="flex items-start gap-3 mb-4">
             <div className="w-10 h-10 rounded-lg bg-gold/15 text-gold flex items-center justify-center flex-shrink-0">
               <Sparkles size={20} />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <h2 className="text-xl font-bold text-ink">Lifestyle &amp; gaming creators</h2>
               <p className="text-sm text-label mt-0.5">
-                Premium-only roster — all Tier 1 / Tier S. Different deal shapes than players: campaign archetypes,
-                lifestyle content series, brand ambassador packages.
+                Premium-only roster — all Tier 1 / Tier S. Click any creator for the full client-pitch profile + booking.
               </p>
             </div>
           </div>
+
+          {/* Filter bar */}
+          <div className="flex items-center gap-2 flex-wrap mb-4 pb-4 border-b border-line">
+            <input
+              type="search"
+              value={crQ}
+              onChange={(e) => setCrQ(e.target.value)}
+              placeholder="Search creator name or vibe…"
+              className="text-sm border border-line rounded-lg px-3 py-1.5 bg-white flex-1 min-w-[200px] max-w-xs focus:outline-none focus:ring-2 focus:ring-greenDark/30"
+            />
+            <FilterPills label="Reach" value={crReach} onChange={setCrReach} options={[
+              { v: '',           label: 'All reach' },
+              { v: 'anchor',     label: 'Anchor 10M+' },
+              { v: 'premium',    label: 'Premium 3M+' },
+              { v: 'established',label: 'Established 1M+' },
+              { v: 'mid',        label: 'Mid 250K+' },
+              { v: 'emerging',   label: 'Emerging' },
+            ]} />
+            <FilterPills label="Tier" value={crTier} onChange={setCrTier} options={[
+              { v: '',       label: 'All tiers' },
+              { v: 'Tier S', label: 'Tier S' },
+              { v: 'Tier 1', label: 'Tier 1' },
+            ]} />
+            <FilterPills label="Market" value={crMarket} onChange={setCrMarket} options={[
+              { v: '',       label: 'All markets' },
+              { v: 'KSA',    label: 'KSA' },
+              { v: 'MENA',   label: 'MENA' },
+              { v: 'Global', label: 'Global' },
+            ]} />
+            <span className="text-[11px] text-mute ml-auto">{filtered.length} of {creators.length}</span>
+            {(crQ || crTier || crReach || crMarket) && (
+              <button
+                type="button"
+                onClick={() => { setCrQ(''); setCrTier(''); setCrReach(''); setCrMarket(''); }}
+                className="text-[11px] text-greenDark hover:underline"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="text-center py-12 text-sm text-mute">
+              No creators match those filters.
+            </div>
+          ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {creators.map(c => {
+            {filtered.map(c => {
               const tierStyle = TIER_STYLES[c.tier_code || ''] ?? TIER_STYLES['Tier 1'];
               const reachItems = [
                 { label: 'YT',    value: c.followers_yt,     handle: c.handle_yt    },
                 { label: 'TT',    value: c.followers_tiktok, handle: c.handle_tiktok},
                 { label: 'IG',    value: c.followers_ig,     handle: c.handle_ig    },
                 { label: 'X',     value: c.followers_x,      handle: c.handle_x     },
-                { label: 'TWCH',  value: c.followers_twitch, handle: c.handle_twitch},
+                { label: 'KICK',  value: c.followers_kick,   handle: c.handle_kick  },
+                { label: 'SNAP',  value: c.followers_snap,   handle: c.handle_snap  },
               ].filter(r => r.value && r.value > 0);
               const totalReach = reachItems.reduce((s, r) => s + (r.value || 0), 0);
               const peak = Math.max(...reachItems.map(r => r.value || 0), 0);
@@ -649,17 +747,29 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                           {dataPending ? '—' : fmtCount(totalReach)}
                         </div>
                       </div>
+                      <div className="text-right">
+                        <div className="text-[10px] uppercase tracking-wider text-mute font-bold">From</div>
+                        <div className="text-sm font-bold text-greenDark tabular-nums leading-tight">
+                          {c.rate_ig_reels > 0 ? `SAR ${c.rate_ig_reels.toLocaleString('en-US')}` : 'On request'}
+                        </div>
+                        <div className="text-[10px] text-mute">per IG Reel</div>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-line flex items-center justify-between">
                       <div className="text-[11px] text-greenDark font-semibold inline-flex items-center gap-1">
                         View profile <ArrowUpRight size={12} />
                       </div>
+                      <div className="text-[10px] text-mute">Click for full pitch</div>
                     </div>
                   </div>
                 </button>
               );
             })}
           </div>
+          )}
         </div>
-      )}
+        );
+      })()}
 
 {/* ─── Player detail modal ──────────────────────────────────────── */}
       {openPlayerId !== null && (() => {
@@ -968,10 +1078,10 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
         const tierStyle = TIER_STYLES[c.tier_code || ''] ?? TIER_STYLES['Tier 1'];
         const reachItems = [
           { label: 'YouTube',  short: 'YT',   value: c.followers_yt,     handle: c.handle_yt,     icon: 'youtube' },
+          { label: 'Snapchat', short: 'SNAP', value: (c as any).followers_snap, handle: (c as any).handle_snap, icon: 'snapchat' },
           { label: 'TikTok',   short: 'TT',   value: c.followers_tiktok, handle: c.handle_tiktok, icon: 'tiktok' },
           { label: 'Instagram',short: 'IG',   value: c.followers_ig,     handle: c.handle_ig,     icon: 'instagram' },
           { label: 'X / Twitter', short: 'X', value: c.followers_x,      handle: c.handle_x,      icon: 'x' },
-          { label: 'Twitch',   short: 'TWCH', value: c.followers_twitch, handle: c.handle_twitch, icon: 'twitch' },
           { label: 'Kick',     short: 'KICK', value: (c as any).followers_kick, handle: (c as any).handle_kick, icon: 'kick' },
         ].filter(r => r.value && r.value > 0);
         const totalReach = reachItems.reduce((s, r) => s + (r.value || 0), 0);
@@ -998,6 +1108,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
           if (kind === 'x')         return `https://x.com/${handle}`;
           if (kind === 'twitch')    return `https://twitch.tv/${handle}`;
           if (kind === 'kick')      return `https://kick.com/${handle}`;
+          if (kind === 'snapchat')  return `https://www.snapchat.com/add/${handle}`;
           return null;
         };
         const productionStyle = (c as any).production_style_default as string | undefined;
@@ -1179,6 +1290,24 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                     )}
                   </div>
                 )}
+              </div>
+              {/* ─── Sticky CTA footer ───────────────────────────────────── */}
+              <div className="border-t border-line bg-bg/40 px-6 py-4 flex items-center gap-3 flex-wrap">
+                <a
+                  href={`/quote/new?focus_creator=${c.id}`}
+                  className="btn btn-primary inline-flex items-center gap-2 px-4 py-2"
+                >
+                  <Sparkles size={14} /> Book {c.nickname}
+                </a>
+                <a
+                  href={`mailto:Sales@falcons.sa?subject=${encodeURIComponent(`Booking inquiry — ${c.nickname}`)}&body=${encodeURIComponent(`Hi Team Falcons,\n\nWe'd like to discuss a campaign with ${c.nickname}.\n\nBrief:\n- Brand:\n- Objective:\n- Markets:\n- Timing:\n\nThanks.`)}`}
+                  className="btn btn-ghost inline-flex items-center gap-2 px-4 py-2 text-sm"
+                >
+                  <ArrowUpRight size={14} /> Email Sales
+                </a>
+                <span className="text-[11px] text-mute ml-auto">
+                  Sales@falcons.sa · +966 53 370 4233
+                </span>
               </div>
             </div>
           </div>
