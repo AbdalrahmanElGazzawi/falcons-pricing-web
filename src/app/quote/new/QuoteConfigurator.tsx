@@ -1100,7 +1100,7 @@ function DeliverableGroups({
                           ? (d.suggestedRange
                               ? <span>Approx. <strong className="text-label">SAR {d.suggestedRange[0].toLocaleString()}–{d.suggestedRange[1].toLocaleString()}</strong></span>
                               : <span className="italic">Manual rate</span>)
-                          : `Base ${fmtCurrency(d.rate, currency, 3.75)}`}
+                          : `Floor ${fmtCurrency(d.rate, currency, 3.75)}`}
                       </div>
                     </div>
                     {checked && priceMap.get(d.key) && (
@@ -1359,7 +1359,7 @@ function PriceBreakdownChip({
     isOverridden?: boolean;
   };
   const rows: AxisRow[] = [
-    { k: 'Base', v: m.base, note: 'Base SAR' },
+    { k: 'Floor', v: m.base, note: 'Floor SAR — defensible minimum, multipliers stack above' },
     {
       k: 'Engagement', v: line.engGated, axisKey: 'o_eng',
       options: axisOptions.engagement.map((e: any) => e.factor),
@@ -1436,7 +1436,7 @@ function PriceBreakdownChip({
             )}
 
             {/* ── Phase 1 — Base ───────────────────────────────────── */}
-            <PhaseHeader n={1} title="Base" />
+            <PhaseHeader n={1} title="Floor — talent’s defensible minimum" />
             <div className="flex justify-between text-xs font-mono tabular-nums px-1">
               <span className="text-label">{rows[0].k}</span>
               <span className="font-bold text-ink">{fmtCurrency(line.mults.base, currency, usdRate)}</span>
@@ -1545,7 +1545,7 @@ function AxisPickRow({
 }) {
   const [open, setOpen] = useState(false);
   const editable = !!r.axisKey && !!(r.options && r.options.length);
-  const highlighted = r.v !== 1 && r.k !== 'Base';
+  const highlighted = r.v !== 1 && r.k !== 'Floor';
   return (
     <div className={[
       'flex justify-between gap-3 px-2 py-1 rounded items-center',
@@ -1576,7 +1576,7 @@ function AxisPickRow({
           </button>
         ) : (
           <span className={highlighted ? 'text-amber-700 font-bold' : 'text-ink'}>
-            {r.k === 'Base' ? fmtCurrency(r.v, currency, usdRate) : `× ${r.v.toFixed(2)}`}
+            {r.k === 'Floor' ? fmtCurrency(r.v, currency, usdRate) : `× ${r.v.toFixed(2)}`}
           </span>
         )}
         {open && editable && (
