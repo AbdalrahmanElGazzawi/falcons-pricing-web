@@ -27,6 +27,15 @@ type Globals = {
   obj: number; conf: MeasurementConfidence;
   // Channel multiplier (Migration 035/037). Defaults to 1.00 when omitted.
   channelMultiplier?: number;
+  // Migration 042 — world-class premium axes. All optional, default 1.00.
+  audCountryMix?: number;
+  audAgeDemo?: number;
+  integrationDepth?: number;
+  firstLook?: number;
+  realTimeLive?: number;
+  lifestyleContext?: number;
+  brandSafety?: number;
+  collabSize?: number;
 };
 
 type RowSel = { qty: number; manualRate?: number };
@@ -378,6 +387,15 @@ export function QuoteConfigurator({
           auth: overrides.o_auth  ?? globals.auth,
           obj: globals.obj, conf: globals.conf,
           channelMultiplier: globals.channelMultiplier,
+          // Migration 042 — world-class axes
+          audCountryMix: globals.audCountryMix,
+          audAgeDemo: globals.audAgeDemo,
+          integrationDepth: globals.integrationDepth,
+          firstLook: globals.firstLook,
+          realTimeLive: globals.realTimeLive,
+          lifestyleContext: globals.lifestyleContext,
+          brandSafety: globals.brandSafety,
+          collabSize: globals.collabSize,
           floorShare, rightsPct: lineAddonsUpliftPct, qty: sel.qty,
           // Creator-multiplier preview (override → creator default → neutral)
           brandLoyaltyPct: creatorMults.o_brand_loyalty

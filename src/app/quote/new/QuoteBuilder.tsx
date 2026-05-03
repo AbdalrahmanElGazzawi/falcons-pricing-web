@@ -216,6 +216,15 @@ export function QuoteBuilder({
   const [lang, setLang] = useState(AXIS_OPTIONS.language[0].factor);
   const [auth, setAuth] = useState(AXIS_OPTIONS.authority[0].factor);
   const [obj, setObj] = useState(AXIS_OPTIONS.objective[1].weight);
+  // ── Migration 042 — World-class premium axes (Campaign-level) ──
+  const [audCountryMix,    setAudCountryMix]    = useState(1.00);
+  const [audAgeDemo,       setAudAgeDemo]       = useState(1.00);
+  const [integrationDepth, setIntegrationDepth] = useState(1.00);
+  const [firstLook,        setFirstLook]        = useState(1.00);
+  const [realTimeLive,     setRealTimeLive]     = useState(1.00);
+  const [lifestyleContext, setLifestyleContext] = useState(1.00);
+  const [brandSafety,      setBrandSafety]      = useState(1.00);
+  // collabSize is auto-derived from unique talent IDs in lines (computed below)
   const [conf, setConf] = useState<MeasurementConfidence>('exact');
 
   // ── Add-ons (months per addon, presence of key = selected, 1 = default)
@@ -417,6 +426,8 @@ export function QuoteBuilder({
       const creatorRec = l.talent_type === 'creator'
         ? creators.find(c => c.id === l.talent_id)
         : null;
+      // Migration 042: per-line collab discount derived from unique talent count.
+      const uniqueTalents = Math.max(1, new Set(lines.map(x => x.talent_type + ':' + x.talent_id)).size);
       const r = computeLine({
         baseFee: l.base_rate,
         irl: l.irl,
@@ -427,6 +438,10 @@ export function QuoteBuilder({
         lang: l.o_lang ?? lang,
         auth: l.o_auth ?? auth,
         obj, conf,
+        // Migration 042 — world-class axes (campaign-level)
+        audCountryMix, audAgeDemo, integrationDepth, firstLook, realTimeLive,
+        lifestyleContext, brandSafety,
+        collabSize: uniqueTalents,
         floorShare: l.floorShare,
         rightsPct: (() => {
           const am = (l as any).addon_months || {};
@@ -456,7 +471,7 @@ export function QuoteBuilder({
       vatRate,
     });
     return { rows: out, totals };
-  }, [lines, eng, aud, seas, ctype, lang, auth, obj, conf, addonsUpliftPct, vatRate, channelMultiplier]);
+  }, [lines, eng, aud, seas, ctype, lang, auth, obj, conf, addonsUpliftPct, vatRate, channelMultiplier, audCountryMix, audAgeDemo, integrationDepth, firstLook, realTimeLive, lifestyleContext, brandSafety]);
 
   async function save(status: 'draft' | 'pending_approval') {
     setError(null);
@@ -910,6 +925,49 @@ export function QuoteBuilder({
             </select>
           </div>
         </div>
+
+        {/* ── World-class premium axes (Migration 042) ──────────────── */}
+        <details className="mt-6 pt-6 border-t border-line">
+          <summary className="cursor-pointer text-sm font-semibold text-ink select-none flex items-center gap-2">
+            <span>World-class premium axes</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wider font-bold bg-green/15 text-greenDark">new</span>
+            <span className="text-xs text-mute font-normal">— audience fit, integration depth, exclusivity, and more</span>
+          </summary>
+          <p className="text-xs text-label mt-3 mb-4">
+            These are the axes top-tier orgs (FaZe / T1 / Cloud9 / NRG / 100T) use to defend premium pricing. Each defaults neutral (1.00×) — change only when the campaign warrants. Final price stacks them all multiplicatively on top of the standard axes above.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <AxisSelect label="Audience country mix" hint="% of talent's audience in the brand's target country. Strongly aligned (>70%) commands premium." value={audCountryMix} setValue={setAudCountryMix}
+              options={AXIS_OPTIONS.audCountryMix.map(o => ({ label: o.label, val: o.factor }))} />
+            <AxisSelect label="Audience age demo" hint="Premium 25-44 = high-spend (banks, auto, finance). Mainstream 18-34 = baseline. Youth-skewed = lower commercial value for premium brands." value={audAgeDemo} setValue={setAudAgeDemo}
+              options={AXIS_OPTIONS.audAgeDemo.map(o => ({ label: o.label, val: o.factor }))} />
+            <AxisSelect label="Integration depth" hint="Passive logo / Active product use / Endorsement / Long-term ambassador. How prominently the brand sits in the content." value={integrationDepth} setValue={setIntegrationDepth}
+              options={AXIS_OPTIONS.integrationDepth.map(o => ({ label: o.label, val: o.factor }))} />
+            <AxisSelect label="First-look exclusivity" hint="Talent is first to post about product launch. 24-48h regional or global first commands premium." value={firstLook} setValue={setFirstLook}
+              options={AXIS_OPTIONS.firstLook.map(o => ({ label: o.label, val: o.factor }))} />
+            <AxisSelect label="Real-time / live moment" hint="Standard (recorded) vs Live during talent's match (1.30×) vs Trophy moment (1.50×). Authenticity-driven, irreplaceable." value={realTimeLive} setValue={setRealTimeLive}
+              options={AXIS_OPTIONS.realTimeLive.map(o => ({ label: o.label, val: o.factor }))} />
+            <AxisSelect label="Lifestyle context" hint="Where is the talent shown — at home (0.95×), training facility (1.00×), or lifestyle setting like gym/travel/event (1.10×)." value={lifestyleContext} setValue={setLifestyleContext}
+              options={AXIS_OPTIONS.lifestyleContext.map(o => ({ label: o.label, val: o.factor }))} />
+            <AxisSelect label="Brand safety score" hint="Talent's brand-safety / sentiment score. Low (<0.6) = risky for premium brands. Premium (>0.85) = family-safe, brand-clean." value={brandSafety} setValue={setBrandSafety}
+              options={AXIS_OPTIONS.brandSafety.map(o => ({ label: o.label, val: o.factor }))} />
+            <div className="rounded-lg border border-line/60 bg-bg/40 p-3 text-xs">
+              <div className="font-semibold uppercase tracking-wider text-[10px] text-label mb-1">Collab size (auto)</div>
+              <div className="text-ink">
+                {(() => {
+                  const ids = new Set(lines.map(l => `${l.talent_type}:${l.talent_id}`));
+                  const n = Math.max(1, ids.size);
+                  const m = n === 1 ? 1.00 : n === 2 ? 0.85 : n === 3 ? 0.75 : 0.65;
+                  return `${n} talent${n !== 1 ? 's' : ''} → ${m.toFixed(2)}× per line`;
+                })()}
+              </div>
+              <p className="text-[10px] text-mute mt-1">Engine bakes -15% / -25% / -35% per-line as talent count grows.</p>
+            </div>
+          </div>
+          <p className="text-[11px] text-mute mt-3">
+            Stretch addons (signature asset lock, brand category exclusivity) live in the Add-ons section as additive rights uplifts.
+          </p>
+        </details>
       </div>
     ),
     addons: (
@@ -1067,7 +1125,10 @@ export function QuoteBuilder({
         creators={creators}
         tiers={tiers}
         addons={addons}
-        globals={{ eng, aud, seas, ctype, lang, auth, obj, conf, channelMultiplier }}
+        globals={{ eng, aud, seas, ctype, lang, auth, obj, conf, channelMultiplier,
+          audCountryMix, audAgeDemo, integrationDepth, firstLook, realTimeLive,
+          lifestyleContext, brandSafety,
+          collabSize: Math.max(1, new Set(lines.map(l => l.talent_type + ':' + l.talent_id)).size) }}
         currency={currency}
         usdRate={usdRate}
         addonsUpliftPct={addonsUpliftPct}
