@@ -85,7 +85,8 @@ export function AddonsTable({ addons }: { addons: Addon[] }) {
       )}
 
       <div className="card overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="text-left text-xs text-label uppercase tracking-wide bg-bg">
               <th className="px-4 py-3">Label</th>
@@ -135,6 +136,7 @@ export function AddonsTable({ addons }: { addons: Addon[] }) {
             {addons.length === 0 && <tr><td colSpan={5} className="px-4 py-10 text-center text-label">No add-ons yet.</td></tr>}
           </tbody>
         </table>
+        </div>
       </div>
     </>
   );

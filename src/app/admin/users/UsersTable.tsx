@@ -179,7 +179,8 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
       )}
 
       <div className="card overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="text-left text-xs text-label uppercase tracking-wide bg-bg">
               <th className="px-4 py-3">Email</th>
@@ -269,6 +270,7 @@ export function UsersTable({ users, currentUserId }: { users: Row[]; currentUser
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </>
   );

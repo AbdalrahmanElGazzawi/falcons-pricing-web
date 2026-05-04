@@ -9,12 +9,6 @@ type AchievementObj = {
 };
 type Achievement = string | AchievementObj;
 
-// Pull the year(s) from a free-text achievement string and split it from
-// the rest. Examples handled:
-//   '2024 World Finals'                → { year: '2024',      rest: 'World Finals' }
-//   'EWC 2025 — 1st place'             → { year: '2025',      rest: 'EWC — 1st place' }
-//   'Multi-podium 2023–2025'           → { year: '2023–2025', rest: 'Multi-podium' }
-//   'Career winnings: $31,440+'        → { year: null,        rest: original }
 function splitYear(text: string): { rest: string; year: string | null } {
   const range = text.match(/\b(20\d{2}\s*[–\-]\s*20\d{2})\b/);
   if (range) return { year: range[1].replace(/\s+/g, ''), rest: text.replace(range[0], '').replace(/\s{2,}/g, ' ').trim() };
@@ -23,8 +17,6 @@ function splitYear(text: string): { rest: string; year: string | null } {
   return { year: null, rest: text };
 }
 
-// Look for a leading placement-y prefix ('1st', 'Champion', 'Top 4', '2x') so
-// we can render it bolded.
 function leadingPlacement(text: string): { lead: string | null; rest: string } {
   const m = text.match(/^(\d+(st|nd|rd|th)|top\s*\d+|champion|world\s+champion|gold|silver|bronze|\dx\s+\w+|\d+x\s+\w+)\b\s*[—\-:•]?\s*/i);
   if (!m) return { lead: null, rest: text };
@@ -59,9 +51,9 @@ type Deliverable = {
   label: string;
   blurb: string;
   group: string;
-  internal: number;     // current internal SAR rate
-  band: Band;           // regional benchmark
-  existing: number;     // previously submitted minimum (SAR)
+  internal: number;
+  band: Band;
+  existing: number;
 };
 
 const fmt = (n: number) => Number(n || 0).toLocaleString('en-US');
@@ -74,22 +66,15 @@ export function TalentIntake({
   market: 'KSA' | 'MENA' | 'Global';
   deliverables: Deliverable[];
 }) {
-  // ── Currency display toggle (SAR ↔ USD)
-  // Talent picks either; we always STORE in SAR for the engine but display
-  // and accept input in whichever currency the talent prefers.
   const SAR_PER_USD = 3.75;
   const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
   const fmtMoney = (sar: number) => {
     const n = currency === 'USD' ? Math.round(sar / SAR_PER_USD) : Math.round(sar);
     return `${currency} ${n.toLocaleString('en-US')}`;
   };
-  // Convert a number typed by the talent (in their displayed currency) into SAR
   const toSar = (typed: number) => currency === 'USD' ? Math.round(typed * SAR_PER_USD) : Math.round(typed);
-  // Convert a SAR amount → the input value the talent should see (their currency)
   const fromSar = (sar: number) => currency === 'USD' ? Math.round(sar / SAR_PER_USD) : Math.round(sar);
 
-  // Per-deliverable input state. Always stored as SAR strings. Display layer
-  // converts via fromSar/toSar.
   const [mins, setMins] = useState<Record<string, string>>(() => {
     const m: Record<string, string> = {};
     for (const d of deliverables) {
@@ -138,13 +123,12 @@ export function TalentIntake({
     }
   }
 
-  // Already submitted view
   if (done?.ok || (player.submitted_at && !done)) {
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border-2 border-greenDark/40 bg-greenSoft/40 p-8 text-center">
+        <div className="rounded-2xl border-2 border-greenDark/40 bg-greenSoft/40 p-6 sm:p-8 text-center">
           <CheckCircle2 size={48} className="mx-auto text-greenDark mb-3" />
-          <h1 className="text-2xl font-bold text-greenDark">Thank you, {player.nickname}.</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-greenDark">Thank you, {player.nickname}.</h1>
           <p className="text-sm text-ink/80 mt-2 max-w-md mx-auto">
             Your minimums have been recorded. Your account manager will reach out
             before any quote goes below them. You can revise at any time —
@@ -153,7 +137,7 @@ export function TalentIntake({
         </div>
         <button
           onClick={() => setDone(null)}
-          className="text-xs text-mute hover:text-ink underline mx-auto block"
+          className="text-xs text-mute hover:text-ink underline mx-auto block min-h-[44px] px-3"
         >
           Revise my minimums
         </button>
@@ -162,31 +146,35 @@ export function TalentIntake({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* ─── Header card ────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-line bg-card overflow-hidden shadow-sm">
-        <div className="bg-gradient-to-br from-greenDark to-greenDark/80 text-white p-6">
-          <div className="flex items-center gap-4">
-            {player.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={player.avatar_url} alt={player.nickname}
-                className="w-20 h-20 rounded-full object-cover ring-2 ring-white/40" />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold">
-                {player.nickname.slice(0,2).toUpperCase()}
-              </div>
-            )}
-            <div className="min-w-0">
-              <div className="text-[11px] uppercase tracking-wider opacity-80">Talent intake — minimum rates</div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold truncate">{player.nickname}</h1>
-              <div className="text-sm opacity-90 mt-0.5">
-                {[player.full_name, player.game, player.team].filter(Boolean).join(' · ')}
-              </div>
-              <div className="text-[11px] opacity-80 mt-1">
-                {player.tier_code || 'Tier 3'} · {player.nationality || 'Region unspecified'} · benchmarks shown for {market}
+        <div className="bg-gradient-to-br from-greenDark to-greenDark/80 text-white p-4 sm:p-6">
+          {/* Avatar + name + meta + currency: stacks on mobile, side-by-side at sm+ */}
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+              {player.avatar_url ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={player.avatar_url} alt={player.nickname}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-2 ring-white/40 flex-shrink-0" />
+              ) : (
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/20 flex items-center justify-center text-xl sm:text-2xl font-bold flex-shrink-0">
+                  {player.nickname.slice(0,2).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] sm:text-[11px] uppercase tracking-wider opacity-80">Talent intake — minimum rates</div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold leading-tight break-words">{player.nickname}</h1>
+                <div className="text-xs sm:text-sm opacity-90 mt-0.5 break-words">
+                  {[player.full_name, player.game, player.team].filter(Boolean).join(' · ')}
+                </div>
+                <div className="text-[10px] sm:text-[11px] opacity-80 mt-1">
+                  {player.tier_code || 'Tier 3'} · {player.nationality || 'Region unspecified'} · benchmarks shown for {market}
+                </div>
               </div>
             </div>
-            <div className="ml-auto self-start">
+            {/* Currency switcher: full row on mobile, top-right on desktop */}
+            <div className="flex sm:flex-col sm:items-end justify-between gap-2 sm:gap-1 sm:ml-auto sm:flex-shrink-0">
               <div className="inline-flex items-center rounded-lg border border-white/30 bg-white/10 overflow-hidden text-xs font-semibold">
                 {(['SAR', 'USD'] as const).map((c, i) => (
                   <button
@@ -194,22 +182,23 @@ export function TalentIntake({
                     type="button"
                     onClick={() => setCurrency(c)}
                     className={[
-                      'px-3 py-1.5 transition',
+                      'px-3 py-2 min-h-[44px] sm:min-h-0 sm:py-1.5 transition',
                       i > 0 ? 'border-l border-white/30' : '',
                       currency === c ? 'bg-white text-greenDark' : 'text-white/90 hover:bg-white/10',
                     ].join(' ')}
                     title={`Show prices in ${c}`}
+                    aria-label={`Show prices in ${c}`}
                   >
                     {c}
                   </button>
                 ))}
               </div>
-              <div className="text-[10px] text-white/70 mt-1 text-right">@ 3.75 SAR/USD</div>
+              <div className="text-[10px] text-white/70 self-center sm:self-end">@ 3.75 SAR/USD</div>
             </div>
           </div>
         </div>
 
-        <div className="p-5 grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="p-3 sm:p-5 grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
           <Stat icon={<Instagram size={14}/>} label="IG"      value={fmt(player.followers_ig)} />
           <Stat icon={<Music2 size={14}/>}    label="TikTok"  value={fmt(player.followers_tiktok)} />
           <Stat icon={<Youtube size={14}/>}   label="YouTube" value={fmt(player.followers_yt)} />
@@ -220,29 +209,28 @@ export function TalentIntake({
 
       {/* ─── Achievements (Liquipedia) ─────────────────────────────────── */}
       {player.achievements.length > 0 && (
-        <div className="rounded-2xl border border-line bg-card p-5">
-          <div className="flex items-center justify-between mb-3">
+        <div className="rounded-2xl border border-line bg-card p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
             <div className="flex items-center gap-2">
               <Trophy size={16} className="text-greenDark" />
               <h2 className="text-sm font-semibold text-ink">Career achievements (we have on file)</h2>
             </div>
             {player.liquipedia_url && (
               <a href={player.liquipedia_url} target="_blank" rel="noopener noreferrer"
-                 className="text-[11px] text-mute hover:text-greenDark underline">View Liquipedia →</a>
+                 className="text-[11px] text-mute hover:text-greenDark underline min-h-[44px] sm:min-h-0 inline-flex items-center">
+                View Liquipedia →
+              </a>
             )}
           </div>
-          <ul className="space-y-1.5 text-xs max-h-72 overflow-auto pr-2">
+          <ul className="space-y-1.5 text-xs max-h-72 overflow-auto pr-1 sm:pr-2">
             {player.achievements.slice(0, 18).map((raw, i) => {
-              // Achievements can be either:
-              //   - free-text strings (current production data — text[] column)
-              //   - structured objects { title, placement, year, tier, ... }
               const isStr = typeof raw === 'string';
               if (isStr) {
                 const text = raw as string;
                 const { rest: noYear, year } = splitYear(text);
                 const { lead, rest } = leadingPlacement(noYear);
                 return (
-                  <li key={i} className="flex items-baseline justify-between gap-3 border-b border-line/60 pb-1">
+                  <li key={i} className="flex items-baseline justify-between gap-2 sm:gap-3 border-b border-line/60 pb-1">
                     <span className="text-ink min-w-0">
                       {lead && <span className="font-semibold text-greenDark mr-1.5">{lead}</span>}
                       <span className="break-words">{rest || text}</span>
@@ -254,7 +242,7 @@ export function TalentIntake({
               const a = raw as AchievementObj;
               const label = a.title || a.tier || (typeof a.placement === 'string' ? a.placement : '') || 'Achievement';
               return (
-                <li key={i} className="flex items-baseline justify-between gap-3 border-b border-line/60 pb-1">
+                <li key={i} className="flex items-baseline justify-between gap-2 sm:gap-3 border-b border-line/60 pb-1">
                   <span className="text-ink min-w-0">
                     {a.placement && <span className="font-semibold text-greenDark mr-1.5">{a.placement}</span>}
                     <span className="break-words">{label}</span>
@@ -274,7 +262,7 @@ export function TalentIntake({
       )}
 
       {/* ─── How this works ────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-greenDark/30 bg-greenSoft/30 p-4 text-xs text-ink leading-relaxed">
+      <div className="rounded-xl border border-greenDark/30 bg-greenSoft/30 p-4 text-xs sm:text-[13px] text-ink leading-relaxed">
         <div className="flex items-center gap-2 mb-1.5 font-semibold text-greenDark">
           <Info size={14} /> How this works
         </div>
@@ -285,10 +273,10 @@ export function TalentIntake({
       </div>
 
       {/* ─── Deliverable rows ──────────────────────────────────────────── */}
-      <div className="space-y-5">
+      <div className="space-y-4 sm:space-y-5">
         {groups.map(([groupName, items]) => (
           <div key={groupName} className="rounded-2xl border border-line bg-card overflow-hidden">
-            <div className="bg-bg/60 border-b border-line px-4 py-2 text-[11px] uppercase tracking-wider font-bold text-label">
+            <div className="bg-bg/60 border-b border-line px-3 sm:px-4 py-2 text-[11px] uppercase tracking-wider font-bold text-label">
               {groupName}
             </div>
             <div className="divide-y divide-line">
@@ -310,27 +298,27 @@ export function TalentIntake({
       </div>
 
       {/* ─── Notes ─────────────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-line bg-card p-5 space-y-2">
+      <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 space-y-2">
         <label className="text-xs font-semibold text-ink">Notes for your account manager (optional)</label>
         <textarea
           rows={3}
           value={notes}
           onChange={e => setNotes(e.target.value)}
           placeholder="e.g. exclusivity-only on energy-drink category, can't post on stream days during EWC, prefer non-gambling brands…"
-          className="w-full text-sm border border-line rounded-lg px-3 py-2 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30"
+          className="w-full text-base sm:text-sm border border-line rounded-lg px-3 py-2.5 sm:py-2 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30"
         />
       </div>
 
       {/* ─── Submit ────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between bg-card rounded-2xl border border-line p-4">
-        <div className="flex items-center gap-2 text-[11px] text-mute">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between bg-card rounded-2xl border border-line p-4 sticky bottom-0 sm:static z-10 -mx-4 sm:mx-0 rounded-none sm:rounded-2xl border-x-0 sm:border-x shadow-lg sm:shadow-none">
+        <div className="flex items-center gap-2 text-[11px] text-mute order-2 sm:order-1">
           <Lock size={12} /> Private to you and Falcons Talent. Audit-logged.
         </div>
         <button
           type="button"
           onClick={submit}
           disabled={submitting}
-          className="btn btn-primary inline-flex items-center gap-2 px-5 py-2.5 disabled:opacity-50"
+          className="btn btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 min-h-[48px] sm:min-h-[44px] disabled:opacity-50 w-full sm:w-auto order-1 sm:order-2 text-base sm:text-sm font-semibold"
         >
           <Send size={14} />
           {submitting ? 'Saving…' : (player.submitted_at ? 'Save revision' : 'Submit my minimums')}
@@ -339,7 +327,7 @@ export function TalentIntake({
 
       {done && !done.ok && (
         <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-xs text-red-700 flex items-start gap-2">
-          <AlertCircle size={14} className="mt-0.5" />
+          <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
           <div>
             <strong>Couldn't save.</strong> {done.error}
           </div>
@@ -371,7 +359,6 @@ function DeliverableRow({
   fromSar: (sar: number) => number;
   onChange: (v: string) => void;
 }) {
-  // Convert stored SAR string ↔ displayed currency for the input field
   const displayValue = value === '' ? '' : String(fromSar(Number(value) || 0));
   const handleInput = (raw: string) => {
     const cleaned = raw.replace(/[^\d]/g, '');
@@ -379,13 +366,14 @@ function DeliverableRow({
     onChange(String(toSar(Number(cleaned))));
   };
   return (
-    <div className="px-4 py-3.5 grid grid-cols-12 gap-3 items-center">
-      <div className="col-span-12 sm:col-span-4">
+    /* MOBILE: pure stack — label, then benchmark, then input. SM+: 12-col grid. */
+    <div className="px-3 sm:px-4 py-3 sm:py-3.5 space-y-3 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-3 sm:items-center">
+      <div className="sm:col-span-4">
         <div className="text-sm font-semibold text-ink">{d.label}</div>
         <div className="text-[11px] text-mute mt-0.5">{d.blurb}</div>
       </div>
 
-      <div className="col-span-7 sm:col-span-5">
+      <div className="sm:col-span-5">
         {d.band ? (
           <div className="rounded-lg border border-line bg-bg/50 px-3 py-2 text-[11px] tabular-nums">
             <div className="text-mute font-semibold uppercase tracking-wider text-[10px] mb-1">
@@ -402,17 +390,18 @@ function DeliverableRow({
         )}
       </div>
 
-      <div className="col-span-5 sm:col-span-3">
+      <div className="sm:col-span-3">
         <label className="text-[10px] uppercase tracking-wider text-mute font-bold flex items-center gap-1 mb-1">
           <ShieldCheck size={11} /> Your minimum ({currency})
         </label>
         <input
           type="text"
           inputMode="numeric"
+          pattern="[0-9]*"
           value={displayValue}
           onChange={e => handleInput(e.target.value)}
           placeholder={currency === 'USD' ? 'e.g. 2000' : 'e.g. 8000'}
-          className="w-full text-right text-sm font-semibold tabular-nums border border-line rounded-lg px-2.5 py-1.5 bg-card focus:outline-none focus:ring-2 focus:ring-greenDark/40"
+          className="w-full text-right text-base sm:text-sm font-semibold tabular-nums border border-line rounded-lg px-3 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 bg-card focus:outline-none focus:ring-2 focus:ring-greenDark/40"
         />
       </div>
     </div>

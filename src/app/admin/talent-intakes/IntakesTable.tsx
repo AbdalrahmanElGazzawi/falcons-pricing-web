@@ -150,7 +150,8 @@ export function IntakesTable({ players }: { players: P[] }) {
       </div>
 
       <div className="rounded-xl border border-line bg-card overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
           <thead className="bg-bg/60 border-b border-line">
             <tr className="text-[10px] uppercase tracking-wider text-label">
               <th className="text-left px-3 py-2 w-[8px]"></th>
@@ -332,6 +333,7 @@ export function IntakesTable({ players }: { players: P[] }) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       <div className="text-[11px] text-mute flex items-center gap-1.5 flex-wrap">

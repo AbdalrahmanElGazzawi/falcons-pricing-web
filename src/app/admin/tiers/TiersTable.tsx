@@ -39,7 +39,8 @@ export function TiersTable({ tiers }: { tiers: Tier[] }) {
 
   return (
     <div className="card overflow-hidden">
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+      <table className="w-full text-sm min-w-[640px]">
         <thead>
           <tr className="text-left text-xs text-label uppercase tracking-wide bg-bg">
             <th className="px-4 py-3">Tier</th>
@@ -91,6 +92,7 @@ export function TiersTable({ tiers }: { tiers: Tier[] }) {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
