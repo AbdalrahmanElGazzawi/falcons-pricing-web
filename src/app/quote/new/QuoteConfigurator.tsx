@@ -1392,6 +1392,13 @@ function PriceBreakdownChip({
     finalAmount: number; finalUnit: number; qty: number; baseWhy: string;
     socialPrice: number; floorPrice: number; preAddOn: number; confCap: number;
     engGated: number; audGated: number; seasGated: number; authGated: number;
+    // Migration 056 — talent intake floor + agency gross-up
+    talentFloorRaw?: number;
+    talentFloorGrossed?: number;
+    talentFloorHit?: boolean;
+    talentFloorDelta?: number;
+    agencyFeePctApplied?: number;
+    priceController?: 'engine' | 'base_floor' | 'talent_floor';
     mults: {
       base: number; eng: number; aud: number; seas: number; ctype: number;
       lang: number; auth: number; obj: number; rightsPct: number; isCompanion: boolean;
