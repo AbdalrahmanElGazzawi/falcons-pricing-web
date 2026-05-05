@@ -82,9 +82,8 @@ function baseWhyFor(platformKey: string, talent: any, tierCode: string | null): 
   // Map platform → (label, follower field)
   const map: Record<string, { label: string; field: string }> = {
     rate_ig_reel:         { label: 'Instagram', field: 'followers_ig' },
-    rate_ig_post:       { label: 'Instagram', field: 'followers_ig' },
-    rate_ig_story:        { label: 'Instagram', field: 'followers_ig' },
     rate_ig_post:         { label: 'Instagram', field: 'followers_ig' },
+    rate_ig_story:        { label: 'Instagram', field: 'followers_ig' },
     rate_ig_repost:       { label: 'Instagram', field: 'followers_ig' },
     rate_ig_share:        { label: 'Instagram', field: 'followers_ig' },
     rate_tiktok_video:    { label: 'TikTok',    field: 'followers_tiktok' },

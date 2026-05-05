@@ -65,12 +65,9 @@ export const PLATFORM_RATIO: Record<string, number> = {
   rate_usage_monthly:  1.50,
   rate_promo_monthly:  1.10,
   // Creator-specific (not in players.platform_ratio but useful for hints)
-  rate_ig_reel:       1.00,
-  rate_ig_post:        0.65,
   rate_tiktok_ours:    0.80,
   rate_tiktok_client:  0.95,
   rate_yt_preroll:     1.20,
-  rate_yt_short:      0.32,
   rate_x_post_quote:   0.20,
   rate_snapchat:       0.40,
   rate_event_snap:     1.20,
