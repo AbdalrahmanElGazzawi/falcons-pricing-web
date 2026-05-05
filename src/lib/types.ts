@@ -42,6 +42,7 @@ export interface Player {
   rate_tiktok_share: number;
   rate_yt_short: number;
   rate_yt_short_repost: number;
+  rate_yt_full: number;  // long-form sponsored video (Migration 066)
   rate_x_post: number;
   rate_x_repost: number;
   rate_x_share: number;
@@ -316,6 +317,7 @@ export const PLAYER_PLATFORMS = [
   { key: 'rate_tiktok_share',  label: 'TikTok Stitch/Duet', group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_yt_short',      label: 'YT Short',           group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_yt_short_repost', label: 'YT Short Repost',    group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_yt_full',       label: 'YT Long-form Video', group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_x_post',        label: 'X Post',             group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_x_repost',      label: 'X Retweet',          group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_x_share',       label: 'X Quote Tweet',      group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
