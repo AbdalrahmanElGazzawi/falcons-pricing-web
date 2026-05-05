@@ -67,6 +67,112 @@ export function IntakesTable({ players }: { players: P[] }) {
   const { t } = useLocale();
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [override, setOverride] = useState<OverrideState | null>(null);
+
+  const RATE_KEYS: Array<{ k: string; label: string }> = [
+    { k:'ig_reel',         label:'IG Reel' },
+    { k:'ig_static',       label:'IG Static' },
+    { k:'ig_story',        label:'IG Story' },
+    { k:'tiktok_video',    label:'TikTok Video' },
+    { k:'tiktok_repost',   label:'TikTok Repost' },
+    { k:'yt_short',        label:'YT Short' },
+    { k:'yt_short_repost', label:'YT Short Repost' },
+    { k:'x_post',          label:'X Post' },
+    { k:'x_repost',        label:'X Repost' },
+    { k:'twitch_stream',   label:'Twitch Stream' },
+    { k:'twitch_integ',    label:'Twitch Integ' },
+    { k:'irl',             label:'IRL' },
+  ];
+
+  async function callAdmin(playerId: number, path: 'override'|'clear'|'unlock', body?: unknown) {
+    setBusyId(playerId);
+    try {
+      const res = await fetch(`/api/admin/talent-intake/${playerId}/${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        alert(`Failed: ${txt || res.status}`);
+        return false;
+      }
+      return true;
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function onClearSubmission(p: P) {
+    if (!confirm(`Clear ${p.nickname}'s submission? This wipes their min_rates, resets status to 'not_started', and clears any lockout. They can resubmit fresh from the intake link.`)) return;
+    if (await callAdmin(p.id, 'clear')) {
+      setPlayers(rows => rows.map(r => r.id === p.id ? {
+        ...r,
+        min_rates: null,
+        intake_status: 'not_started',
+        intake_submitted_at: null,
+        intake_revision_count: 0,
+        intake_locked_until: null,
+      } : r));
+    }
+  }
+
+  async function onUnlock(p: P) {
+    if (!confirm(`Unlock ${p.nickname}? This clears their 3-month revision lockout so they can revise once more without resubmitting.`)) return;
+    if (await callAdmin(p.id, 'unlock')) {
+      setPlayers(rows => rows.map(r => r.id === p.id ? {
+        ...r,
+        intake_revision_count: 0,
+        intake_locked_until: null,
+      } : r));
+    }
+  }
+
+  function onOverride(p: P) {
+    const initialRates: Record<string, string> = {};
+    for (const { k } of RATE_KEYS) {
+      const v = (p.min_rates ?? {})[k];
+      initialRates[k] = v ? String(v) : '';
+    }
+    setOverride({
+      player: p,
+      rates: initialRates,
+      agencyOn: p.agency_status === 'agency',
+      agencyName: p.agency_name ?? '',
+      agencyFee: p.agency_fee_pct != null ? String(p.agency_fee_pct) : '',
+    });
+  }
+
+  async function submitOverride() {
+    if (!override) return;
+    const cleaned: Record<string, number> = {};
+    for (const [k, v] of Object.entries(override.rates)) {
+      const n = Number(String(v).replace(/[, ]/g,''));
+      if (Number.isFinite(n) && n > 0) cleaned[k] = Math.round(n);
+    }
+    const body = {
+      min_rates: cleaned,
+      agency: {
+        has_agency: override.agencyOn,
+        name: override.agencyOn ? override.agencyName.trim() : null,
+        fee_pct: override.agencyOn ? Number(String(override.agencyFee).replace(',','.')) : null,
+      },
+    };
+    if (await callAdmin(override.player.id, 'override', body)) {
+      const id = override.player.id;
+      setPlayers(rows => rows.map(r => r.id === id ? {
+        ...r,
+        min_rates: cleaned,
+        intake_status: 'approved',
+        agency_status: override.agencyOn ? 'agency' : 'direct',
+        agency_name:   override.agencyOn ? override.agencyName.trim() || null : null,
+        agency_fee_pct: override.agencyOn && Number.isFinite(Number(override.agencyFee)) ? Number(override.agencyFee) : null,
+      } : r));
+      setOverride(null);
+    }
+  }
+
 
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
 
