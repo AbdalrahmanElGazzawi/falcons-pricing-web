@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/access-revoked'];
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/access-revoked', '/talent/'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
   // would get redirected to /login.
   if (
     pathname.startsWith('/client/') ||
+    pathname.startsWith('/talent/') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/') ||
     pathname.startsWith('/favicon') ||
