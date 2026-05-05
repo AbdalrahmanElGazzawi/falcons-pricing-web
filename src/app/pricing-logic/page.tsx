@@ -35,11 +35,11 @@ export default async function PricingLogicPage() {
   ] = await Promise.all([
     supabase
       .from('players')
-      .select('id, nickname, role, game, team, nationality, tier_code, rate_ig_reel, rate_irl, authority_factor, measurement_confidence, liquipedia_url, prize_money_24mo_usd')
+      .select('id, nickname, role, game, team, nationality, tier_code, rate_ig_reel, rate_irl, authority_factor, measurement_confidence, liquipedia_url, prize_money_24mo_usd, audience_market, is_bookable, profile_strength_pct, intake_status, base_rate_anchor')
       .eq('is_active', true),
     supabase
       .from('creators')
-      .select('id, nickname, tier_code, rate_ig_reels, rate_yt_full, rate_tiktok_ours'),
+      .select('id, nickname, tier_code, rate_ig_reels, rate_yt_full, rate_tiktok_ours, is_bookable, profile_strength_pct'),
     supabase.from('tiers').select('code, label, base_fee_min, base_fee_max, floor_share, sort_order').order('sort_order'),
   ]);
 

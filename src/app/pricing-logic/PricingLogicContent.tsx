@@ -11,9 +11,18 @@ type Player = {
   team: string | null; nationality: string | null; tier_code: string | null;
   rate_ig_reel: number; rate_irl: number;
   authority_factor: number | null; measurement_confidence: string | null;
+  liquipedia_url?: string | null; prize_money_24mo_usd?: number | null;
+  audience_market?: string | null;
+  is_bookable?: boolean | null;
+  profile_strength_pct?: number | null;
+  intake_status?: string | null;
+  base_rate_anchor?: number | null;
 };
 type Creator = { id: number; nickname: string; tier_code: string | null;
-  rate_ig_reels: number; rate_yt_full: number; rate_tiktok_ours: number };
+  rate_ig_reels: number; rate_yt_full: number; rate_tiktok_ours: number;
+  is_bookable?: boolean | null;
+  profile_strength_pct?: number | null;
+};
 type Tier = { code: string; label: string;
   base_fee_min: number; base_fee_max: number; floor_share: number; sort_order: number };
 
@@ -158,6 +167,65 @@ export function PricingLogicContent({
             <div className="text-xs text-label mt-1">{s.hint}</div>
           </div>
         ))}
+      </section>
+
+      {/* ─── Pricing readiness (Mig 059 + 062, May 5) ──────────────────── */}
+      <section className="card card-p border-2 border-greenDark/20">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-greenSoft text-greenDark flex items-center justify-center flex-shrink-0">
+            <ShieldCheck size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-xl font-bold text-ink">Pricing readiness — locked stage</h2>
+              <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-greenSoft text-greenDark font-bold">May 5 2026</span>
+            </div>
+            <p className="text-sm text-label mt-0.5">Agency-industry two-axis model — bookable status (binary) + profile strength (continuous %). Live from Supabase; recomputes on every page load.</p>
+          </div>
+        </div>
+        <div className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {(() => {
+            const all = [...players, ...creators] as any[];
+            const bookable = all.filter(r => r.is_bookable !== false).length;
+            const onHold   = all.filter(r => r.is_bookable === false).length;
+            const pct      = all.length ? Math.round((bookable / all.length) * 100) : 0;
+            const strengths = all.map(r => Number(r.profile_strength_pct ?? 0)).filter(n => Number.isFinite(n));
+            const avg = strengths.length ? Math.round(strengths.reduce((s, n) => s + n, 0) / strengths.length) : 0;
+            const strong = strengths.filter(n => n >= 70).length;
+            const mid    = strengths.filter(n => n >= 50 && n < 70).length;
+            const weak   = strengths.filter(n => n < 50).length;
+            const submitted = (players as any[]).filter(p => p.intake_status === 'submitted' || p.intake_status === 'revised').length;
+            const approved  = (players as any[]).filter(p => p.intake_status === 'approved').length;
+            return [
+              { v: pct + '%',       l: 'Bookable',         sub: bookable + ' of ' + all.length + ' active' },
+              { v: onHold.toString(), l: 'On hold',         sub: onHold === 0 ? 'no hard blockers' : 'needs source / market' },
+              { v: avg + '%',       l: 'Avg profile strength', sub: 'strong ' + strong + ' · mid ' + mid + ' · weak ' + weak },
+              { v: submitted.toString(), l: 'Awaiting approval', sub: approved + ' approved · gate live (Mig 062)' },
+            ].map(s => (
+              <div key={s.l} className="rounded-xl border border-line bg-bg/40 p-3">
+                <div className="text-[10px] text-mute uppercase tracking-wider font-bold">{s.l}</div>
+                <div className="text-3xl font-extrabold text-ink tabular-nums mt-1">{s.v}</div>
+                <div className="text-xs text-label mt-1">{s.sub}</div>
+              </div>
+            ));
+          })()}
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
+          {[
+            { n: 1, t: 'Talent submits', d: 'Per-deliverable floors via /talent/<token>. intake_status → submitted.' },
+            { n: 2, t: 'Admin approves', d: '/admin/talent-intakes Approve button. status → approved. One-click or with edits via Override.' },
+            { n: 3, t: 'Engine auto-applies', d: 'Calculator, QuoteBuilder, Configurator, Wizard all read floors immediately. priceController = talent_floor when active.' },
+          ].map(s => (
+            <div key={s.n} className="rounded-xl border border-line p-3">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="w-6 h-6 rounded-full bg-greenSoft text-greenDark text-xs font-bold grid place-items-center">{s.n}</span>
+                <div className="text-sm font-semibold text-ink">{s.t}</div>
+              </div>
+              <div className="text-xs text-label leading-relaxed">{s.d}</div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* ─── Tier baselines (live) ───────────────────────────────────── */}
