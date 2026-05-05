@@ -33,6 +33,7 @@ type PlayerInfo = {
   full_name: string | null;
   avatar_url: string | null;
   tier_code: string | null;
+  role: string | null;
   game: string | null;
   team: string | null;
   nationality: string | null;
@@ -222,18 +223,32 @@ export function TalentIntake({
   // (hidden behind 'show all'). Primary = talent has a handle on that
   // platform OR has any existing min_rate set in that group OR it's
   // a universal deliverable (Instagram, IRL).
+  // Per-talent visibility heuristic. Defaults skew to what brands actually
+  // buy globally — IG / TikTok / YouTube / IRL are universal. Twitch surfaces
+  // when the talent streams. Snapchat is KSA-only (regional format). Kick is
+  // currently creators-only (no players are on Kick at Falcons yet).
+  // Game-ad formats surface for competitive players. Reposts and secondary
+  // repost variants hide behind 'show all' to keep the visible list tight.
+  const isContentCreator = player.role === 'Influencer'
+    || player.game === 'Esports Influencers'
+    || player.game === 'Content Creator';
+  const isStreamer = (player.followers_twitch ?? 0) > 10000 || !!(player as any).twitch;
+  const isCompetitivePlayer = player.role === 'Player'
+    && player.game != null
+    && player.game !== 'Esports Influencers';
+
   const platformHandleSignal = (groupName: string): boolean => {
     switch (groupName) {
-      case 'Instagram':   return true;  // always universal
-      case 'IRL':         return true;  // always universal
-      case 'TikTok':      return !!(player as any).tiktok || (player.followers_tiktok ?? 0) > 5000;
-      case 'YouTube':     return !!(player as any).youtube || (player.followers_yt ?? 0) > 5000;
+      case 'Instagram':   return true;  // universal
+      case 'TikTok':      return true;  // universal — short-form video
+      case 'YouTube':     return true;  // universal — long-form review / playthrough is the bread-and-butter product-review asset globally
+      case 'IRL':         return true;  // universal
       case 'X (Twitter)': return !!(player as any).x_handle || (player.followers_x ?? 0) > 5000;
-      case 'Twitch':      return !!(player as any).twitch || (player.followers_twitch ?? 0) > 5000;
-      case 'Kick':        return !!(player as any).kick;
-      case 'Snapchat':    return !!(player as any).snapchat;
-      case 'Live & Stream': return (player.followers_twitch ?? 0) > 10000;  // streamers only
-      case 'Game Ads':    return player.game !== 'Esports Influencers' && player.game != null;  // competitive players
+      case 'Twitch':      return isStreamer;
+      case 'Kick':        return isContentCreator;          // creators-only currently
+      case 'Snapchat':    return market === 'KSA';          // KSA-native format
+      case 'Live & Stream': return isStreamer;
+      case 'Game Ads':    return isCompetitivePlayer;
       default:            return false;
     }
   };
@@ -855,9 +870,19 @@ function DeliverableRow({
             value={displayValue}
             disabled={disabled}
             onChange={e => handleInput(e.target.value)}
-            placeholder={currency === 'USD' ? 'e.g. 2,000' : 'e.g. 8,000'}
+            placeholder={d.band ? `${currency} ${fromSar(Number(d.band.median_sar)).toLocaleString('en-US')}` : (currency === 'USD' ? 'e.g. 2,000' : 'e.g. 8,000')}
             className={`w-full text-right text-base sm:text-sm font-semibold tabular-nums border border-line rounded-lg px-3 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 bg-card focus:outline-none focus:ring-2 focus:ring-greenDark/40 ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
           />
+          {!disabled && d.band && !value && (
+            <button
+              type="button"
+              onClick={() => onChange(String(Math.round(Number(d.band!.median_sar))))}
+              className="mt-1 w-full text-[11px] text-greenDark hover:underline text-center min-h-[28px]"
+              title="One-tap to fill the regional median — adjust if needed"
+            >
+              Use median ({currency} {fromSar(Number(d.band.median_sar)).toLocaleString('en-US')})
+            </button>
+          )}
         </div>
         {zone !== 'none' && (
           <div className={`flex-1 rounded-lg ${tone.bg} ring-1 ${tone.ring} px-3 py-2 text-[11px] flex items-start gap-2`}>

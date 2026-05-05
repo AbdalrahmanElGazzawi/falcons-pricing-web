@@ -8,41 +8,51 @@ export const dynamic = 'force-dynamic';
 // Order matters: it's the order the talent will see. Keys must match the
 // rate_<key> columns on `players` and the platform values in `market_bands`.
 const DELIVERABLES: Array<{
-  key: string;                       // jsonb key in players.min_rates
-  rate_col: keyof PlayerRateColumns; // current internal rate column
-  band_platform: string;             // matches market_bands.platform
+  key: string;
+  rate_col: keyof PlayerRateColumns;
+  band_platform: string;
   label: string;
-  blurb: string;
+  blurb: string;                     // copy aimed at the talent — connects deliverable to real campaign types
   group: 'Instagram' | 'TikTok' | 'YouTube' | 'X (Twitter)' | 'Twitch' | 'IRL'
        | 'Snapchat' | 'Kick' | 'Live & Stream' | 'Game Ads';
 }> = [
-  { key: 'ig_reel',         rate_col: 'rate_ig_reel',         band_platform: 'rate_ig_reel',     label: 'Instagram Reel',           blurb: '15–60s sponsored vertical video on your IG.',           group: 'Instagram' },
-  { key: 'ig_static',       rate_col: 'rate_ig_static',       band_platform: 'rate_ig_post',     label: 'Instagram Static / Carousel', blurb: 'Single image or carousel grid post.',                group: 'Instagram' },
-  { key: 'ig_story',        rate_col: 'rate_ig_story',        band_platform: 'rate_ig_post',     label: 'Instagram Story',          blurb: '24-hour story frame, swipe-up included.',              group: 'Instagram' },
-  { key: 'tiktok_video',    rate_col: 'rate_tiktok_video',    band_platform: 'rate_tiktok_video',label: 'TikTok Video',             blurb: 'Original 15–60s sponsored TikTok.',                    group: 'TikTok' },
-  { key: 'tiktok_repost',   rate_col: 'rate_tiktok_repost',   band_platform: 'rate_tiktok_video',label: 'TikTok Repost',            blurb: 'Cross-post brand-supplied creative on your TikTok.',   group: 'TikTok' },
-  { key: 'yt_short',        rate_col: 'rate_yt_short',        band_platform: 'rate_yt_short',    label: 'YouTube Short',            blurb: 'Vertical short on your YT channel.',                   group: 'YouTube' },
-  { key: 'yt_short_repost', rate_col: 'rate_yt_short_repost', band_platform: 'rate_yt_short',    label: 'YouTube Short Repost',     blurb: 'Re-upload of brand-supplied vertical short.',          group: 'YouTube' },
-  { key: 'x_post',          rate_col: 'rate_x_post',          band_platform: 'rate_ig_post',     label: 'X / Twitter Post',         blurb: 'Sponsored tweet from your handle.',                    group: 'X (Twitter)' },
-  { key: 'x_repost',        rate_col: 'rate_x_repost',        band_platform: 'rate_ig_post',     label: 'X / Twitter Repost',       blurb: 'Quote-retweet brand content from your handle.',        group: 'X (Twitter)' },
-  { key: 'twitch_stream',   rate_col: 'rate_twitch_stream',   band_platform: 'rate_yt_full',     label: 'Twitch Sponsored Stream',  blurb: 'Full live stream with brand integration.',             group: 'Twitch' },
-  { key: 'twitch_integ',    rate_col: 'rate_twitch_integ',    band_platform: 'rate_yt_short',    label: 'Twitch Integration',       blurb: 'In-stream segment, mid-roll mention or chat overlay.', group: 'Twitch' },
-  { key: 'irl',             rate_col: 'rate_irl',             band_platform: 'rate_irl',         label: 'IRL / Event Appearance',   blurb: 'Per-day on-site brand activation.',                    group: 'IRL' },
-  // ── Migration 040 — Snapchat / Kick / Watch party
-  { key: 'snapchat',        rate_col: 'rate_snapchat',        band_platform: 'rate_ig_post',     label: 'Snapchat (single)',        blurb: 'One sponsored Snap on your story.',                    group: 'Snapchat' },
-  { key: 'kick_stream',     rate_col: 'rate_kick_stream',     band_platform: 'rate_yt_full',     label: 'Kick Sponsored Stream',    blurb: 'Full sponsored stream on your Kick channel.',          group: 'Kick' },
-  { key: 'kick_integ',      rate_col: 'rate_kick_integ',      band_platform: 'rate_yt_short',    label: 'Kick Integration',         blurb: 'Mid-stream brand segment / mention on Kick.',          group: 'Kick' },
-  { key: 'watchparty',      rate_col: 'rate_watchparty',      band_platform: 'rate_yt_full',     label: 'Watch Party Stream',       blurb: 'Co-stream of a tournament / event with brand integration.', group: 'Live & Stream' },
-  // ── Migration 042 — Game-ad deliverables (Xsolla-class partners)
-  { key: 'game_playthrough_full', rate_col: 'rate_game_playthrough_full', band_platform: 'rate_yt_full',  label: 'Game Playthrough (Full)',     blurb: 'Long-form sponsored playthrough of a brand title.', group: 'Game Ads' },
-  { key: 'game_sponsored_match',  rate_col: 'rate_game_sponsored_match',  band_platform: 'rate_yt_full',  label: 'Sponsored Match',             blurb: 'Branded sponsored match / scrim with overlay.',     group: 'Game Ads' },
-  { key: 'game_branded_skin_use', rate_col: 'rate_game_branded_skin_use', band_platform: 'rate_yt_short', label: 'Branded Skin / Loadout Use',  blurb: 'Featuring a brand skin or loadout in stream.',      group: 'Game Ads' },
+  // ── Instagram (universal — every brand campaign uses it)
+  { key: 'ig_reel',         rate_col: 'rate_ig_reel',         band_platform: 'rate_ig_reel',     label: 'Instagram Reel',           blurb: 'Sponsored 15–60s vertical — product reviews, game promo, lifestyle drops.',     group: 'Instagram' },
+  { key: 'ig_static',       rate_col: 'rate_ig_static',       band_platform: 'rate_ig_post',     label: 'Instagram Post / Carousel', blurb: 'Single image or carousel — seeding, product features, partnership announcements.', group: 'Instagram' },
+  { key: 'ig_story',        rate_col: 'rate_ig_story',        band_platform: 'rate_ig_post',     label: 'Instagram Story',          blurb: '24h frame — unboxings, in-moment shoutouts, swipe-ups.',                       group: 'Instagram' },
+  // ── TikTok
+  { key: 'tiktok_video',    rate_col: 'rate_tiktok_video',    band_platform: 'rate_tiktok_video',label: 'TikTok Video',             blurb: 'Original sponsored TikTok — product testing, game promo, brand integration.',  group: 'TikTok' },
+  { key: 'tiktok_repost',   rate_col: 'rate_tiktok_repost',   band_platform: 'rate_tiktok_video',label: 'TikTok Repost',            blurb: 'Cross-post brand-supplied creative on your TikTok — seeding amplification.',   group: 'TikTok' },
+  // ── YouTube
+  { key: 'yt_short',        rate_col: 'rate_yt_short',        band_platform: 'rate_yt_short',    label: 'YouTube Short',            blurb: 'Vertical short — clips, teasers, drink-in-content moments.',                   group: 'YouTube' },
+  { key: 'yt_video',        rate_col: 'rate_yt_video',        band_platform: 'rate_yt_full',     label: 'YouTube Video (long-form)',blurb: 'Full review, sponsored playthrough, brand narrative — most-common product-review asset globally.', group: 'YouTube' },
+  { key: 'yt_short_repost', rate_col: 'rate_yt_short_repost', band_platform: 'rate_yt_short',    label: 'YouTube Short Repost',     blurb: 'Re-upload of brand-supplied vertical short.',                                  group: 'YouTube' },
+  // ── X / Twitter
+  { key: 'x_post',          rate_col: 'rate_x_post',          band_platform: 'rate_ig_post',     label: 'X / Twitter Post',         blurb: 'Sponsored tweet — announcements, brand mentions, link shares.',                group: 'X (Twitter)' },
+  { key: 'x_repost',        rate_col: 'rate_x_repost',        band_platform: 'rate_ig_post',     label: 'X / Twitter Repost',       blurb: 'Quote-retweet brand content from your handle — seeding boost.',                group: 'X (Twitter)' },
+  // ── Twitch (streamers)
+  { key: 'twitch_stream',   rate_col: 'rate_twitch_stream',   band_platform: 'rate_yt_full',     label: 'Twitch Sponsored Stream',  blurb: 'Full live stream with brand integration — game launches, beta access, sponsored play.', group: 'Twitch' },
+  { key: 'twitch_integ',    rate_col: 'rate_twitch_integ',    band_platform: 'rate_yt_short',    label: 'Twitch Integration',       blurb: 'In-stream brand segment — mid-roll mention, chat overlay, brief shoutout.',    group: 'Twitch' },
+  // ── IRL (universal — events, activations, appearances)
+  { key: 'irl',             rate_col: 'rate_irl',             band_platform: 'rate_irl',         label: 'IRL / Event Appearance',   blurb: 'Per-day on-site — product launches, brand activations, venue appearances.',     group: 'IRL' },
+  // ── Snapchat (Migration 040 — KSA-relevant only)
+  { key: 'snapchat',        rate_col: 'rate_snapchat',        band_platform: 'rate_ig_post',     label: 'Snapchat (single)',        blurb: 'One sponsored Snap on your story — KSA-native format, strong for FMCG and QSR.', group: 'Snapchat' },
+  // ── Kick (Migration 040 — content-creator only currently)
+  { key: 'kick_stream',     rate_col: 'rate_kick_stream',     band_platform: 'rate_yt_full',     label: 'Kick Sponsored Stream',    blurb: 'Full sponsored stream on Kick — for creators who stream there exclusively.',   group: 'Kick' },
+  { key: 'kick_integ',      rate_col: 'rate_kick_integ',      band_platform: 'rate_yt_short',    label: 'Kick Integration',         blurb: 'Mid-stream brand segment / mention on Kick.',                                  group: 'Kick' },
+  // ── Watch party (streamers)
+  { key: 'watchparty',      rate_col: 'rate_watchparty',      band_platform: 'rate_yt_full',     label: 'Watch Party Stream',       blurb: 'Co-stream a tournament / event with brand integration — EWC season especially.', group: 'Live & Stream' },
+  // ── Game Ads (Migration 042 — competitive players, Xsolla / publisher partners)
+  { key: 'game_playthrough_full', rate_col: 'rate_game_playthrough_full', band_platform: 'rate_yt_full',  label: 'Game Playthrough (Full)',     blurb: 'Long-form sponsored playthrough of a brand title — game launches, expansions.', group: 'Game Ads' },
+  { key: 'game_sponsored_match',  rate_col: 'rate_game_sponsored_match',  band_platform: 'rate_yt_full',  label: 'Sponsored Match',             blurb: 'Branded scrim / showmatch with overlay — game promo, brand activation.',         group: 'Game Ads' },
+  { key: 'game_branded_skin_use', rate_col: 'rate_game_branded_skin_use', band_platform: 'rate_yt_short', label: 'Branded Skin / Loadout Use',  blurb: 'Featuring a brand skin or loadout in stream — partnership integrations.',         group: 'Game Ads' },
 ];
 
 type PlayerRateColumns = {
   rate_ig_reel: number; rate_ig_static: number; rate_ig_story: number;
   rate_tiktok_video: number; rate_tiktok_repost: number;
   rate_yt_short: number; rate_yt_short_repost: number;
+  rate_yt_video: number;  // long-form sponsored video (Migration ≤039)
   rate_x_post: number; rate_x_repost: number;
   rate_twitch_stream: number; rate_twitch_integ: number;
   rate_irl: number;
@@ -203,6 +213,7 @@ export default async function TalentIntakePage({ params }: { params: { token: st
           full_name: player.full_name,
           avatar_url: player.avatar_url,
           tier_code: player.tier_code,
+          role:      player.role,
           game:      player.game,
           team:      player.team,
           nationality: player.nationality,
