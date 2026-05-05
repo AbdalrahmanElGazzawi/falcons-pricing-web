@@ -105,6 +105,52 @@ export default async function TalentIntakePage({ params }: { params: { token: st
     source_url: string | null; notes: string | null;
   }>;
 
+  // ─── Industry reference data (Migration 057+) ──────────────────────
+  // Pull recent Falcons closed-deal aggregate so the talent sees real
+  // campaign flow as a benchmark anchor — "brands ARE paying this".
+  const since12mo = new Date();
+  since12mo.setMonth(since12mo.getMonth() - 12);
+  const { data: dealsRaw } = await supabase
+    .from('sales_log')
+    .select('amount_sar, amount_usd, platform, brand_name, deal_date, player_id, creator_id')
+    .gte('deal_date', since12mo.toISOString().slice(0, 10));
+  const deals = (dealsRaw ?? []) as Array<{
+    amount_sar: number | null; amount_usd: number | null;
+    platform: string | null;   brand_name: string | null;
+    deal_date: string;         player_id: number | null; creator_id: number | null;
+  }>;
+  const dealsCount = deals.length;
+  const dealsBrands = new Set(deals.map(d => d.brand_name).filter(Boolean)).size;
+  const dealsTotalSar = deals.reduce((acc, d) => acc + Number(d.amount_sar ?? 0), 0);
+  const dealsAvgSar = dealsCount ? Math.round(dealsTotalSar / dealsCount) : 0;
+  const platformCounts = new Map<string, number>();
+  for (const d of deals) {
+    const k = (d.platform ?? '').trim();
+    if (!k) continue;
+    platformCounts.set(k, (platformCounts.get(k) ?? 0) + 1);
+  }
+  const topPlatforms = Array.from(platformCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([name, count]) => ({ name, count }));
+
+  // Aggregate peer-org reach in this talent's region for the spend-context card.
+  const peerOrgsTotalReach = peerOrgs.reduce((acc, p) => acc + Number(p.followers_total ?? 0), 0);
+
+  const industryReference = {
+    falcons: {
+      dealsCount,
+      dealsBrands,
+      avgSar: dealsAvgSar,
+      avgUsd: dealsAvgSar ? Math.round(dealsAvgSar / 3.75) : 0,
+      topPlatforms,
+    },
+    peerOrgs: {
+      count: peerOrgs.length,
+      totalReach: peerOrgsTotalReach,
+    },
+  };
+
   // Mark intake as 'sent' the first time they open it
   if (player.intake_status === 'not_started') {
     void supabase.from('players').update({
@@ -168,6 +214,7 @@ export default async function TalentIntakePage({ params }: { params: { token: st
         market={audienceMarket}
         deliverables={deliverables}
         peerOrgs={peerOrgs}
+        industryReference={industryReference}
       />
     </Shell>
   );
