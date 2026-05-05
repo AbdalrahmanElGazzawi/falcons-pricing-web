@@ -5,6 +5,7 @@ import { Edit3, Check } from 'lucide-react';
 
 const SECTION_TITLES: Record<string, string> = {
   hero:        'Hero strip',
+  readiness:   'Pricing readiness',
   owned_media: 'Owned media',
   a_team:      'A-team',
   brain_trust: 'Brain trust',

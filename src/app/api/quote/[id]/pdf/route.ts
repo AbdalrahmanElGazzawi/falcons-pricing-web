@@ -40,7 +40,11 @@ function dateStr(iso?: string) { return iso ? new Date(iso).toLocaleDateString('
 import { labelForFactor } from '@/lib/pricing';
 
 // Map an axis multiplier to a human label — talent-aware (uses labelForFactor from pricing engine).
-function axisLabel(axis: string, value: number, kind: 'player' | 'creator' = 'player'): string {
+function axisLabel(
+  axis: string, value: number,
+  kind: 'player' | 'creator' = 'player',
+  locale: 'en' | 'ar' = 'en',
+): string {
   const round = (v: number) => Math.round(v * 100) / 100;
   const v = round(value);
   // Translate short axis key → labelForFactor's expected key
@@ -54,7 +58,9 @@ function axisLabel(axis: string, value: number, kind: 'player' | 'creator' = 'pl
   };
   const k = axisMap[axis];
   if (!k) return fmtMult(v);
-  const lbl = labelForFactor(k, v, kind);
+  // Mig 067 (May 5): pass locale through to pricing.labelForFactor for AR.
+  // Default 'en' preserves prior PDF behaviour.
+  const lbl = labelForFactor(k, v, kind, locale);
   if (lbl.includes('×')) return lbl; // unmatched fallback
   return `${lbl} (${fmtMult(v)})`;
 }
@@ -81,6 +87,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   // Allow ?ccy=USD|SAR&rate=N to override the stored currency / FX at render time.
   // Internal use only — the public client portal (token path) sticks with the saved
   // currency + rate to avoid rep-side ambiguity.
+  // Mig 067 (May 5): optional ?locale=ar renders Arabic multiplier labels.
+  // Default English. URL-param only — no quote-row column yet (deliberate;
+  // can wire to a stored quote.locale column when Arabic-PDF demand lands).
+  const localeParam = (url.searchParams.get('locale') || '').toLowerCase();
+  const pdfLocale: 'en' | 'ar' = localeParam === 'ar' ? 'ar' : 'en';
   const ccyOverride = (url.searchParams.get('ccy') || '').toUpperCase();
   const rateOverrideRaw = url.searchParams.get('rate');
   const rateOverride = rateOverrideRaw ? Number(rateOverrideRaw) : NaN;
@@ -415,7 +426,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   doc.font('Helvetica').fontSize(8.5).fillColor(INK);
   axes.forEach(([name, key, val]) => {
     doc.fillColor(LABEL).text(`${name}:`, methX, y);
-    doc.fillColor(INK).text(axisLabel(key, val, dominantKind), methX + 75, y, { width: methW - 75 });
+    doc.fillColor(INK).text(axisLabel(key, val, dominantKind, pdfLocale), methX + 75, y, { width: methW - 75 });
     y += 10;
   });
   if (Number(quote.addons_uplift_pct || 0) > 0) {

@@ -27,8 +27,8 @@ export default async function DashboardPage() {
     { data: tiers },
     { data: teams },
   ] = await Promise.all([
-    supabase.from('players').select('id, nickname, full_name, role, game, tier_code, avatar_url, ingame_role, agency_status, agency_name, agency_contact').eq('is_active', true),
-    supabase.from('creators').select('id, nickname, tier_code').eq('is_active', true),
+    supabase.from('players').select('id, nickname, full_name, role, game, tier_code, avatar_url, ingame_role, agency_status, agency_name, agency_contact, is_bookable, profile_strength_pct, intake_status').eq('is_active', true),
+    supabase.from('creators').select('id, nickname, tier_code, is_bookable, profile_strength_pct').eq('is_active', true),
     supabase.from('tiers').select('code, label, sort_order').order('sort_order'),
     supabase.from('esports_teams').select('*').eq('is_active', true).order('sort_order').order('game'),
   ]);
@@ -55,6 +55,29 @@ export default async function DashboardPage() {
   const totalInfluencers = influencers.length;
   const totalCreators = allCreators.length;
   const totalRoster = totalPlayers + totalCreators + totalInfluencers;
+
+  // ── Pricing readiness (Mig 059 + 062) ────────────────────────────────────
+  // Bookable + profile-strength reflects the agency-industry two-axis model:
+  // continuous confidence score + binary bookable. Intake-status is the
+  // talent-side floor approval queue.
+  const allBookable = [...allRows, ...allCreators];
+  const bookableCount = allBookable.filter((r: any) => r.is_bookable !== false).length;
+  const onHoldCount   = allBookable.filter((r: any) => r.is_bookable === false).length;
+  const bookablePct   = allBookable.length ? Math.round((bookableCount / allBookable.length) * 100) : 0;
+
+  const strengths = allBookable
+    .map((r: any) => Number(r.profile_strength_pct ?? 0))
+    .filter(n => Number.isFinite(n));
+  const avgStrength = strengths.length ? Math.round(strengths.reduce((s, n) => s + n, 0) / strengths.length) : 0;
+  const strongCount = strengths.filter(n => n >= 70).length;
+  const midCount    = strengths.filter(n => n >= 50 && n < 70).length;
+  const weakCount   = strengths.filter(n => n < 50).length;
+
+  const intakeSubmitted = allRows.filter((p: any) => p.intake_status === 'submitted' || p.intake_status === 'revised').length;
+  const intakeApproved  = allRows.filter((p: any) => p.intake_status === 'approved').length;
+  const intakeSent      = allRows.filter((p: any) => p.intake_status === 'sent').length;
+  const intakeNotStarted = allRows.filter((p: any) => !p.intake_status || p.intake_status === 'not_started').length;
+
   // tier codes are stored as 'Tier S' / 'Tier 1' / 'Tier 2' — not single letters
   const tierSPlayers = playersOnly.filter(p => p.tier_code === 'Tier S');
   const games = new Set(playersOnly.map(p => p.game).filter(Boolean));
@@ -110,10 +133,51 @@ export default async function DashboardPage() {
   // Super admin can reorder sections; persisted in page_layouts
   const sectionOrder = await getPageLayout(
     supabase, 'dashboard',
-    ['hero', 'owned_media', 'a_team', 'brain_trust', 'charts', 'inventory']
+    ['hero', 'readiness', 'owned_media', 'a_team', 'brain_trust', 'charts', 'inventory']
   );
 
   const sectionNodes: Record<string, React.ReactNode> = {
+    readiness: (
+      <>
+      {/* PRICING READINESS — bookable + profile-strength + intake queue */}
+      <div className="card overflow-hidden mb-6">
+        <div className="px-5 py-3 border-b border-line flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold flex items-center gap-2"><BarChart3 size={14} className="text-greenDark" /> Pricing readiness</h2>
+            <p className="text-xs text-mute mt-0.5">Bookable status + profile strength + intake-approval queue. The 5-second answer to &quot;what % of the roster can I sell today?&quot;</p>
+          </div>
+          <Link href="/roster/players?readiness=on_hold" className="text-xs text-greenDark hover:underline">View on-hold →</Link>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 p-5">
+          <div className="rounded-xl border border-greenDark/30 bg-greenSoft/40 p-4">
+            <div className="text-[10px] text-greenDark uppercase tracking-wider font-bold">Bookable today</div>
+            <div className="text-3xl font-extrabold text-greenDark tabular-nums mt-1">{bookablePct}%</div>
+            <div className="text-xs text-label mt-1">{bookableCount} of {allBookable.length} active</div>
+          </div>
+          <div className="rounded-xl border border-line p-4">
+            <div className="text-[10px] text-mute uppercase tracking-wider font-bold">On hold</div>
+            <div className="text-3xl font-extrabold text-ink tabular-nums mt-1">{onHoldCount}</div>
+            <div className="text-xs text-label mt-1">{onHoldCount === 0 ? 'no hard blockers' : 'needs source / market'}</div>
+          </div>
+          <div className="rounded-xl border border-line p-4">
+            <div className="text-[10px] text-mute uppercase tracking-wider font-bold">Avg profile strength</div>
+            <div className="text-3xl font-extrabold text-ink tabular-nums mt-1">{avgStrength}%</div>
+            <div className="text-xs text-label mt-1">strong {strongCount} · mid {midCount} · weak {weakCount}</div>
+          </div>
+          <div className="rounded-xl border border-line p-4">
+            <div className="text-[10px] text-mute uppercase tracking-wider font-bold">Intake queue</div>
+            <div className="text-3xl font-extrabold text-ink tabular-nums mt-1">{intakeSubmitted}</div>
+            <div className="text-xs text-label mt-1">awaiting your approval</div>
+          </div>
+          <div className="rounded-xl border border-line p-4">
+            <div className="text-[10px] text-mute uppercase tracking-wider font-bold">Intake coverage</div>
+            <div className="text-3xl font-extrabold text-ink tabular-nums mt-1">{intakeApproved}</div>
+            <div className="text-xs text-label mt-1">approved · {intakeSent} sent · {intakeNotStarted} not started</div>
+          </div>
+        </div>
+      </div>
+      </>
+    ),
     hero: (
       <>
       {/* Hero strip — asset inventory */}
