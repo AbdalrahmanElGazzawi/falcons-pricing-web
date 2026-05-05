@@ -75,10 +75,19 @@ export interface LineInput {
    */
   achievementDecay?: number;
   /**
-   * Creator-specific multipliers (added by QuoteBuilder + QuoteConfigurator).
-   * Currently passed through but not consumed in the SocialPrice/AuthorityFloor
-   * math — they're stored for the per-line creator multiplier override panel
-   * and surfaced in the quote PDF. Math wiring is a follow-up phase.
+   * Creator-specific multipliers — wired into SocialPrice (Migration 059, May 5).
+   * Sourced by QuoteBuilder + QuoteConfigurator from the creator record's
+   * defaults, with per-line overrides. For player lines (no creator record),
+   * all four resolve to neutral: brand_loyalty_pct=0 / exclusivity_premium_pct=0 /
+   * cross_vertical_multiplier=1.0 / engagement_quality_modifier=1.0.
+   * Each is clamped to a sane range to prevent runaway prices from a stray
+   * input value:
+   *   brandLoyaltyPct           clamped to [-50, +100]  (loyalty discount → premium)
+   *   exclusivityPremiumPct     clamped to [0,   +100]  (premium only, no discount)
+   *   crossVerticalMultiplier   clamped to [0.5, 2.0]   (multiplicative)
+   *   engagementQualityModifier clamped to [0.5, 2.0]   (multiplicative)
+   * The pct fields are converted to multipliers as (1 + pct/100) before
+   * stacking into SocialPrice.
    */
   brandLoyaltyPct?: number;
   exclusivityPremiumPct?: number;
@@ -173,6 +182,13 @@ export interface LineInput {
    * `agencyFeePct` if any, then takes max(finalUnit, grossedFloor).
    * `talentFloorHit` is set on LineOutput when this floor controlled the price.
    * Default 0 (no intake floor — engine math wins as before).
+   *
+   * APPROVAL GATE (Mig 062, May 5): the value passed in here is ALREADY
+   * gated by the call site on `players.intake_status === 'approved'` —
+   * meaning admin has reviewed and approved the talent submission.
+   * Submitted-but-not-yet-approved intakes pass 0 (no-op). The engine
+   * itself doesn't know about intake_status; gating is per-call-site
+   * because that's where the player record is in scope.
    */
   talentSubmittedFloor?: number;
   /**
@@ -348,6 +364,14 @@ export function computeLine(p: LineInput): LineOutput {
   const chatHealthMult           = p.chatHealth ?? 1.0;
   const crossGameMult            = p.crossGameVersatility ?? 1.0;
 
+  // Creator-specific multipliers (Migration 059, May 5 — moved from
+  // passed-through to consumed). Clamped to sane ranges; pct fields convert
+  // to multipliers as (1 + pct/100). Player lines pass neutral defaults.
+  const brandLoyaltyMult       = 1 + Math.max(-50, Math.min(100, p.brandLoyaltyPct ?? 0)) / 100;
+  const exclusivityPremiumMult = 1 + Math.max(0,   Math.min(100, p.exclusivityPremiumPct ?? 0)) / 100;
+  const crossVerticalMult      = Math.max(0.5, Math.min(2.0, p.crossVerticalMultiplier ?? 1.0));
+  const engagementQualityMult  = Math.max(0.5, Math.min(2.0, p.engagementQualityModifier ?? 1.0));
+
   const socialPrice = Math.round(
     effBaseFee * engGated * audGated * seasGated * ctype * lang * authGated
     * prodMult * streamMult
@@ -355,6 +379,7 @@ export function computeLine(p: LineInput): LineOutput {
     * firstLookMult * realTimeLiveMult * lifestyleMult * brandSafetyMult
     * collabMult
     * streamingConsistencyMult * chatHealthMult * crossGameMult
+    * brandLoyaltyMult * exclusivityPremiumMult * crossVerticalMult * engagementQualityMult
   );
   // AuthorityFloor scales by achievement_decay so a 2019 Major winner
   // doesn't get the same protection as a 2025 Major winner.

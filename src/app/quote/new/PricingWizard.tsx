@@ -240,9 +240,13 @@ export function PricingWizard({
       channelMultiplier: (globals as any).channelMultiplier,
       productionStyleMultiplier: (globals as any).productionStyleMultiplier,
       streamActivity: (globals as any).streamActivity,
-      // Migration 056 — talent intake floor + agency gross-up
-      talentSubmittedFloor: Number(((selectedPlayer as any)?.min_rates ?? {})[draft.platform] ?? 0),
-      agencyFeePct: ((selectedPlayer as any)?.agency_status === 'agency')
+      // Migration 056 + 062 — talent floor + agency gross-up, gated on
+      // intake_status='approved' (admin approval required).
+      talentSubmittedFloor: ((selectedPlayer as any)?.intake_status === 'approved')
+        ? Number(((selectedPlayer as any)?.min_rates ?? {})[draft.platform] ?? 0)
+        : 0,
+      agencyFeePct: ((selectedPlayer as any)?.intake_status === 'approved'
+                   && (selectedPlayer as any)?.agency_status === 'agency')
         ? Number((selectedPlayer as any)?.agency_fee_pct ?? 0)
         : 0,
     });

@@ -444,9 +444,13 @@ export function QuoteConfigurator({
             return ps === 'raw' ? 0.9 : ps === 'scripted' ? 1.20 : ps === 'full_studio' ? 1.40 : 1.0;
           })(),
           isCompanion,
-          // Migration 056 — talent intake floor + agency gross-up
-          talentSubmittedFloor: Number(((selectedPlayer as any)?.min_rates ?? {})[d.key] ?? 0),
-          agencyFeePct: ((selectedPlayer as any)?.agency_status === 'agency')
+          // Migration 056 + 062 — talent intake floor + agency gross-up,
+          // gated on intake_status='approved' (admin approval required).
+          talentSubmittedFloor: ((selectedPlayer as any)?.intake_status === 'approved')
+            ? Number(((selectedPlayer as any)?.min_rates ?? {})[d.key] ?? 0)
+            : 0,
+          agencyFeePct: ((selectedPlayer as any)?.intake_status === 'approved'
+                       && (selectedPlayer as any)?.agency_status === 'agency')
             ? Number((selectedPlayer as any)?.agency_fee_pct ?? 0)
             : 0,
         });

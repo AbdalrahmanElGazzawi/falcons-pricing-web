@@ -71,8 +71,12 @@ export function Calculator({
       const playerRec = l.talent_type === 'player'
         ? players.find(pl => pl.id === l.talent_id)
         : null;
-      const intakeFloor = Number(((playerRec as any)?.min_rates ?? {})[l.platform] ?? 0);
-      const intakeAgencyFee = (playerRec as any)?.agency_status === 'agency'
+      // Mig 062: talent floor + agency only flow when intake approved by admin.
+      const intakeApproved = (playerRec as any)?.intake_status === 'approved';
+      const intakeFloor = intakeApproved
+        ? Number(((playerRec as any)?.min_rates ?? {})[l.platform] ?? 0)
+        : 0;
+      const intakeAgencyFee = intakeApproved && (playerRec as any)?.agency_status === 'agency'
         ? Number((playerRec as any)?.agency_fee_pct ?? 0)
         : 0;
       const r = computeLine({

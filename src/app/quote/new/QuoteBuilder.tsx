@@ -432,8 +432,13 @@ export function QuoteBuilder({
       const playerRec = l.talent_type === 'player'
         ? players.find(pl => pl.id === l.talent_id)
         : null;
-      const intakeFloor = Number(((playerRec as any)?.min_rates ?? {})[l.platform] ?? 0);
-      const intakeAgencyFee = (playerRec as any)?.agency_status === 'agency'
+      // Mig 062: talent floor + agency fee only flow when admin has approved the intake.
+      // intake_status moves submitted -> approved via /admin/talent-intakes Override action.
+      const intakeApproved = (playerRec as any)?.intake_status === 'approved';
+      const intakeFloor = intakeApproved
+        ? Number(((playerRec as any)?.min_rates ?? {})[l.platform] ?? 0)
+        : 0;
+      const intakeAgencyFee = intakeApproved && (playerRec as any)?.agency_status === 'agency'
         ? Number((playerRec as any)?.agency_fee_pct ?? 0)
         : 0;
       // Migration 042: per-line collab discount derived from unique talent count.

@@ -351,3 +351,72 @@ describe('talent intake floor + agency gross-up (Migration 056)', () => {
     expect(r.talentFloorGrossed).toBe(6_000); // 4000 × 1.5
   });
 });
+
+describe('computeLine — creator-specific multipliers (Migration 059 wiring)', () => {
+  const base = 10_000;
+
+  it('all four creator multipliers default to neutral when omitted', () => {
+    const r = computeLine({ baseFee: base, qty: 1, conf: 'exact' });
+    expect(r.finalUnit).toBe(base);
+  });
+
+  it('brandLoyaltyPct = 10 adds +10%', () => {
+    const r = computeLine({ baseFee: base, qty: 1, conf: 'exact', brandLoyaltyPct: 10 });
+    expect(r.finalUnit).toBe(11_000);
+  });
+
+  it('exclusivityPremiumPct = 25 adds +25%', () => {
+    const r = computeLine({ baseFee: base, qty: 1, conf: 'exact', exclusivityPremiumPct: 25 });
+    expect(r.finalUnit).toBe(12_500);
+  });
+
+  it('crossVerticalMultiplier = 1.20 adds +20%', () => {
+    const r = computeLine({ baseFee: base, qty: 1, conf: 'exact', crossVerticalMultiplier: 1.20 });
+    expect(r.finalUnit).toBe(12_000);
+  });
+
+  it('engagementQualityModifier = 1.15 adds +15%', () => {
+    const r = computeLine({ baseFee: base, qty: 1, conf: 'exact', engagementQualityModifier: 1.15 });
+    expect(r.finalUnit).toBe(11_500);
+  });
+
+  it('all four stack multiplicatively', () => {
+    // 1.10 × 1.20 × 1.10 × 1.05 = 1.5246, × 10_000 = 15_246 → rounded
+    const r = computeLine({
+      baseFee: base, qty: 1, conf: 'exact',
+      brandLoyaltyPct: 10,
+      exclusivityPremiumPct: 20,
+      crossVerticalMultiplier: 1.10,
+      engagementQualityModifier: 1.05,
+    });
+    expect(r.finalUnit).toBe(15_246);
+  });
+
+  it('brandLoyaltyPct above +100 is clamped to +100', () => {
+    const r = computeLine({ baseFee: base, qty: 1, conf: 'exact', brandLoyaltyPct: 999 });
+    expect(r.finalUnit).toBe(20_000); // 1 + 100/100 = 2.0×
+  });
+
+  it('crossVerticalMultiplier above 2.0 is clamped to 2.0', () => {
+    const r = computeLine({ baseFee: base, qty: 1, conf: 'exact', crossVerticalMultiplier: 5 });
+    expect(r.finalUnit).toBe(20_000);
+  });
+
+  it('discount multipliers are clamped UP by floor enforcement (enforceFloor=true default)', () => {
+    // 0.80 modifier would push unit below baseFee, but the post-Mig 030 floor
+    // clamp pulls it back up to baseFee for non-companion lines.
+    const r = computeLine({
+      baseFee: base, qty: 1, conf: 'exact', engagementQualityModifier: 0.80,
+    });
+    expect(r.finalUnit).toBe(base);
+    expect(r.floorHit).toBe(true);
+  });
+
+  it('discount multipliers DO push price down when enforceFloor=false', () => {
+    const r = computeLine({
+      baseFee: base, qty: 1, conf: 'exact',
+      engagementQualityModifier: 0.80, enforceFloor: false,
+    });
+    expect(r.finalUnit).toBe(8_000);
+  });
+});
