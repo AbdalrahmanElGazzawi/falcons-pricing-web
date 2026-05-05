@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-import { requireSuperAdmin } from '@/lib/auth';
+import { requireAdminOrSuper } from '@/lib/auth';
 
 const ALLOWED_KEYS = new Set([
   'ig_reel','ig_static','ig_story',
@@ -16,7 +16,7 @@ const ALLOWED_KEYS = new Set([
 ]);
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireSuperAdmin();
+  const auth = await requireAdminOrSuper();
   if (auth.denied) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const id = Number(params.id);

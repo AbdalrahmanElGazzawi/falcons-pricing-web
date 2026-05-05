@@ -45,3 +45,12 @@ export async function requireSuperAdmin() {
   }
   return { ...res, denied: false as const };
 }
+
+export async function requireAdminOrSuper() {
+  const res = await requireAuth();
+  if (res.denied) return { ...res, denied: true as const };
+  const isSuper = isSuperAdminEmail(res.profile.email);
+  const isAdmin = res.profile.role === 'admin';
+  if (!isSuper && !isAdmin) return { ...res, denied: true as const };
+  return { ...res, denied: false as const };
+}

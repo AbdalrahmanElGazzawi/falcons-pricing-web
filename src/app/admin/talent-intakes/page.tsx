@@ -1,4 +1,4 @@
-import { requireSuperAdmin } from '@/lib/auth';
+import { requireAdminOrSuper } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
 import { IntakesTable } from './IntakesTable';
@@ -7,7 +7,7 @@ import { resolveTalentPhoto, audienceMarketFor } from '@/lib/talent-photo';
 export const dynamic = 'force-dynamic';
 
 export default async function TalentIntakesPage() {
-  const { denied, profile, supabase } = await requireSuperAdmin();
+  const { denied, profile, supabase } = await requireAdminOrSuper();
   if (denied) return <AccessDenied />;
 
   const { data: playersRows } = await supabase

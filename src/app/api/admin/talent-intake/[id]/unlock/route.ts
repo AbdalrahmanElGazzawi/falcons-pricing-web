@@ -3,10 +3,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-import { requireSuperAdmin } from '@/lib/auth';
+import { requireAdminOrSuper } from '@/lib/auth';
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireSuperAdmin();
+  const auth = await requireAdminOrSuper();
   if (auth.denied) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const id = Number(params.id);

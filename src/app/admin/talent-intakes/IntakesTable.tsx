@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { Copy, ExternalLink, Check, Search, RefreshCw, Sparkles, Globe, ChevronDown, ChevronRight } from 'lucide-react';
+import { Copy, ExternalLink, Check, Search, RefreshCw, Sparkles, Globe, ChevronDown, ChevronRight, Edit3, Trash2, Unlock } from 'lucide-react';
 import { resolveTalentPhoto, isAuto, audienceMarketFor } from '@/lib/talent-photo';
 import { useLocale } from '@/lib/i18n/Locale';
 import { fmtCurrency } from '@/lib/utils';
@@ -280,6 +280,7 @@ export function IntakesTable({ players: initialPlayers }: { players: P[] }) {
               <th className="text-right px-3 py-2">{t('ti.col.floors_set')}</th>
               <th className="text-right px-3 py-2">{t('ti.col.floor_total')}</th>
               <th className="text-right px-3 py-2">{t('ti.col.link')}</th>
+              <th className="text-right px-3 py-2">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -404,10 +405,45 @@ export function IntakesTable({ players: initialPlayers }: { players: P[] }) {
                         </div>
                       ) : <span className="text-[11px] text-mute italic">{t('ti.no_token')}</span>}
                     </td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center gap-0.5">
+                        <button
+                          onClick={() => onOverride(p)}
+                          disabled={busyId === p.id}
+                          className="p-1.5 rounded-md text-mute hover:text-greenDark hover:bg-greenSoft/40 disabled:opacity-50"
+                          title="Override floor — set or replace min_rates as admin"
+                          aria-label="Override floor"
+                        >
+                          <Edit3 size={14} />
+                        </button>
+                        {p.intake_locked_until && (
+                          <button
+                            onClick={() => onUnlock(p)}
+                            disabled={busyId === p.id}
+                            className="p-1.5 rounded-md text-amber-700 hover:text-amber-900 hover:bg-amber-50 dark:hover:bg-amber-900/20 disabled:opacity-50"
+                            title={`Unlock revisions (locked until ${new Date(p.intake_locked_until).toLocaleDateString()})`}
+                            aria-label="Unlock revisions"
+                          >
+                            <Unlock size={14} />
+                          </button>
+                        )}
+                        {(p.min_rates && Object.keys(p.min_rates ?? {}).filter(k => Number((p.min_rates ?? {})[k]) > 0).length > 0) && (
+                          <button
+                            onClick={() => onClearSubmission(p)}
+                            disabled={busyId === p.id}
+                            className="p-1.5 rounded-md text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
+                            title="Clear submission — wipe min_rates, reset status, clear lockout"
+                            aria-label="Clear submission"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                   {isExpanded && p.min_rates && (
                     <tr key={`${p.id}-x`} className="bg-bg/40 border-t border-line/40">
-                      <td colSpan={9} className="px-3 py-3">
+                      <td colSpan={10} className="px-3 py-3">
                         <div className="text-[11px] text-mute mb-2 flex items-center gap-3 flex-wrap">
                           <span className="font-semibold text-ink">{p.nickname}&apos;s minimum floors</span>
                           <span>·</span>
@@ -443,7 +479,7 @@ export function IntakesTable({ players: initialPlayers }: { players: P[] }) {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-sm text-mute">
+                <td colSpan={10} className="px-4 py-10 text-center text-sm text-mute">
                   {t('ti.no_match')}
                 </td>
               </tr>
