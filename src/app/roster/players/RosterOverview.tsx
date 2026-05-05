@@ -45,6 +45,61 @@ const TR_LS_DISABLED  = 'falcons.tierReview.disabled';
 const TR_LS_TOLERANCE = 'falcons.tierReview.tolerance';
 const TR_LS_DISMISSED = 'falcons.tierReview.dismissed';
 
+// ── Migration 059: bookable + profile strength ──────────────────────────────
+// Compute a short list of "what's missing" from the underlying flags so the
+// rep sees actionable items (not just a percentage).
+function whatsMissingFor(p: Player): string[] {
+  const out: string[] = [];
+  const hasAnySocial =
+    !!(p.instagram || p.tiktok || p.youtube || p.x_handle || p.twitch || p.kick || (p as any).snapchat || (p as any).facebook);
+  if (!hasAnySocial)              out.push('social handles');
+  if (!p.has_social_data)         out.push('follower data verification');
+  if (!(p as any).has_audience_demo) out.push('audience demo');
+  if (!(p as any).has_tournament_data && p.role === 'Player') out.push('tournament data');
+  if (!(p as any).audience_data_verified) out.push('audience-data verified flag');
+  if (p.rate_source && p.rate_source !== 'reach_calibrated' && p.rate_source !== 'methodology_v2_with_data') {
+    out.push('reach-calibrated rate');
+  }
+  if (!p.agency_status || p.agency_status === 'unknown') out.push('agency declaration');
+  if (p.intake_status !== 'submitted')                   out.push('intake submission');
+  if (!p.pricing_rationale)                              out.push('pricing rationale text');
+  if (!p.liquipedia_url && p.role === 'Player')          out.push('Liquipedia URL');
+  return out;
+}
+
+function ReadinessBadge({ p }: { p: Player }) {
+  const bookable = p.is_bookable !== false;
+  const strength = p.profile_strength_pct ?? 0;
+  if (!bookable) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300 text-[10px] font-semibold border border-red-200 dark:border-red-800"
+        title="On hold — cannot quote until source data is filled. Hard blocker: missing rate_source, tier, anchor, or audience_market."
+      >
+        <Lock size={10} /> On hold
+      </span>
+    );
+  }
+  // Bookable; segment by strength.
+  const tone = strength >= 70 ? 'green' : strength >= 50 ? 'amber' : 'gray';
+  const cls =
+    tone === 'green' ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800'
+    : tone === 'amber' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+    : 'bg-bg text-mute border-line';
+  const missing = whatsMissingFor(p);
+  const tipBase = `Profile ${strength}% — ${tone === 'green' ? 'locked-in (premium-pitch defensible)' : tone === 'amber' ? 'mid (median-pitch defensible)' : 'weak (floor only)'}`;
+  const tip = missing.length === 0 ? tipBase : `${tipBase}. Missing: ${missing.join(', ')}.`;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold border ${cls}`}
+      title={tip}
+    >
+      {tone === 'green' ? <Lock size={10} /> : null}
+      {strength}%
+    </span>
+  );
+}
+
 function useTierReviewSettings() {
   const [disabled, setDisabledState] = useState(false);
   const [tolerance, setToleranceState] = useState(0);
@@ -125,6 +180,7 @@ export function RosterOverview({
   const [country, setCountry] = useState('');
   const [dataFilter, setDataFilter] = useState<'' | 'locked' | 'tbd' | 'pending'>('');
   const [liqFilter, setLiqFilter] = useState<'' | 'missing_url' | 'has_url_unsynced' | 'synced' | 'stale'>('');
+  const [readinessFilter, setReadinessFilter] = useState<'' | 'bookable' | 'on_hold' | 'strong' | 'mid' | 'weak'>('');
   const [density, setDensity] = useState<Density>('comfortable');
   const [reviewOnly, setReviewOnly] = useState(false);
   const tierReview = useTierReviewSettings();
@@ -195,13 +251,22 @@ export function RosterOverview({
         const f = tierReviewFlag(p.tier_code, maxPlatformReach(p), { tolerance: tierReview.tolerance });
         if (f !== 'promote' && f !== 'demote') return false;
       }
+      if (readinessFilter) {
+        const bookable = p.is_bookable !== false; // null/undefined → treat as bookable; only false hides
+        const strength = p.profile_strength_pct ?? 0;
+        if (readinessFilter === 'bookable' && !bookable) return false;
+        if (readinessFilter === 'on_hold'  &&  bookable) return false;
+        if (readinessFilter === 'strong'   && strength < 70) return false;
+        if (readinessFilter === 'mid'      && (strength < 50 || strength >= 70)) return false;
+        if (readinessFilter === 'weak'     && strength >= 50) return false;
+      }
       if (s) {
         const fields = [p.nickname, p.full_name, p.team, p.game, p.nationality, p.ingame_role, p.role];
         if (!fields.filter(Boolean).some(v => v!.toLowerCase().includes(s))) return false;
       }
       return true;
     });
-  }, [players, q, tier, game, team, country, dataFilter, tabMatch, reviewOnly, tierReview.disabled, tierReview.dismissed, tierReview.tolerance, liqFilter]);
+  }, [players, q, tier, game, team, country, dataFilter, tabMatch, reviewOnly, tierReview.disabled, tierReview.dismissed, tierReview.tolerance, liqFilter, readinessFilter]);
 
   const reviewFlagCount = useMemo(() => {
     if (tierReview.disabled) return 0;
@@ -278,6 +343,14 @@ export function RosterOverview({
           <option value="locked">Locked only</option>
           <option value="tbd">TBD only</option>
           <option value="pending">No data (pending)</option>
+        </select>
+        <select value={readinessFilter} onChange={e => setReadinessFilter(e.target.value as any)} className="input max-w-[180px]" title="Filter by campaign readiness (Mig 059)">
+          <option value="">All readiness</option>
+          <option value="bookable">Bookable only</option>
+          <option value="on_hold">On hold (blocked)</option>
+          <option value="strong">Strong profile (≥70%)</option>
+          <option value="mid">Mid profile (50–69%)</option>
+          <option value="weak">Weak profile (&lt;50%)</option>
         </select>
         <select value={tier} onChange={e => setTier(e.target.value)} className="input max-w-[160px]">
           <option value="">All tiers</option>
@@ -416,7 +489,10 @@ function RosterRow({
             {editingNick && isAdmin ? (
               <InlineInput value={nick} onCancel={() => { setNick(p.nickname); setEditingNick(false); }} onCommit={async (v) => { if (!v.trim()) { setEditingNick(false); return; } const ok = await onPatch(p.id, { nickname: v.trim() }); if (ok) setEditingNick(false); }} />
             ) : (
-              <div className={`font-medium text-ink truncate ${isAdmin ? 'cursor-text hover:underline decoration-dotted' : ''}`} onClick={() => isAdmin && setEditingNick(true)}>{p.nickname}</div>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className={`font-medium text-ink truncate ${isAdmin ? 'cursor-text hover:underline decoration-dotted' : ''}`} onClick={() => isAdmin && setEditingNick(true)}>{p.nickname}</div>
+                <ReadinessBadge p={p} />
+              </div>
             )}
             {editingName && isAdmin ? (
               <InlineInput value={name} onCancel={() => { setName(p.full_name ?? ''); setEditingName(false); }} onCommit={async (v) => { const ok = await onPatch(p.id, { full_name: v.trim() || null }); if (ok) setEditingName(false); }} size="sm" />

@@ -146,6 +146,13 @@ export interface Player {
   last_major_finish_date?: string | null;
   last_major_placement?: string | null;
   achievement_decay_factor?: number;
+  // ── Campaign readiness (Migration 059) ─────────────────────────────────
+  /** Computed: false only for hard blockers (no rate_source / unverified /
+   *  no tier / no anchor / no market). 'No socials' alone does NOT block. */
+  is_bookable?: boolean;
+  /** Computed 0-100. Drives pricing CONFIDENCE (floor vs median vs premium
+   *  pitch), never gates the quote button. 10 weighted signals in Mig 059. */
+  profile_strength_pct?: number;
 }
 
 export interface Creator {
@@ -207,6 +214,9 @@ export interface Creator {
   audience_market?: string | null;
   rate_source?: string | null;
   rate_card_historical?: Record<string, number | string> | null;
+  // ── Campaign readiness (Migration 059) ─────────────────────────────────
+  is_bookable?: boolean;
+  profile_strength_pct?: number;
 }
 
 export interface Tier {
