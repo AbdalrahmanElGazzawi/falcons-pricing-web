@@ -426,6 +426,16 @@ export function QuoteBuilder({
       const creatorRec = l.talent_type === 'creator'
         ? creators.find(c => c.id === l.talent_id)
         : null;
+      // Migration 056 — talent intake floor + agency gross-up.
+      // Look up the player record so we can pass their submitted floor for
+      // this deliverable + their declared agency fee %.
+      const playerRec = l.talent_type === 'player'
+        ? players.find(pl => pl.id === l.talent_id)
+        : null;
+      const intakeFloor = Number(((playerRec as any)?.min_rates ?? {})[l.platform] ?? 0);
+      const intakeAgencyFee = (playerRec as any)?.agency_status === 'agency'
+        ? Number((playerRec as any)?.agency_fee_pct ?? 0)
+        : 0;
       // Migration 042: per-line collab discount derived from unique talent count.
       const uniqueTalents = Math.max(1, new Set(lines.map(x => x.talent_type + ':' + x.talent_id)).size);
       const r = computeLine({
@@ -462,6 +472,9 @@ export function QuoteBuilder({
           return ps === 'raw' ? 0.9 : ps === 'scripted' ? 1.20 : ps === 'full_studio' ? 1.40 : 1.0;
         })(),
         channelMultiplier,
+        // Migration 056 — talent intake floor + agency gross-up
+        talentSubmittedFloor: intakeFloor,
+        agencyFeePct: intakeAgencyFee,
       });
       return { ...l, ...r };
     });

@@ -240,6 +240,11 @@ export function PricingWizard({
       channelMultiplier: (globals as any).channelMultiplier,
       productionStyleMultiplier: (globals as any).productionStyleMultiplier,
       streamActivity: (globals as any).streamActivity,
+      // Migration 056 — talent intake floor + agency gross-up
+      talentSubmittedFloor: Number(((selectedPlayer as any)?.min_rates ?? {})[draft.platform] ?? 0),
+      agencyFeePct: ((selectedPlayer as any)?.agency_status === 'agency')
+        ? Number((selectedPlayer as any)?.agency_fee_pct ?? 0)
+        : 0,
     });
   }, [draft, globals, addonsUpliftPct]);
 

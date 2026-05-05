@@ -164,6 +164,25 @@ export interface LineInput {
   streamingConsistency?: number;   // <3mo 0.90 / 3-12mo 1.00 / 12mo+ 1.10 / 24mo+ 1.20
   chatHealth?: number;             // toxic 0.80 / mixed 0.95 / clean 1.05 / curated 1.15
   crossGameVersatility?: number;   // single 0.95 / 2-game 1.00 / variety 1.10
+  // ── Migration 056 — Talent-submitted intake floor + agency gross-up ─────
+  /**
+   * Talent's submitted floor for this deliverable (SAR), as captured by the
+   * /talent/<token> intake page and persisted on `players.min_rates[key]`.
+   * When > 0, this is treated as a defensible floor *on top of* the
+   * existing engine floor (effBaseFee). The engine grosses it up by
+   * `agencyFeePct` if any, then takes max(finalUnit, grossedFloor).
+   * `talentFloorHit` is set on LineOutput when this floor controlled the price.
+   * Default 0 (no intake floor — engine math wins as before).
+   */
+  talentSubmittedFloor?: number;
+  /**
+   * Agency fee % declared by the talent on the intake form (0–50). Used to
+   * gross up `talentSubmittedFloor` so the talent's NET take-home matches
+   * what they submitted after the agency takes its cut.
+   *   grossedFloor = talentSubmittedFloor × (1 + agencyFeePct/100)
+   * Default 0 (talent represents themselves directly).
+   */
+  agencyFeePct?: number;
 }
 
 /**
@@ -220,6 +239,24 @@ export interface LineOutput {
   floorHit?: boolean;
   /** Floor enforcement: SAR amount the floor enforcement added. */
   floorDelta?: number;
+  // ── Migration 056 — Talent intake floor + agency gross-up ───────────────
+  /** Raw intake-submitted floor (SAR), pre-agency gross-up. 0 = none on file. */
+  talentFloorRaw?: number;
+  /** After agency gross-up: floorRaw × (1 + agencyFeePct/100). 0 = none. */
+  talentFloorGrossed?: number;
+  /** True if the grossed talent floor controlled the final price. */
+  talentFloorHit?: boolean;
+  /** SAR added by the talent-floor enforcement (finalUnit - rawUnit). */
+  talentFloorDelta?: number;
+  /** Agency fee % used in the gross-up (mirrored for the breakdown UI). */
+  agencyFeePctApplied?: number;
+  /**
+   * Which input controlled the final unit price:
+   *   'engine'       — multipliers landed above all floors (normal path)
+   *   'base_floor'   — engine baseFee floor enforced (Migration 030)
+   *   'talent_floor' — intake-submitted floor (with agency gross-up) won
+   */
+  priceController?: 'engine' | 'base_floor' | 'talent_floor';
   appliedState: DataCompleteness;
 }
 
@@ -341,6 +378,33 @@ export function computeLine(p: LineInput): LineOutput {
     finalUnit = Math.round(effBaseFee);
   }
 
+  // ── Migration 056 — Talent intake floor + agency gross-up ────────────────
+  // Layered ON TOP of the baseFee floor: when the talent has submitted a
+  // floor for this deliverable via the /talent/<token> intake, treat it as a
+  // defensible minimum after grossing up by the agency fee they declared.
+  // Companion lines bypass (they're explicitly half-priced by design).
+  const talentFloorRaw = Math.max(0, Math.round(p.talentSubmittedFloor ?? 0));
+  const agencyFeePctApplied = Math.max(0, Math.min(50, p.agencyFeePct ?? 0));
+  const talentFloorGrossed = talentFloorRaw > 0
+    ? Math.round(talentFloorRaw * (1 + agencyFeePctApplied / 100))
+    : 0;
+  let talentFloorHit = false;
+  let talentFloorDelta = 0;
+  const allowTalentFloor = enforceFloor; // same gate: skip companion / opt-out lines
+  const beforeTalentFloor = finalUnit;
+  if (allowTalentFloor && talentFloorGrossed > 0 && finalUnit < talentFloorGrossed) {
+    talentFloorHit = true;
+    talentFloorDelta = Math.round(talentFloorGrossed - finalUnit);
+    finalUnit = talentFloorGrossed;
+  }
+
+  // Determine which input controlled the final unit price.
+  // Talent-floor wins last → so if it bumped, it controls.
+  const priceController: 'engine' | 'base_floor' | 'talent_floor' =
+    talentFloorHit ? 'talent_floor'
+    : floorHit     ? 'base_floor'
+    :                'engine';
+
   const finalAmount = Math.round(finalUnit * qty);
 
   return {
@@ -349,6 +413,13 @@ export function computeLine(p: LineInput): LineOutput {
     socialPrice, floorPrice, preAddOn,
     finalUnit, finalAmount,
     ...(floorHit ? { floorHit, floorDelta } : {}),
+    ...(talentFloorRaw > 0 ? {
+      talentFloorRaw,
+      talentFloorGrossed,
+      agencyFeePctApplied,
+      ...(talentFloorHit ? { talentFloorHit, talentFloorDelta } : {}),
+    } : {}),
+    priceController,
     appliedState: state,
   };
 }

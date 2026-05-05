@@ -288,3 +288,66 @@ describe('AXIS_OPTIONS catalogue (sanity checks for UI)', () => {
     }
   });
 });
+
+// ─── Migration 056 — Talent intake floor + agency gross-up ────────────────
+describe('talent intake floor + agency gross-up (Migration 056)', () => {
+  it('engine wins when computed price is above the grossed-up talent floor', () => {
+    const r = computeLine({
+      baseFee: 5_000, qty: 1, conf: 'exact',
+      talentSubmittedFloor: 4_000, agencyFeePct: 10, // grossed = 4,400
+    });
+    expect(r.priceController).toBe('engine');
+    expect(r.talentFloorHit).toBeUndefined();
+    expect(r.finalUnit).toBeGreaterThanOrEqual(5_000); // baseFee floor anyway
+  });
+
+  it('talent floor wins when its grossed value exceeds engine output', () => {
+    // Pin axes neutral, baseFee low, talent floor high.
+    const r = computeLine({
+      baseFee: 1_000, qty: 1, conf: 'exact',
+      talentSubmittedFloor: 8_000, agencyFeePct: 25, // grossed = 10,000
+    });
+    expect(r.priceController).toBe('talent_floor');
+    expect(r.talentFloorHit).toBe(true);
+    expect(r.talentFloorRaw).toBe(8_000);
+    expect(r.talentFloorGrossed).toBe(10_000);
+    expect(r.finalUnit).toBe(10_000);
+  });
+
+  it('zero agency fee leaves the floor un-grossed', () => {
+    const r = computeLine({
+      baseFee: 1_000, qty: 1, conf: 'exact',
+      talentSubmittedFloor: 7_000, agencyFeePct: 0,
+    });
+    expect(r.talentFloorRaw).toBe(7_000);
+    expect(r.talentFloorGrossed).toBe(7_000);
+    expect(r.priceController).toBe('talent_floor');
+    expect(r.finalUnit).toBe(7_000);
+  });
+
+  it('companion lines bypass the talent floor', () => {
+    const r = computeLine({
+      baseFee: 1_000, qty: 1, conf: 'exact', isCompanion: true,
+      talentSubmittedFloor: 8_000, agencyFeePct: 0,
+    });
+    // Companion: no floor enforcement at all → finalUnit = 0.5 × computed.
+    expect(r.priceController).toBe('engine');
+    expect(r.talentFloorHit).toBeUndefined();
+  });
+
+  it('omitted intake fields do not affect price (back-compat)', () => {
+    const r = computeLine({ baseFee: 5_000, qty: 1, conf: 'exact' });
+    expect(r.priceController).toBe('engine');
+    expect(r.talentFloorRaw).toBeUndefined();
+    expect(r.talentFloorGrossed).toBeUndefined();
+  });
+
+  it('agency fee above 50 is clamped to 50', () => {
+    const r = computeLine({
+      baseFee: 1_000, qty: 1, conf: 'exact',
+      talentSubmittedFloor: 4_000, agencyFeePct: 999,
+    });
+    expect(r.agencyFeePctApplied).toBe(50);
+    expect(r.talentFloorGrossed).toBe(6_000); // 4000 × 1.5
+  });
+});

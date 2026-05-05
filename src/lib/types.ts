@@ -125,6 +125,12 @@ export interface Player {
   agency_status?: 'direct' | 'agency' | 'unknown';
   agency_name?: string | null;
   agency_contact?: string | null;
+  // Talent intake (Migration 056) — declared agency fee % + per-deliverable floors
+  agency_fee_pct?: number | null;
+  min_rates?: Record<string, number> | null;
+  min_rates_notes?: string | null;
+  intake_status?: 'not_started' | 'sent' | 'submitted' | 'revised' | 'approved';
+  intake_submitted_at?: string | null;
   // ── Data state (Migration 022) ────────────────────────────────────────
   has_social_data?: boolean;
   has_tournament_data?: boolean;

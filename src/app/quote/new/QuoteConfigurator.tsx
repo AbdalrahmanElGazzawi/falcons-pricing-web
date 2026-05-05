@@ -444,6 +444,11 @@ export function QuoteConfigurator({
             return ps === 'raw' ? 0.9 : ps === 'scripted' ? 1.20 : ps === 'full_studio' ? 1.40 : 1.0;
           })(),
           isCompanion,
+          // Migration 056 — talent intake floor + agency gross-up
+          talentSubmittedFloor: Number(((selectedPlayer as any)?.min_rates ?? {})[d.key] ?? 0),
+          agencyFeePct: ((selectedPlayer as any)?.agency_status === 'agency')
+            ? Number((selectedPlayer as any)?.agency_fee_pct ?? 0)
+            : 0,
         });
         const baseWhy = d.manual
           ? 'Manual rate entered for this quote.'
@@ -1607,9 +1612,45 @@ function PriceBreakdownChip({
               </>
             )}
 
+            {/* ── Phase 6 — Talent intake floor (Migration 056) ────── */}
+            {(line.talentFloorRaw ?? 0) > 0 && (
+              <>
+                <PhaseHeader n={line.floorPrice > 0 ? 6 : 5} title="Talent intake floor" />
+                <div className="text-xs space-y-1 font-mono tabular-nums px-1">
+                  <div className="flex justify-between">
+                    <span className="text-label">Submitted floor</span>
+                    <span>{fmtCurrency(line.talentFloorRaw ?? 0, currency, usdRate)}</span>
+                  </div>
+                  {(line.agencyFeePctApplied ?? 0) > 0 && (
+                    <div className="flex justify-between text-mute">
+                      <span>+ agency fee {(line.agencyFeePctApplied ?? 0).toFixed(1)}%</span>
+                      <span>{fmtCurrency((line.talentFloorGrossed ?? 0) - (line.talentFloorRaw ?? 0), currency, usdRate)}</span>
+                    </div>
+                  )}
+                  <div className={['flex justify-between font-bold border-t border-line/60 pt-1', line.talentFloorHit ? 'text-amber-800' : 'text-mute'].join(' ')}>
+                    <span>{(line.agencyFeePctApplied ?? 0) > 0 ? 'Grossed-up floor' : 'Effective floor'}</span>
+                    <span>{fmtCurrency(line.talentFloorGrossed ?? 0, currency, usdRate)}</span>
+                  </div>
+                  <div className={['flex items-center gap-1.5 text-[10px] uppercase tracking-wider mt-1', line.talentFloorHit ? 'text-amber-800 font-bold' : 'text-mute'].join(' ')}>
+                    {line.talentFloorHit
+                      ? <span>↑ Talent floor controlled this price (+{fmtCurrency(line.talentFloorDelta ?? 0, currency, usdRate)})</span>
+                      : <span>Engine math landed above the talent floor — no change.</span>}
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* ── Final ────────────────────────────────────────────── */}
             <div className="flex justify-between border-t-2 border-greenDark/40 pt-2 px-1">
-              <span className="font-bold text-ink uppercase text-[11px] tracking-wider">Final</span>
+              <span className="font-bold text-ink uppercase text-[11px] tracking-wider">
+                Final
+                {line.priceController === 'talent_floor' && (
+                  <span className="ml-1.5 text-amber-800 normal-case font-semibold text-[10px]">· talent-floor controlled</span>
+                )}
+                {line.priceController === 'base_floor' && (
+                  <span className="ml-1.5 text-amber-700 normal-case font-semibold text-[10px]">· base-floor controlled</span>
+                )}
+              </span>
               <span className="font-mono font-extrabold tabular-nums text-greenDark text-base">{fmtCurrency(line.finalAmount, currency, usdRate)}</span>
             </div>
 

@@ -67,6 +67,14 @@ export function Calculator({
   // Compute totals
   const computed = useMemo(() => {
     const out = lines.map(l => {
+      // Migration 056 — talent intake floor + agency gross-up
+      const playerRec = l.talent_type === 'player'
+        ? players.find(pl => pl.id === l.talent_id)
+        : null;
+      const intakeFloor = Number(((playerRec as any)?.min_rates ?? {})[l.platform] ?? 0);
+      const intakeAgencyFee = (playerRec as any)?.agency_status === 'agency'
+        ? Number((playerRec as any)?.agency_fee_pct ?? 0)
+        : 0;
       const r = computeLine({
         baseFee: l.base_rate,
         irl: l.irl,
@@ -81,6 +89,8 @@ export function Calculator({
         rightsPct: addonsUpliftPct,
         qty: l.qty,
         channelMultiplier,
+        talentSubmittedFloor: intakeFloor,
+        agencyFeePct: intakeAgencyFee,
       });
       return { ...l, ...r };
     });
