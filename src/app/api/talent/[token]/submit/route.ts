@@ -132,10 +132,13 @@ export async function POST(
     ? new Date(player.intake_locked_until).getTime()
     : null;
   const isCurrentlyLocked = lockedUntilMs !== null && lockedUntilMs > now;
-  if (isRevision && isCurrentlyLocked) {
+  // Lockout enforcement (Migration 058). If a previous revision started
+  // a 3-month window and it's still active, reject EVERYTHING — rates,
+  // agency block, socials. Belt-and-suspenders even if the UI is bypassed.
+  if (isCurrentlyLocked) {
     return NextResponse.json({
       error: 'Revision locked',
-      detail: 'You\'ve already used your one free revision. The next revision opens automatically on the date below; to request an earlier change, email afg@falcons.sa.',
+      detail: 'Your submission is locked until the date below. To request an earlier change, email afg@falcons.sa.',
       locked_until: player.intake_locked_until,
       unlock_contact: 'afg@falcons.sa',
     }, { status: 423 });
@@ -155,7 +158,10 @@ export async function POST(
     }
     newRevisionCount += 1;
     if (newRevisionCount >= 1 && !newLockedUntil) {
-      const lock = new Date(now + 90 * 24 * 60 * 60 * 1000); // 90 days ≈ 3 months
+      // Calendar-month math: now + 3 months. Date.setMonth handles
+      // month-end boundaries (Mar 31 + 3mo = Jun 30, not Jul 1).
+      const lock = new Date(now);
+      lock.setMonth(lock.getMonth() + 3);
       newLockedUntil = lock.toISOString();
     }
   }

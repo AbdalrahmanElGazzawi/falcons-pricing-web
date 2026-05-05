@@ -338,9 +338,9 @@ export function TalentIntake({
           <div className="flex items-start gap-3">
             <Lock size={18} className="mt-0.5 flex-shrink-0 text-amber-700" />
             <div className="space-y-1">
-              <div className="font-bold">Revision locked until {unlockDateLabel}</div>
+              <div className="font-bold">All fields locked until {unlockDateLabel}</div>
               <div>
-                You\'ve already used your one free revision in this 3-month window. The next revision opens automatically on <strong>{unlockDateLabel}</strong>.
+                You\'ve already used your one free revision in this 3-month window. <strong>Floors, socials, agency details, and notes are all locked</strong> until <strong>{unlockDateLabel}</strong>.
                 {' '}To request an earlier change, email <a href="mailto:afg@falcons.sa" className="underline font-semibold">afg@falcons.sa</a>.
               </div>
             </div>
@@ -409,13 +409,17 @@ export function TalentIntake({
             <Users size={14} className="text-greenDark" />
             <h2 className="text-sm font-semibold text-ink">Your socials</h2>
           </div>
-          <button
-            type="button"
-            onClick={() => setEditingSocials(v => !v)}
-            className="text-[11px] font-semibold text-greenDark hover:underline min-h-[44px] sm:min-h-0 px-2"
-          >
-            {editingSocials ? 'Done editing' : 'Edit / fill missing'}
-          </button>
+          {isLocked ? (
+            <span className="text-[11px] text-mute italic">Locked</span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingSocials(v => !v)}
+              className="text-[11px] font-semibold text-greenDark hover:underline min-h-[44px] sm:min-h-0 px-2"
+            >
+              {editingSocials ? 'Done editing' : 'Edit / fill missing'}
+            </button>
+          )}
         </div>
         <div className="divide-y divide-line">
           {[
@@ -432,7 +436,7 @@ export function TalentIntake({
               <div key={key} className="px-4 sm:px-5 py-3 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-start sm:items-center">
                 <div className="sm:col-span-3 text-xs font-semibold text-label">{label}</div>
                 <div className="sm:col-span-6 min-w-0">
-                  {editingSocials ? (
+                  {(editingSocials && !isLocked) ? (
                     <input
                       type="url"
                       value={handleVal}
@@ -454,7 +458,7 @@ export function TalentIntake({
                   )}
                 </div>
                 <div className="sm:col-span-3">
-                  {editingSocials ? (
+                  {(editingSocials && !isLocked) ? (
                     <input
                       type="text"
                       inputMode="numeric"
@@ -547,6 +551,7 @@ export function TalentIntake({
                   toSar={toSar}
                   fromSar={fromSar}
                   onChange={v => setMins(s => ({ ...s, [d.key]: v }))}
+                  disabled={isLocked}
                 />
               ))}
             </div>
@@ -556,16 +561,19 @@ export function TalentIntake({
 
       {/* ─── Agency representation ─────────────────────────────────────── */}
       <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 space-y-3">
-        <label className="flex items-center justify-between gap-3 cursor-pointer">
+        <label className={`flex items-center justify-between gap-3 ${isLocked ? 'cursor-default' : 'cursor-pointer'}`}>
           <span className="flex items-center gap-2 text-sm font-semibold text-ink">
             <Building2 size={16} className="text-greenDark" />
             Are you represented by an agency?
+            {isLocked && <span className="text-[10px] text-mute italic font-normal">· locked</span>}
           </span>
           <span className={[
             'relative inline-flex h-6 w-11 items-center rounded-full transition',
+            isLocked ? 'opacity-50 cursor-not-allowed' : '',
             hasAgency ? 'bg-greenDark' : 'bg-line',
           ].join(' ')}>
             <input type="checkbox" className="sr-only" checked={hasAgency}
+              disabled={isLocked}
               onChange={e => setHasAgency(e.target.checked)} />
             <span className={[
               'inline-block h-5 w-5 transform rounded-full bg-white shadow transition',
@@ -580,9 +588,10 @@ export function TalentIntake({
               <input
                 type="text"
                 value={agencyName}
+                disabled={isLocked}
                 onChange={e => setAgencyName(e.target.value)}
                 placeholder="e.g. CAA Sports, Loaded, CodeRed…"
-                className="mt-1 w-full text-sm border border-line rounded-lg px-3 py-2 min-h-[44px] sm:min-h-0 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30"
+                className={`mt-1 w-full text-sm border border-line rounded-lg px-3 py-2 min-h-[44px] sm:min-h-0 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30 ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
               />
             </div>
             <div>
@@ -592,9 +601,10 @@ export function TalentIntake({
                   type="text"
                   inputMode="decimal"
                   value={agencyFeePct}
+                  disabled={isLocked}
                   onChange={e => setAgencyFeePct(e.target.value.replace(/[^\d.,]/g, '').slice(0, 5))}
                   placeholder="e.g. 15"
-                  className="w-full text-sm border border-line rounded-lg px-3 py-2 pr-8 min-h-[44px] sm:min-h-0 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30 tabular-nums"
+                  className={`w-full text-sm border border-line rounded-lg px-3 py-2 pr-8 min-h-[44px] sm:min-h-0 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30 tabular-nums ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mute text-sm">%</span>
               </div>
@@ -617,9 +627,10 @@ export function TalentIntake({
         <textarea
           rows={3}
           value={notes}
+          disabled={isLocked}
           onChange={e => setNotes(e.target.value)}
           placeholder="e.g. exclusivity-only on energy-drink category, can't post on stream days during EWC, prefer non-gambling brands…"
-          className="w-full text-base sm:text-sm border border-line rounded-lg px-3 py-2.5 sm:py-2 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30"
+          className={`w-full text-base sm:text-sm border border-line rounded-lg px-3 py-2.5 sm:py-2 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30 ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
         />
       </div>
 
@@ -676,7 +687,7 @@ function ZoneHint({ zone, title }: { zone: 'floor' | 'median' | 'premium'; title
 }
 
 function DeliverableRow({
-  d, value, currency, fmtMoney, toSar, fromSar, onChange,
+  d, value, currency, fmtMoney, toSar, fromSar, onChange, disabled,
 }: {
   d: Deliverable; value: string;
   currency: 'SAR' | 'USD';
@@ -684,6 +695,7 @@ function DeliverableRow({
   toSar: (typed: number) => number;
   fromSar: (sar: number) => number;
   onChange: (v: string) => void;
+  disabled?: boolean;
 }) {
   const displayValue = value === '' ? '' : String(fromSar(Number(value) || 0));
   const handleInput = (raw: string) => {
@@ -747,9 +759,10 @@ function DeliverableRow({
             inputMode="numeric"
             pattern="[0-9]*"
             value={displayValue}
+            disabled={disabled}
             onChange={e => handleInput(e.target.value)}
             placeholder={currency === 'USD' ? 'e.g. 2,000' : 'e.g. 8,000'}
-            className="w-full text-right text-base sm:text-sm font-semibold tabular-nums border border-line rounded-lg px-3 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 bg-card focus:outline-none focus:ring-2 focus:ring-greenDark/40"
+            className={`w-full text-right text-base sm:text-sm font-semibold tabular-nums border border-line rounded-lg px-3 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 bg-card focus:outline-none focus:ring-2 focus:ring-greenDark/40 ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
           />
         </div>
         {zone !== 'none' && (
