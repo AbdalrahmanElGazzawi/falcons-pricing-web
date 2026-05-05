@@ -203,6 +203,10 @@ export function TalentIntake({
 
   const [notes, setNotes] = useState(player.notes ?? '');
   const [submitting, setSubmitting] = useState(false);
+  // Slim v2: progressive disclosure of secondary surfaces
+  const [showAch, setShowAch] = useState(false);
+  const [showAllDeliv, setShowAllDeliv] = useState(false);
+  const [showHowPriced, setShowHowPriced] = useState(false);
   const [done, setDone] = useState<null | { ok: true } | { ok: false; error: string }>(null);
 
   const groups = useMemo(() => {
@@ -213,6 +217,38 @@ export function TalentIntake({
     }
     return Array.from(m.entries());
   }, [deliverables]);
+
+  // ── Slim v2: split groups into primary (always shown) vs secondary
+  // (hidden behind 'show all'). Primary = talent has a handle on that
+  // platform OR has any existing min_rate set in that group OR it's
+  // a universal deliverable (Instagram, IRL).
+  const platformHandleSignal = (groupName: string): boolean => {
+    switch (groupName) {
+      case 'Instagram':   return true;  // always universal
+      case 'IRL':         return true;  // always universal
+      case 'TikTok':      return !!(player as any).tiktok || (player.followers_tiktok ?? 0) > 5000;
+      case 'YouTube':     return !!(player as any).youtube || (player.followers_yt ?? 0) > 5000;
+      case 'X (Twitter)': return !!(player as any).x_handle || (player.followers_x ?? 0) > 5000;
+      case 'Twitch':      return !!(player as any).twitch || (player.followers_twitch ?? 0) > 5000;
+      case 'Kick':        return !!(player as any).kick;
+      case 'Snapchat':    return !!(player as any).snapchat;
+      case 'Live & Stream': return (player.followers_twitch ?? 0) > 10000;  // streamers only
+      case 'Game Ads':    return player.game !== 'Esports Influencers' && player.game != null;  // competitive players
+      default:            return false;
+    }
+  };
+  const groupHasExistingRate = (items: Deliverable[]) => items.some(d => d.existing > 0);
+
+  const primaryGroups = groups.filter(([g, items]) => platformHandleSignal(g) || groupHasExistingRate(items));
+  const secondaryGroups = groups.filter(([g, items]) => !platformHandleSignal(g) && !groupHasExistingRate(items));
+
+  // Progress meter — count deliverables across ALL visible groups (including hidden when expanded).
+  const visibleDeliverables = (showAllDeliv ? groups : primaryGroups).flatMap(([, items]) => items);
+  const visibleSet = new Set(visibleDeliverables.map(d => d.key));
+  const filledCount = Object.entries(mins).filter(([k, v]) => visibleSet.has(k) && Number(String(v).replace(/[, ]/g,'')) > 0).length;
+  const totalCount = visibleDeliverables.length;
+  const filledPct = totalCount > 0 ? Math.round((filledCount / totalCount) * 100) : 0;
+
 
   const totalReach = player.followers_ig + player.followers_tiktok + player.followers_yt + player.followers_x + player.followers_twitch;
 
@@ -377,7 +413,21 @@ export function TalentIntake({
 
       {/* ─── Achievements (Liquipedia) ─────────────────────────────────── */}
       {player.achievements.length > 0 && (
-        <div className="rounded-2xl border border-line bg-card p-4 sm:p-5">
+        <div className="rounded-2xl border border-line bg-card overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowAch(s => !s)}
+          className="w-full flex items-center justify-between gap-2 px-4 sm:px-5 py-3 text-left hover:bg-bg/40 min-h-[44px]"
+          aria-expanded={showAch}
+        >
+          <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <Trophy size={14} className="text-greenDark" />
+            {player.achievements.length} career achievement{player.achievements.length === 1 ? '' : 's'} on file
+          </span>
+          <span className="text-[11px] text-mute">{showAch ? 'Hide' : 'Show'} ▾</span>
+        </button>
+        {showAch && (
+        <div className="px-4 sm:px-5 pb-4 sm:pb-5 border-t border-line">
           <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
             <div className="flex items-center gap-2">
               <Trophy size={16} className="text-greenDark" />
@@ -420,6 +470,8 @@ export function TalentIntake({
           <p className="text-[11px] text-mute mt-2">
             If anything's missing or wrong, mention it in the notes box below — we'll update it.
           </p>
+        </div>
+        )}
         </div>
       )}
 
@@ -503,138 +555,81 @@ export function TalentIntake({
         </div>
       </div>
 
-      {/* ─── How your price is built ───────────────────────────────────── */}
+      {/* ─── How your price is built — slim v2 (collapsed by default) ─── */}
       <div className="rounded-2xl border border-line bg-card overflow-hidden">
-        <div className="px-4 sm:px-5 py-3 border-b border-line">
-          <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowHowPriced(s => !s)}
+          className="w-full flex items-center justify-between gap-2 px-4 sm:px-5 py-3 text-left hover:bg-bg/40 min-h-[44px]"
+          aria-expanded={showHowPriced}
+        >
+          <span className="flex items-center gap-2 text-sm font-semibold text-ink">
             <BarChart3 size={14} className="text-greenDark" />
-            <h2 className="text-sm font-semibold text-ink">How your price is built</h2>
+            How does my price get calculated?
+          </span>
+          <span className="text-[11px] text-mute">{showHowPriced ? 'Hide' : 'Show'} ▾</span>
+        </button>
+        {showHowPriced && (
+          <div className="px-4 sm:px-5 pb-4 sm:pb-5 border-t border-line space-y-3 text-xs sm:text-[13px] text-ink leading-relaxed pt-3">
+            <p>
+              Your floor is the <strong>bottom line</strong> — sales never quotes a brand below it. The engine then prices <strong>above</strong> based on:
+            </p>
+            <ul className="space-y-1 list-disc pl-5 text-[12px]">
+              <li><strong>{player.tier_code || 'Tier'} {REGION_LABEL[market]}</strong> base anchor (your tier × region)</li>
+              <li><strong>{player.achievements.length} achievement{player.achievements.length === 1 ? '' : 's'}</strong> on file (Authority lift up to 1.50×)</li>
+              <li><strong>{fmt(totalReach)}</strong> aggregate followers (reach calibration)</li>
+              <li>Per-deal context: content type, seasonality (e.g. EWC peak), language, production complexity, exclusivity / usage rights</li>
+            </ul>
+            <p className="text-mute text-[11px]">
+              You don&apos;t need to set this — sales handles per-quote. You just lock the bottom.
+            </p>
           </div>
-          <p className="text-[11px] text-mute mt-0.5">
-            Your floor is one input. Sales never quotes below it. The engine may price <strong>above</strong> based on the factors below — your tier, achievements, audience fit, language, and per-deal context.
-          </p>
-        </div>
-
-        <div className="p-3 sm:p-5 space-y-3">
-          {/* Top: 3-card "what you bring" */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* Card 1 — Tier × region anchor (this is the BASE) */}
-            <div className="rounded-xl border border-greenDark/30 bg-greenSoft/20 dark:bg-green/10 p-3 sm:p-4 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-greenDark">
-                <DollarSign size={11} /> Base anchor
-              </div>
-              <div className="text-xs text-ink leading-snug">
-                <span className="text-mute">Tier:</span>{' '}
-                <span className="font-semibold">{player.tier_code || '—'}</span>{' · '}
-                <span className="text-mute">Region:</span>{' '}
-                <span className="font-semibold">{REGION_LABEL[market]}</span>
-              </div>
-              <div className="text-[11px] text-mute leading-snug">
-                Engine starts from your tier × region market band. Bigger tier and richer region = higher base. This is the number sales would land at if every other factor was neutral.
-              </div>
-            </div>
-
-            {/* Card 2 — Esports achievements (Authority axis) */}
-            <div className="rounded-xl border border-line bg-bg/40 p-3 sm:p-4 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-label">
-                <Trophy size={11} /> Esports authority
-              </div>
-              <div className="text-xs text-ink leading-snug">
-                <span className="font-semibold">{player.achievements.length}</span>{' '}
-                <span className="text-mute">tracked achievement{player.achievements.length === 1 ? '' : 's'}</span>
-                {player.peak_tournament_tier && (<><br/><span className="text-mute">Peak tier:</span> <span className="font-semibold">{player.peak_tournament_tier}</span></>)}
-                {typeof player.prize_money_24mo_usd === 'number' && player.prize_money_24mo_usd > 0 && (
-                  <><br/><span className="text-mute">Earnings 24mo:</span> <span className="font-semibold">${player.prize_money_24mo_usd.toLocaleString('en-US')}</span></>
-                )}
-              </div>
-              <div className="text-[11px] text-mute leading-snug">
-                Engine&apos;s Authority axis lifts price from <span className="tabular-nums">1.00×</span> (baseline) up to <span className="tabular-nums">1.50×</span> (Global Star / Major Winner). Wins, podiums, and prize money raise this.
-              </div>
-            </div>
-
-            {/* Card 3 — Audience + reach calibration */}
-            <div className="rounded-xl border border-line bg-bg/40 p-3 sm:p-4 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-label">
-                <Users size={11} /> Reach & engagement
-              </div>
-              <div className="text-xs text-ink leading-snug">
-                <span className="font-semibold tabular-nums">{fmt(totalReach)}</span>{' '}
-                <span className="text-mute">aggregate followers</span>
-                {typeof player.er_ig === 'number' && player.er_ig > 0 && (
-                  <><br/><span className="text-mute">IG ER:</span> <span className="font-semibold tabular-nums">{(player.er_ig * 100).toFixed(1)}%</span></>
-                )}
-              </div>
-              <div className="text-[11px] text-mute leading-snug">
-                Reach calibration adjusts your tier baseline up or down vs cohort median. Engagement axis adds <span className="tabular-nums">0.85×</span> to <span className="tabular-nums">1.45×</span> based on your ER vs the Tier 1–4 bands.
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom: per-quote multipliers stack */}
-          <div className="rounded-xl border border-line bg-bg/30 p-3 sm:p-4">
-            <div className="text-[10px] uppercase tracking-wider font-bold text-label mb-2 flex items-center gap-1.5">
-              <TrendingUp size={11} /> Per-deal multipliers (sales tunes these per campaign)
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-[11px]">
-              {[
-                { label: 'Audience fit',     range: '0.95×–1.25×', hint: 'Gaming-core / KSA / MENA / GCC' },
-                { label: 'Content type',     range: '0.85×–1.25×', hint: 'Organic / Integrated / Sponsored' },
-                { label: 'Seasonality',      range: '1.00×–1.35×', hint: 'Playoffs / EWC / Game launch' },
-                { label: 'Language',         range: '1.00×–1.20×', hint: 'Arabic / Bilingual / Trilingual' },
-                { label: 'Production',       range: '1.00×–1.35×', hint: 'Standard / Scripted / On-ground' },
-                { label: 'Rights & usage',   range: '+0%–+120%',   hint: 'Whitelisting / Paid usage / Exclusivity' },
-              ].map(m => (
-                <div key={m.label} className="rounded-lg border border-line bg-card px-2 py-1.5">
-                  <div className="text-mute text-[10px] uppercase tracking-wider font-semibold">{m.label}</div>
-                  <div className="text-ink font-semibold tabular-nums">{m.range}</div>
-                  <div className="text-[10px] text-mute leading-tight mt-0.5">{m.hint}</div>
-                </div>
-              ))}
-            </div>
-            <div className="text-[11px] text-mute mt-3 leading-snug">
-              <strong className="text-ink">Final quoted price</strong> = max(your floor × agency gross-up, base anchor × all multipliers above). The floor sets the bottom; the engine prices above when factors justify.
-            </div>
-          </div>
-
-          {/* Industry context (compact, cited) */}
-          {industryReference.falcons.dealsCount > 0 && (
-            <div className="rounded-xl border border-line bg-bg/40 p-3 sm:p-4 text-[11px] text-mute leading-snug flex items-start gap-2">
-              <DollarSign size={12} className="text-greenDark mt-0.5 flex-shrink-0" />
-              <div>
-                <span className="text-ink font-semibold">Falcons deal flow (last 12 mo):</span>{' '}
-                <span className="tabular-nums">{industryReference.falcons.dealsCount} campaigns</span> across{' '}
-                <span className="tabular-nums">{industryReference.falcons.dealsBrands} brands</span>, avg{' '}
-                <span className="tabular-nums">SAR {industryReference.falcons.avgSar.toLocaleString('en-US')} / ${industryReference.falcons.avgUsd.toLocaleString('en-US')}</span>{' · '}
-                Industry: ~$1.4B global esports influencer marketing 2024 (HypeAuditor), MENA gaming brand spend +40% YoY (Newzoo 2024).
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* ─── How this works (with explicit deal-flow trade-off) ─────────── */}
-      <div className="rounded-xl border border-greenDark/30 bg-greenSoft/30 p-4 text-xs sm:text-[13px] text-ink leading-relaxed space-y-2">
-        <div className="flex items-center gap-2 font-semibold text-greenDark">
-          <Info size={14} /> How to set your floor
+      {/* ─── How this works — slim ─── */}
+      <div className="rounded-xl border border-greenDark/30 bg-greenSoft/30 p-4 text-xs sm:text-[13px] text-ink leading-relaxed">
+        <div className="flex items-center gap-2 font-semibold text-greenDark mb-1">
+          <Info size={14} /> Quick guide
         </div>
         <p>
-          For each deliverable, set the <strong>minimum {currency} you'll accept per single posting</strong>.
-          We show you two anchors: <strong className="text-greenDark">your regional band ({REGION_LABEL[market]})</strong> and
-          the <strong className="text-greenDark">world-class band</strong> for your tier.
+          For each deliverable below, set the <strong>minimum {currency} you&apos;d accept per post</strong>.
+          Brands won&apos;t be quoted below this — we&apos;ll call you first if they want to push lower.
+          Leave blank to skip anything you don&apos;t want to do.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+        <div className="grid grid-cols-3 gap-2 mt-3">
           <ZoneHint zone="floor"   title="Floor"   />
           <ZoneHint zone="median"  title="Median" />
           <ZoneHint zone="premium" title="Premium" />
         </div>
-        <p className="text-[11px] text-mute pt-1">
-          You'll never be quoted below your floor without us calling you first. Leave blank to skip a deliverable you don't want to do.
-        </p>
+      </div>
+
+      {/* ─── Progress meter ────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-line bg-card p-3 sm:p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-xs font-semibold text-ink">
+            <span className="tabular-nums">{filledCount}</span>
+            <span className="text-mute"> / {totalCount} </span>
+            minimums set
+          </div>
+          <div className="text-[11px] text-mute">
+            {filledCount === 0 && 'Start with the platform you post on most.'}
+            {filledCount > 0 && filledCount < totalCount && filledPct < 50 && 'Keep going.'}
+            {filledPct >= 50 && filledPct < 100 && 'Almost there.'}
+            {filledPct === 100 && totalCount > 0 && 'All set — submit when ready.'}
+          </div>
+        </div>
+        <div className="mt-2 h-1.5 rounded-full bg-bg overflow-hidden">
+          <div
+            className="h-full bg-greenDark transition-all duration-300"
+            style={{ width: `${filledPct}%` }}
+          />
+        </div>
       </div>
 
       {/* ─── Deliverable rows ──────────────────────────────────────────── */}
       <div className="space-y-4 sm:space-y-5">
-        {groups.map(([groupName, items]) => (
+        {(showAllDeliv ? groups : primaryGroups).map(([groupName, items]) => (
           <div key={groupName} className="rounded-2xl border border-line bg-card overflow-hidden">
             <div className="bg-bg/60 border-b border-line px-3 sm:px-4 py-2 text-[11px] uppercase tracking-wider font-bold text-label">
               {groupName}
