@@ -48,6 +48,12 @@ type PlayerInfo = {
   youtube?: string | null;
   x_handle?: string | null;
   twitch?: string | null;
+  kick?: string | null;
+  facebook?: string | null;
+  snapchat?: string | null;
+  followers_kick?: number;
+  followers_fb?: number;
+  followers_snap?: number;
   achievements: Achievement[];
   liquipedia_url: string | null;
   submitted_at: string | null;
@@ -192,13 +198,19 @@ export function TalentIntake({
     instagram:        player.instagram        ?? '',
     tiktok:           player.tiktok           ?? '',
     youtube:          player.youtube          ?? '',
-    x_handle:        player.x_handle        ?? '',
+    x_handle:         player.x_handle         ?? '',
     twitch:           player.twitch           ?? '',
+    kick:             player.kick             ?? '',
+    facebook:         player.facebook         ?? '',
+    snapchat:         player.snapchat         ?? '',
     followers_ig:     String(player.followers_ig     || ''),
     followers_tiktok: String(player.followers_tiktok || ''),
     followers_yt:     String(player.followers_yt     || ''),
     followers_x:      String(player.followers_x      || ''),
     followers_twitch: String(player.followers_twitch || ''),
+    followers_kick:   String(player.followers_kick   || ''),
+    followers_fb:     String(player.followers_fb     || ''),
+    followers_snap:   String(player.followers_snap   || ''),
   });
   const [editingSocials, setEditingSocials] = useState(false);
 
@@ -303,13 +315,19 @@ export function TalentIntake({
             instagram:        socials.instagram.trim() || null,
             tiktok:           socials.tiktok.trim()    || null,
             youtube:          socials.youtube.trim()   || null,
-            x_handle:        socials.x_handle.trim() || null,
+            x_handle:         socials.x_handle.trim()  || null,
             twitch:           socials.twitch.trim()    || null,
+            kick:             socials.kick.trim()      || null,
+            facebook:         socials.facebook.trim()  || null,
+            snapchat:         socials.snapchat.trim()  || null,
             followers_ig:     toIntOrNull(socials.followers_ig),
             followers_tiktok: toIntOrNull(socials.followers_tiktok),
             followers_yt:     toIntOrNull(socials.followers_yt),
             followers_x:      toIntOrNull(socials.followers_x),
             followers_twitch: toIntOrNull(socials.followers_twitch),
+            followers_kick:   toIntOrNull(socials.followers_kick),
+            followers_fb:     toIntOrNull(socials.followers_fb),
+            followers_snap:   toIntOrNull(socials.followers_snap),
           },
         }),
       });
@@ -514,8 +532,11 @@ export function TalentIntake({
             { key: 'instagram', label: 'Instagram',         fkey: 'followers_ig',     prefix: 'https://www.instagram.com/' },
             { key: 'tiktok',    label: 'TikTok',            fkey: 'followers_tiktok', prefix: 'https://www.tiktok.com/@' },
             { key: 'youtube',   label: 'YouTube',           fkey: 'followers_yt',     prefix: 'https://www.youtube.com/' },
-            { key: 'x_handle', label: 'X (Twitter)',       fkey: 'followers_x',      prefix: 'https://x.com/' },
+            { key: 'x_handle',  label: 'X (Twitter)',       fkey: 'followers_x',      prefix: 'https://x.com/' },
             { key: 'twitch',    label: 'Twitch',            fkey: 'followers_twitch', prefix: 'https://www.twitch.tv/' },
+            { key: 'kick',      label: 'Kick',              fkey: 'followers_kick',   prefix: 'https://kick.com/' },
+            { key: 'facebook',  label: 'Facebook',          fkey: 'followers_fb',     prefix: 'https://www.facebook.com/' },
+            { key: 'snapchat',  label: 'Snapchat',          fkey: 'followers_snap',   prefix: 'https://www.snapchat.com/add/' },
           ].map(({ key, label, fkey, prefix }) => {
             const handleVal = (socials as any)[key] as string;
             const followerVal = (socials as any)[fkey] as string;

@@ -18,11 +18,17 @@ type SocialsPayload = {
   youtube?: string | null;
   x_handle?: string | null;
   twitch?: string | null;
+  kick?: string | null;
+  facebook?: string | null;
+  snapchat?: string | null;
   followers_ig?: number | null;
   followers_tiktok?: number | null;
   followers_yt?: number | null;
   followers_x?: number | null;
   followers_twitch?: number | null;
+  followers_kick?: number | null;
+  followers_fb?: number | null;
+  followers_snap?: number | null;
 };
 
 export async function POST(
@@ -79,7 +85,7 @@ export async function POST(
   // Sanitise socials block (Migration 057). Only persist allowed keys.
   const cleanedSocials: Record<string, string | number | null> = {};
   if (body.socials && typeof body.socials === 'object') {
-    const URL_KEYS = ['instagram','tiktok','youtube','x_handle','twitch'] as const;
+    const URL_KEYS = ['instagram','tiktok','youtube','x_handle','twitch','kick','facebook','snapchat'] as const;
     for (const k of URL_KEYS) {
       const v = (body.socials as Record<string, unknown>)[k];
       if (v === null || v === undefined || v === '') {
@@ -93,7 +99,7 @@ export async function POST(
       // http(s)://, so junk here just renders as plain text.
       cleanedSocials[k] = trimmed || null;
     }
-    const FOLLOWER_KEYS = ['followers_ig','followers_tiktok','followers_yt','followers_x','followers_twitch'] as const;
+    const FOLLOWER_KEYS = ['followers_ig','followers_tiktok','followers_yt','followers_x','followers_twitch','followers_kick','followers_fb','followers_snap'] as const;
     for (const k of FOLLOWER_KEYS) {
       const v = (body.socials as Record<string, unknown>)[k];
       if (v === null || v === undefined || v === '') {
@@ -109,7 +115,7 @@ export async function POST(
   // Find player by token
   const { data: playerRow } = await supabase
     .from('players')
-    .select('id, nickname, intake_status, min_rates, is_active, agency_status, agency_name, agency_fee_pct, instagram, tiktok, youtube, x_handle, twitch, followers_ig, followers_tiktok, followers_yt, followers_x, followers_twitch, intake_revision_count, intake_locked_until')
+    .select('id, nickname, intake_status, min_rates, is_active, agency_status, agency_name, agency_fee_pct, instagram, tiktok, youtube, x_handle, twitch, kick, facebook, snapchat, followers_ig, followers_tiktok, followers_yt, followers_x, followers_twitch, followers_kick, followers_fb, followers_snap, intake_revision_count, intake_locked_until')
     .eq('intake_token', params.token)
     .maybeSingle();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -210,11 +216,17 @@ export async function POST(
           youtube:   player.youtube   ?? null,
           x_handle:  player.x_handle  ?? null,
           twitch:    player.twitch    ?? null,
+          kick:      player.kick      ?? null,
+          facebook:  player.facebook  ?? null,
+          snapchat:  player.snapchat  ?? null,
           followers_ig:     player.followers_ig     ?? null,
           followers_tiktok: player.followers_tiktok ?? null,
           followers_yt:     player.followers_yt     ?? null,
           followers_x:      player.followers_x      ?? null,
           followers_twitch: player.followers_twitch ?? null,
+          followers_kick:   player.followers_kick   ?? null,
+          followers_fb:     player.followers_fb     ?? null,
+          followers_snap:   player.followers_snap   ?? null,
         },
       },
       after:   {
