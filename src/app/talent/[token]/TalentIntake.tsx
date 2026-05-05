@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import {
   Trophy, ShieldCheck, Send, CheckCircle2, AlertCircle, Lock, Info,
   Instagram, Music2, Youtube, Twitch, Users, Target, Zap, TrendingDown, Globe2, Building2,
-, BarChart3, TrendingUp, DollarSign } from 'lucide-react';
+  BarChart3, TrendingUp, DollarSign,
+} from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type AchievementObj = {
