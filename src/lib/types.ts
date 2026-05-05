@@ -146,6 +146,9 @@ export interface Player {
   last_major_finish_date?: string | null;
   last_major_placement?: string | null;
   achievement_decay_factor?: number;
+  // ── Source / audience verification (already in DB, formalising types) ──
+  rate_source?: string | null;
+  audience_data_verified?: boolean | null;
   // ── Campaign readiness (Migration 059) ─────────────────────────────────
   /** Computed: false only for hard blockers (no rate_source / unverified /
    *  no tier / no anchor / no market). 'No socials' alone does NOT block. */
