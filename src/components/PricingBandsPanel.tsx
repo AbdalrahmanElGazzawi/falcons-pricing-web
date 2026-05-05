@@ -26,14 +26,14 @@ import { fmtCurrency } from '@/lib/utils';
 
 const PLATFORM_LABELS: Record<string, string> = {
   rate_ig_reel:        'IG Reel',
-  rate_ig_static:      'IG Post',
+  rate_ig_post:      'IG Post',
   rate_ig_story:       'IG Story',
   rate_ig_post:        'IG Post',
-  rate_ig_reels:       'IG Reels',
+  rate_ig_reel:       'IG Reels',
   rate_tiktok_video:   'TikTok',
   rate_tiktok_ours:    'TikTok',
   rate_yt_short:       'YT Short',
-  rate_yt_shorts:      'YT Shorts',
+  rate_yt_short:      'YT Shorts',
   rate_yt_full:        'YT Full',
   rate_x_post:         'X Post',
   rate_x_post_quote:   'X Post',

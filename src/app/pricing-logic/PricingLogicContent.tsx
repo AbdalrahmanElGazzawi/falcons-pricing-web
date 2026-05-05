@@ -19,7 +19,7 @@ type Player = {
   base_rate_anchor?: number | null;
 };
 type Creator = { id: number; nickname: string; tier_code: string | null;
-  rate_ig_reels: number; rate_yt_full: number; rate_tiktok_ours: number;
+  rate_ig_reel: number; rate_yt_full: number; rate_tiktok_ours: number;
   is_bookable?: boolean | null;
   profile_strength_pct?: number | null;
 };

@@ -26,10 +26,10 @@ import {
 type Density = 'compact' | 'comfortable' | 'spacious';
 
 const KEY_PLATFORMS = [
-  { key: 'rate_ig_reels',         label: 'IG Reel'  },
+  { key: 'rate_ig_reel',         label: 'IG Reel'  },
   { key: 'rate_ig_post',          label: 'IG Post'  },
   { key: 'rate_yt_full',          label: 'YT Full'  },
-  { key: 'rate_yt_shorts',        label: 'YT Short' },
+  { key: 'rate_yt_short',        label: 'YT Short' },
   { key: 'rate_tiktok_ours',      label: 'TikTok'   },
   { key: 'rate_x_post_quote',     label: 'X Post'   },
   { key: 'rate_twitch_kick_live', label: 'Twitch/Kick' },

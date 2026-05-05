@@ -13,7 +13,7 @@ const PEAK_TIERS = ['S', 'A', 'B', 'C', 'unrated'] as const;
 const blank: any = {
   nickname: '', full_name: '', role: '', game: '', team: '', nationality: '', tier_code: '',
   avatar_url: '', date_of_birth: '', ingame_role: '',
-  rate_ig_reel: 0, rate_ig_static: 0, rate_ig_story: 0, rate_tiktok_video: 0,
+  rate_ig_reel: 0, rate_ig_post: 0, rate_ig_story: 0, rate_tiktok_video: 0,
   rate_yt_short: 0, rate_x_post: 0, rate_fb_post: 0, rate_twitch_stream: 0,
   rate_twitch_integ: 0, rate_irl: 0,
   // Internal cost basis (commission/markup) intentionally left null —

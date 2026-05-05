@@ -26,7 +26,7 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
     .select(`
       id, nickname, full_name, tier_code, audience_market, game, role,
       base_rate_anchor, reach_multiplier, achievement_decay_factor,
-      rate_ig_reel, rate_ig_static, rate_ig_story,
+      rate_ig_reel, rate_ig_post, rate_ig_story,
       rate_tiktok_video, rate_yt_short, rate_yt_full,
       rate_twitch_stream, rate_kick_stream, rate_irl,
       rate_snapchat, rate_event_snap, rate_x_post,
@@ -53,7 +53,7 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
   // Top-of-card platforms in display order (most-quoted first).
   const PLATFORMS: Array<{ key: keyof typeof p; label: string; ratio: number }> = [
     { key: 'rate_ig_reel',       label: 'IG Reel',         ratio: 1.00 },
-    { key: 'rate_ig_static',     label: 'IG Post',         ratio: 0.65 },
+    { key: 'rate_ig_post',     label: 'IG Post',         ratio: 0.65 },
     { key: 'rate_ig_story',      label: 'IG Story',        ratio: 0.55 },
     { key: 'rate_tiktok_video',  label: 'TikTok Video',    ratio: 0.80 },
     { key: 'rate_yt_short',      label: 'YT Short',        ratio: 0.32 },

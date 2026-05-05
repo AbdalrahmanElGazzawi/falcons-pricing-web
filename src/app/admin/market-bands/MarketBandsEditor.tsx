@@ -17,7 +17,7 @@ const PLATFORMS = [
   // Primary (parents)
   { key: 'rate_ig_reel',         label: 'IG Reel'    },
   { key: 'rate_ig_post',         label: 'IG Post (creator)' },
-  { key: 'rate_ig_static',       label: 'IG Static (player)' },
+  { key: 'rate_ig_post',       label: 'IG Static (player)' },
   { key: 'rate_ig_story',        label: 'IG Story'   },
   { key: 'rate_tiktok_video',    label: 'TikTok'     },
   { key: 'rate_yt_full',         label: 'YT Full'    },

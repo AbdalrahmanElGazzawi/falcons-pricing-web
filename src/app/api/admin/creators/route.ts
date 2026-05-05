@@ -12,8 +12,8 @@ const ALLOWED = new Set([
   'followers_ig', 'followers_x', 'followers_yt', 'followers_tiktok', 'followers_twitch',
   // Rates
   'rate_x_post_quote', 'rate_x_repost',
-  'rate_ig_post', 'rate_ig_story', 'rate_ig_reels',
-  'rate_yt_full', 'rate_yt_preroll', 'rate_yt_shorts', 'rate_yt_shorts_repost',
+  'rate_ig_post', 'rate_ig_story', 'rate_ig_reel',
+  'rate_yt_full', 'rate_yt_preroll', 'rate_yt_short', 'rate_yt_short_repost',
   'rate_snapchat',
   'rate_tiktok_ours', 'rate_tiktok_client',
   'rate_event_snap',

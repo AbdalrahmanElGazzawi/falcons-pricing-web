@@ -18,7 +18,7 @@ const DELIVERABLES: Array<{
 }> = [
   // ── Instagram (universal — every brand campaign uses it)
   { key: 'ig_reel',         rate_col: 'rate_ig_reel',         band_platform: 'rate_ig_reel',     label: 'Instagram Reel',           blurb: 'Sponsored 15–60s vertical — product reviews, game promo, lifestyle drops.',     group: 'Instagram' },
-  { key: 'ig_static',       rate_col: 'rate_ig_static',       band_platform: 'rate_ig_post',     label: 'Instagram Post / Carousel', blurb: 'Single image or carousel — seeding, product features, partnership announcements.', group: 'Instagram' },
+  { key: 'ig_static',       rate_col: 'rate_ig_post',       band_platform: 'rate_ig_post',     label: 'Instagram Post / Carousel', blurb: 'Single image or carousel — seeding, product features, partnership announcements.', group: 'Instagram' },
   { key: 'ig_story',        rate_col: 'rate_ig_story',        band_platform: 'rate_ig_post',     label: 'Instagram Story',          blurb: '24h frame — unboxings, in-moment shoutouts, swipe-ups.',                       group: 'Instagram' },
   // ── TikTok
   { key: 'tiktok_video',    rate_col: 'rate_tiktok_video',    band_platform: 'rate_tiktok_video',label: 'TikTok Video',             blurb: 'Original sponsored TikTok — product testing, game promo, brand integration.',  group: 'TikTok' },
@@ -49,7 +49,7 @@ const DELIVERABLES: Array<{
 ];
 
 type PlayerRateColumns = {
-  rate_ig_reel: number; rate_ig_static: number; rate_ig_story: number;
+  rate_ig_reel: number; rate_ig_post: number; rate_ig_story: number;
   rate_tiktok_video: number; rate_tiktok_repost: number;
   rate_yt_short: number; rate_yt_short_repost: number;
   rate_yt_full: number;  // long-form sponsored video (Migration 066)

@@ -39,7 +39,7 @@ export default async function PricingLogicPage() {
       .eq('is_active', true),
     supabase
       .from('creators')
-      .select('id, nickname, tier_code, rate_ig_reels, rate_yt_full, rate_tiktok_ours, is_bookable, profile_strength_pct'),
+      .select('id, nickname, tier_code, rate_ig_reel, rate_yt_full, rate_tiktok_ours, is_bookable, profile_strength_pct'),
     supabase.from('tiers').select('code, label, base_fee_min, base_fee_max, floor_share, sort_order').order('sort_order'),
   ]);
 

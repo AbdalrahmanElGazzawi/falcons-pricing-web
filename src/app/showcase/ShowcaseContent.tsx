@@ -27,7 +27,7 @@ type Creator = {
   full_name: string | null; nationality: string | null;
   avatar_url: string | null;
   tier_code: string | null; score: number | null;
-  rate_ig_reels: number; rate_yt_full: number; rate_yt_shorts: number;
+  rate_ig_reel: number; rate_yt_full: number; rate_yt_short: number;
   pricing_rationale?: string | null;
   rate_tiktok_ours: number; rate_twitch_kick_live: number;
   handle_ig: string | null; handle_x: string | null;
@@ -750,7 +750,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                       <div className="text-right">
                         <div className="text-[10px] uppercase tracking-wider text-mute font-bold">From</div>
                         <div className="text-sm font-bold text-greenDark tabular-nums leading-tight">
-                          {c.rate_ig_reels > 0 ? `SAR ${c.rate_ig_reels.toLocaleString('en-US')}` : 'On request'}
+                          {c.rate_ig_reel > 0 ? `SAR ${c.rate_ig_reel.toLocaleString('en-US')}` : 'On request'}
                         </div>
                         <div className="text-[10px] text-mute">per IG Reel</div>
                       </div>
@@ -993,7 +993,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                     <div className="p-4 space-y-2 text-xs">
                       {[
                         { label: 'IG Reel',         cpm: 18, n: p.followers_ig||0,     rate: p.rate_ig_reel },
-                        { label: 'IG Static',       cpm: 10, n: p.followers_ig||0,     rate: (p as any).rate_ig_static },
+                        { label: 'IG Static',       cpm: 10, n: p.followers_ig||0,     rate: (p as any).rate_ig_post },
                         { label: 'IG Story',        cpm:  6, n: p.followers_ig||0,     rate: (p as any).rate_ig_story },
                         { label: 'TikTok Video',    cpm: 20, n: p.followers_tiktok||0, rate: (p as any).rate_tiktok_video },
                         { label: 'TikTok Repost',   cpm: 10, n: p.followers_tiktok||0, rate: (p as any).rate_tiktok_repost },
@@ -1273,10 +1273,10 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                     <div className="text-[10px] uppercase tracking-wider text-greenDark font-bold mb-2">Internal — starting from</div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                       {[
-                        { label: 'IG Reel',     v: c.rate_ig_reels },
+                        { label: 'IG Reel',     v: c.rate_ig_reel },
                         { label: 'TikTok',      v: c.rate_tiktok_ours },
                         { label: 'YT Full',     v: c.rate_yt_full },
-                        { label: 'YT Short',    v: c.rate_yt_shorts },
+                        { label: 'YT Short',    v: c.rate_yt_short },
                         { label: 'Twitch/Kick', v: c.rate_twitch_kick_live },
                       ].filter(r => r.v && r.v > 0).map(r => (
                         <div key={r.label} className="flex justify-between bg-white border border-line rounded-md px-2 py-1.5">

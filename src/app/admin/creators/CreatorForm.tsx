@@ -15,8 +15,8 @@ const blank: Partial<Creator> = {
   handle_ig: '', handle_x: '', handle_yt: '', handle_tiktok: '', handle_twitch: '',
   followers_ig: 0, followers_x: 0, followers_yt: 0, followers_tiktok: 0, followers_twitch: 0,
   rate_x_post_quote: 0, rate_x_repost: 0,
-  rate_ig_post: 0, rate_ig_story: 0, rate_ig_reels: 0,
-  rate_yt_full: 0, rate_yt_preroll: 0, rate_yt_shorts: 0,
+  rate_ig_post: 0, rate_ig_story: 0, rate_ig_reel: 0,
+  rate_yt_full: 0, rate_yt_preroll: 0, rate_yt_short: 0,
   rate_snapchat: 0, rate_tiktok_ours: 0, rate_tiktok_client: 0,
   rate_event_snap: 0, rate_twitch_kick_live: 0, rate_kick_irl: 0,
   rate_telegram: 0, rate_usage_monthly: 0, rate_promo_monthly: 0,
@@ -137,7 +137,7 @@ export function CreatorForm({
 
         <h3 className="text-xs uppercase tracking-wider text-mute font-bold mb-2">Instagram</h3>
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <RateNum tier={v.tier_code} platformKey="rate_ig_reels" label="IG Reels" v={v.rate_ig_reels} on={x => set('rate_ig_reels', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_ig_reel" label="IG Reels" v={v.rate_ig_reel} on={x => set('rate_ig_reel', x)} step={500} />
           <RateNum tier={v.tier_code} platformKey="rate_ig_post" label="IG Post" v={v.rate_ig_post} on={x => set('rate_ig_post', x)} step={500} />
           <RateNum tier={v.tier_code} platformKey="rate_ig_story" label="IG Story" v={v.rate_ig_story} on={x => set('rate_ig_story', x)} step={500} />
         </div>
@@ -152,8 +152,8 @@ export function CreatorForm({
         <div className="grid grid-cols-4 gap-3 mb-4">
           <RateNum tier={v.tier_code} platformKey="rate_yt_full" label="YT Full Video" v={v.rate_yt_full} on={x => set('rate_yt_full', x)} step={1000} />
           <RateNum tier={v.tier_code} platformKey="rate_yt_preroll" label="YT Pre-roll" v={v.rate_yt_preroll} on={x => set('rate_yt_preroll', x)} step={500} />
-          <RateNum tier={v.tier_code} platformKey="rate_yt_shorts" label="YT Short" v={v.rate_yt_shorts} on={x => set('rate_yt_shorts', x)} step={500} />
-          <RateNum tier={v.tier_code} platformKey="rate_yt_shorts_repost" label="YT Short Repost" v={v.rate_yt_shorts_repost ?? 0} on={x => set('rate_yt_shorts_repost' as any, x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_yt_short" label="YT Short" v={v.rate_yt_short} on={x => set('rate_yt_short', x)} step={500} />
+          <RateNum tier={v.tier_code} platformKey="rate_yt_short_repost" label="YT Short Repost" v={v.rate_yt_short_repost ?? 0} on={x => set('rate_yt_short_repost' as any, x)} step={500} />
         </div>
 
         <h3 className="text-xs uppercase tracking-wider text-mute font-bold mb-2">X / Snapchat / Telegram</h3>

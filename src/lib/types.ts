@@ -33,7 +33,7 @@ export interface Player {
   ingame_role?: string;    // SMG, Flex, Tank, etc.
   rate_ig_reel: number;
   pricing_rationale?: string | null;
-  rate_ig_static: number;
+  rate_ig_post: number;
   rate_ig_story: number;
   rate_ig_repost: number;
   rate_ig_share: number;
@@ -168,12 +168,12 @@ export interface Creator {
   rate_x_repost: number;
   rate_ig_post: number;
   rate_ig_story: number;
-  rate_ig_reels: number;
+  rate_ig_reel: number;
   commission?: number;            // Falcons take fraction 0..1; player cut = 1 - commission
   rate_yt_full: number;
   rate_yt_preroll: number;
-  rate_yt_shorts: number;
-  rate_yt_shorts_repost: number;
+  rate_yt_short: number;
+  rate_yt_short_repost: number;
   rate_snapchat: number;
   rate_tiktok_ours: number;
   rate_tiktok_client: number;
@@ -308,7 +308,7 @@ export type PlatformGroup = 'Social Media' | 'Live & Stream' | 'On-Ground & Even
 export const PLAYER_PLATFORMS = [
   // Social Media — fixed rates per player
   { key: 'rate_ig_reel',       label: 'IG Reel',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
-  { key: 'rate_ig_static',     label: 'IG Static',          group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_ig_post',     label: 'IG Static',          group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_ig_story',      label: 'IG Story',           group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_ig_repost',     label: 'IG Repost',          group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_ig_share',      label: 'IG Share to Story',  group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
@@ -380,11 +380,11 @@ export const CREATOR_PLATFORMS = [
   { key: 'rate_x_repost',          label: 'X Repost',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_ig_post',           label: 'IG Post',             group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_ig_story',          label: 'IG Story',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
-  { key: 'rate_ig_reels',          label: 'IG Reels',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_ig_reel',          label: 'IG Reels',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_yt_full',           label: 'YT Full Video',       group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_yt_preroll',        label: 'YT 1–2min Pre-roll',  group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
-  { key: 'rate_yt_shorts',         label: 'YT Shorts',           group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
-  { key: 'rate_yt_shorts_repost',  label: 'YT Shorts Repost',    group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_yt_short',         label: 'YT Shorts',           group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
+  { key: 'rate_yt_short_repost',  label: 'YT Shorts Repost',    group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_snapchat',          label: 'Snapchat',            group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_tiktok_ours',       label: 'TikTok – Falcons Account (Ours)', group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },
   { key: 'rate_tiktok_client',     label: 'TikTok – Client Account (Theirs)', group: 'Social Media' as PlatformGroup,        manual: false, suggestedRange: null as null | [number, number] },

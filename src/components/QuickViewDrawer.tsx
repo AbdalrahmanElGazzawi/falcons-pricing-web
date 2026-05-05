@@ -225,7 +225,7 @@ export function PlayerQuickView({
       {/* Key rates (editable) */}
       <Section title="Key rates (SAR per posting)" icon={<ShieldCheck size={11}/>}>
         <EditableNumber label="IG Reel"        value={Number(player.rate_ig_reel || 0)}        isAdmin={isAdmin} onCommit={v => onPatch(player.id, { rate_ig_reel: v })} />
-        <EditableNumber label="IG Static"      value={Number(player.rate_ig_static || 0)}      isAdmin={isAdmin} onCommit={v => onPatch(player.id, { rate_ig_static: v })} />
+        <EditableNumber label="IG Static"      value={Number(player.rate_ig_post || 0)}      isAdmin={isAdmin} onCommit={v => onPatch(player.id, { rate_ig_post: v })} />
         <EditableNumber label="TikTok Video"   value={Number(player.rate_tiktok_video || 0)}   isAdmin={isAdmin} onCommit={v => onPatch(player.id, { rate_tiktok_video: v })} />
         <EditableNumber label="YT Short"       value={Number(player.rate_yt_short || 0)}       isAdmin={isAdmin} onCommit={v => onPatch(player.id, { rate_yt_short: v })} />
         <EditableNumber label="X Post"         value={Number(player.rate_x_post || 0)}         isAdmin={isAdmin} onCommit={v => onPatch(player.id, { rate_x_post: v })} />
@@ -341,7 +341,7 @@ export function CreatorQuickView({
 
       <Section title="Key rates (SAR per posting)" icon={<ShieldCheck size={11}/>}>
         <EditableNumber label="IG Reel"        value={Number(creator.rate_ig_reel || 0)}        isAdmin={isAdmin} onCommit={v => onPatch(creator.id, { rate_ig_reel: v })} />
-        <EditableNumber label="IG Static"      value={Number(creator.rate_ig_static || 0)}      isAdmin={isAdmin} onCommit={v => onPatch(creator.id, { rate_ig_static: v })} />
+        <EditableNumber label="IG Static"      value={Number(creator.rate_ig_post || 0)}      isAdmin={isAdmin} onCommit={v => onPatch(creator.id, { rate_ig_post: v })} />
         <EditableNumber label="TikTok Video"   value={Number(creator.rate_tiktok_video || 0)}   isAdmin={isAdmin} onCommit={v => onPatch(creator.id, { rate_tiktok_video: v })} />
         <EditableNumber label="YT Short"       value={Number(creator.rate_yt_short || 0)}       isAdmin={isAdmin} onCommit={v => onPatch(creator.id, { rate_yt_short: v })} />
         <EditableNumber label="IRL / Event"    value={Number(creator.rate_irl || 0)}            isAdmin={isAdmin} onCommit={v => onPatch(creator.id, { rate_irl: v })} />

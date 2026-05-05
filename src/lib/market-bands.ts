@@ -18,8 +18,8 @@ export type MarketBandSource =
   | 'closed_deal_history'
   | 'manual_override'
   // Migration 033: rows derived programmatically from existing parents
-  | 'derived_from_v015_ratio'   // rate_ig_repost = 0.35 × rate_ig_static, etc.
-  | 'derived_alias';            // rate_ig_static aliased from rate_ig_post
+  | 'derived_from_v015_ratio'   // rate_ig_repost = 0.35 × rate_ig_post, etc.
+  | 'derived_alias';            // rate_ig_post aliased from rate_ig_post
 
 export interface MarketBand {
   id: string;
@@ -44,7 +44,7 @@ export interface MarketBand {
    *   { method: 'sot_v1_baseline',     note, version }
    *   { method: 'manual_peer_card',    note, version }
    *   { method: 'platform_alias',      aliased_from: 'rate_ig_post', note, version }
-   *   { method: 'ratio_from_parent',   parent_platform: 'rate_ig_static', ratio: 0.35, origin: 'migration_015', version }
+   *   { method: 'ratio_from_parent',   parent_platform: 'rate_ig_post', ratio: 0.35, origin: 'migration_015', version }
    */
   derivation?: Record<string, any> | null;
 }

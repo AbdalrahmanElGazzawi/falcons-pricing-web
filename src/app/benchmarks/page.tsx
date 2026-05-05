@@ -20,7 +20,7 @@ const TIER_ORDER = ['Tier S','Tier 1','Tier 2','Tier 3','Tier 4'];
 const PLATFORM_LABEL: Record<string,string> = {
   rate_ig_reel:      'IG Reel',
   rate_ig_post:      'IG Post / Story',
-  rate_ig_static:    'IG Static',
+  rate_ig_post:    'IG Static',
   rate_ig_repost:    'IG Repost',
   rate_tiktok_video: 'TikTok Video',
   rate_tiktok_repost:'TikTok Repost',

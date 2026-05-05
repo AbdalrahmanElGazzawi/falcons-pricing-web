@@ -49,7 +49,7 @@ const STATUS_LABEL: Record<string, string> = {
 // Friendly labels for the floor breakdown — keep aligned with PLAYER_PLATFORMS in lib/types.ts
 const PLATFORM_LABELS: Record<string, string> = {
   rate_ig_reel:        'IG Reel',
-  rate_ig_static:      'IG Post',
+  rate_ig_post:      'IG Post',
   rate_ig_story:       'IG Story',
   rate_tiktok_video:   'TikTok',
   rate_yt_short:       'YT Short',
