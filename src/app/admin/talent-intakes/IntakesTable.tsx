@@ -341,6 +341,57 @@ export function IntakesTable({ players }: { players: P[] }) {
         <span className="ml-3 inline-flex items-center gap-1"><Sparkles size={11} className="text-orange-600" /> {t('ti.legend_auto')}</span>
         <span className="ml-3 inline-flex items-center gap-1"><Globe size={11} className="text-blue-600" /> {t('ti.legend_global')}</span>
       </div>
+
+      {/* ── Override modal (Migration 058) ──────────────────────────── */}
+      {override && (
+        <div className="fixed inset-0 z-[80] bg-black/40 flex items-center justify-center p-4" onClick={() => setOverride(null)}>
+          <div className="bg-card rounded-2xl border-2 border-greenDark/30 shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+              <h2 className="font-semibold text-ink">Override floor — {override.player.nickname}</h2>
+              <button onClick={() => setOverride(null)} className="text-mute hover:text-ink">×</button>
+            </div>
+            <div className="p-5 space-y-3">
+              <p className="text-[11px] text-mute">Sets new min_rates + agency fields. Audit-logged. Doesn&apos;t affect the talent&apos;s lockout.</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {RATE_KEYS.map(({ k, label }) => (
+                  <label key={k} className="flex items-center justify-between gap-2 border border-line rounded-lg px-2 py-1.5 bg-bg/40">
+                    <span className="text-label">{label}</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={override.rates[k] ?? ''}
+                      onChange={e => {
+                        const v = e.target.value.replace(/[^\d]/g, '');
+                        setOverride(st => st ? { ...st, rates: { ...st.rates, [k]: v } } : st);
+                      }}
+                      placeholder="SAR"
+                      className="w-24 text-right text-xs tabular-nums border border-line rounded px-2 py-1 bg-card focus:outline-none focus:ring-1 focus:ring-greenDark/40"
+                    />
+                  </label>
+                ))}
+              </div>
+              <div className="border-t border-line pt-3 space-y-2">
+                <label className="flex items-center justify-between text-xs font-semibold">
+                  <span>Agency representation</span>
+                  <input type="checkbox" checked={override.agencyOn} onChange={e => setOverride(st => st ? { ...st, agencyOn: e.target.checked } : st)} />
+                </label>
+                {override.agencyOn && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <input value={override.agencyName} onChange={e => setOverride(st => st ? { ...st, agencyName: e.target.value } : st)} placeholder="Agency name" className="text-xs border border-line rounded px-2 py-1.5 bg-bg" />
+                    <input value={override.agencyFee} onChange={e => setOverride(st => st ? { ...st, agencyFee: e.target.value.replace(/[^\d.,]/g,'').slice(0,5) } : st)} placeholder="Fee %" className="text-xs border border-line rounded px-2 py-1.5 bg-bg tabular-nums" />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-bg/30">
+              <button onClick={() => setOverride(null)} className="text-xs px-3 py-2 rounded-lg border border-line hover:bg-bg">Cancel</button>
+              <button onClick={submitOverride} disabled={busyId === override.player.id} className="btn btn-primary text-xs px-3 py-2 disabled:opacity-50">
+                {busyId === override.player.id ? 'Saving…' : 'Save override'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

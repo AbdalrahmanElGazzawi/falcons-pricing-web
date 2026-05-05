@@ -109,7 +109,7 @@ export async function POST(
   // Find player by token
   const { data: playerRow } = await supabase
     .from('players')
-    .select('id, nickname, intake_status, min_rates, is_active, agency_status, agency_name, agency_fee_pct, instagram, tiktok, youtube, x_handle, twitch, followers_ig, followers_tiktok, followers_yt, followers_x, followers_twitch')
+    .select('id, nickname, intake_status, min_rates, is_active, agency_status, agency_name, agency_fee_pct, instagram, tiktok, youtube, x_handle, twitch, followers_ig, followers_tiktok, followers_yt, followers_x, followers_twitch, intake_revision_count, intake_locked_until')
     .eq('intake_token', params.token)
     .maybeSingle();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -124,11 +124,49 @@ export async function POST(
     || player.intake_status === 'approved'
     || player.intake_status === 'revised';
 
+  // Migration 058 — Lockout policy on revisions.
+  // First submit: free. After that, ONE free revision per 3-month rolling
+  // window. If they're locked, return 423 with the unlock contact + date.
+  const now = Date.now();
+  const lockedUntilMs = player.intake_locked_until
+    ? new Date(player.intake_locked_until).getTime()
+    : null;
+  const isCurrentlyLocked = lockedUntilMs !== null && lockedUntilMs > now;
+  if (isRevision && isCurrentlyLocked) {
+    return NextResponse.json({
+      error: 'Revision locked',
+      detail: 'You\'ve already used your one free revision. The next revision opens automatically on the date below; to request an earlier change, email afg@falcons.sa.',
+      locked_until: player.intake_locked_until,
+      unlock_contact: 'afg@falcons.sa',
+    }, { status: 423 });
+  }
+
+  // Compute new revision_count + locked_until.
+  // - First-time submit                 → count=0, locked=null
+  // - Revising after lockout expired    → count=1, locked = now + 3 months
+  // - Revising while not locked yet     → count = prev_count + 1, lock if hits 1
+  let newRevisionCount = player.intake_revision_count ?? 0;
+  let newLockedUntil: string | null = player.intake_locked_until ?? null;
+  if (isRevision) {
+    // Lockout expired? reset the window first.
+    if (lockedUntilMs !== null && lockedUntilMs <= now) {
+      newRevisionCount = 0;
+      newLockedUntil = null;
+    }
+    newRevisionCount += 1;
+    if (newRevisionCount >= 1 && !newLockedUntil) {
+      const lock = new Date(now + 90 * 24 * 60 * 60 * 1000); // 90 days ≈ 3 months
+      newLockedUntil = lock.toISOString();
+    }
+  }
+
   const update: Record<string, unknown> = {
     min_rates:           cleaned,
     min_rates_notes:     notes,
     intake_status:       isRevision ? 'revised' : 'submitted',
     intake_submitted_at: new Date().toISOString(),
+    intake_revision_count: newRevisionCount,
+    intake_locked_until:   newLockedUntil,
   };
   if (agency_status !== null) update.agency_status  = agency_status;
   if (agency_status !== null) update.agency_name    = agency_name;

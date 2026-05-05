@@ -54,6 +54,9 @@ type PlayerInfo = {
   agency_status: string | null;
   agency_name: string | null;
   agency_fee_pct: number | null;
+  // Migration 058 — revision lockout
+  revision_count: number;
+  locked_until: string | null;
 };
 
 type PeerOrg = {
@@ -134,6 +137,13 @@ export function TalentIntake({
 }) {
   const SAR_PER_USD = 3.75;
   const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
+
+  // Migration 058 — derived lock state
+  const lockedUntilMs = player.locked_until ? new Date(player.locked_until).getTime() : null;
+  const isLocked = lockedUntilMs !== null && lockedUntilMs > Date.now();
+  const unlockDateLabel = lockedUntilMs ? new Date(lockedUntilMs).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
+  const isFirstSubmit = !player.submitted_at;
+  const remainingRevisions = isLocked ? 0 : (isFirstSubmit ? 1 : Math.max(0, 1 - player.revision_count));
   const fmtMoney = (sar: number) => {
     const n = currency === 'USD' ? Math.round(sar / SAR_PER_USD) : Math.round(sar);
     return `${currency} ${n.toLocaleString('en-US')}`;
@@ -231,7 +241,10 @@ export function TalentIntake({
           },
         }),
       });
-      if (!res.ok) {
+      if (res.status === 423) {
+        const j = await res.json().catch(() => ({} as Record<string, unknown>));
+        setDone({ ok: false, error: typeof j.detail === 'string' ? j.detail : 'Revision locked. Email afg@falcons.sa to request an early unlock.' });
+      } else if (!res.ok) {
         const t = await res.text().catch(() => '');
         setDone({ ok: false, error: t || `HTTP ${res.status}` });
       } else {
@@ -318,6 +331,28 @@ export function TalentIntake({
           <Stat icon={<Users size={14}/>}     label="Total"   value={fmt(totalReach)} accent />
         </div>
       </div>
+
+      {/* ─── Lock banner (Migration 058) ──────────────────────────────── */}
+      {isLocked && (
+        <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 text-xs sm:text-sm text-amber-900">
+          <div className="flex items-start gap-3">
+            <Lock size={18} className="mt-0.5 flex-shrink-0 text-amber-700" />
+            <div className="space-y-1">
+              <div className="font-bold">Revision locked until {unlockDateLabel}</div>
+              <div>
+                You\'ve already used your one free revision in this 3-month window. The next revision opens automatically on <strong>{unlockDateLabel}</strong>.
+                {' '}To request an earlier change, email <a href="mailto:afg@falcons.sa" className="underline font-semibold">afg@falcons.sa</a>.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {!isLocked && player.submitted_at && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 flex items-center gap-2">
+          <Info size={14} className="flex-shrink-0 text-blue-700" />
+          <div>You have <strong>{remainingRevisions}</strong> free revision{remainingRevisions === 1 ? '' : 's'} this quarter. After that, the form locks for 3 months unless you email afg@falcons.sa.</div>
+        </div>
+      )}
 
       {/* ─── Achievements (Liquipedia) ─────────────────────────────────── */}
       {player.achievements.length > 0 && (
@@ -593,10 +628,14 @@ export function TalentIntake({
         <div className="flex items-center gap-2 text-[11px] text-mute order-2 sm:order-1">
           <Lock size={12} /> Private to you and Falcons Talent. Audit-logged.
         </div>
-        <button type="button" onClick={submit} disabled={submitting}
+        <button type="button" onClick={submit} disabled={submitting || isLocked}
           className="btn btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 min-h-[48px] sm:min-h-[44px] disabled:opacity-50 w-full sm:w-auto order-1 sm:order-2 text-base sm:text-sm font-semibold">
           <Send size={14} />
-          {submitting ? 'Saving…' : (player.submitted_at ? 'Save revision' : 'Submit my minimums')}
+          {submitting ? 'Saving…'
+            : isLocked ? `Locked until ${unlockDateLabel}`
+            : (player.submitted_at
+                ? `Save revision (${remainingRevisions} left)`
+                : 'Submit my minimums')}
         </button>
       </div>
 

@@ -161,6 +161,9 @@ export default async function TalentIntakePage({ params }: { params: { token: st
           youtube:         player.youtube ?? null,
           x_handle:       player.x_handle ?? null,
           twitch:          player.twitch ?? null,
+          // Migration 058 — revision lockout
+          revision_count:  Number(player.intake_revision_count ?? 0),
+          locked_until:    player.intake_locked_until ?? null,
         }}
         market={audienceMarket}
         deliverables={deliverables}

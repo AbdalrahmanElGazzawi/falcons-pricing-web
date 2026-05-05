@@ -12,7 +12,7 @@ export default async function TalentIntakesPage() {
 
   const { data: playersRows } = await supabase
     .from('players')
-    .select('id, nickname, full_name, tier_code, role, game, team, is_active, intake_token, intake_status, intake_sent_at, intake_submitted_at, min_rates, min_rates_notes, avatar_url, nationality, instagram, x_handle, tiktok, twitch, youtube, commission')
+    .select('id, nickname, full_name, tier_code, role, game, team, is_active, intake_token, intake_status, intake_sent_at, intake_submitted_at, min_rates, min_rates_notes, avatar_url, nationality, instagram, x_handle, tiktok, twitch, youtube, commission, intake_revision_count, intake_locked_until, intake_admin_override_at, intake_admin_override_by, agency_status, agency_name, agency_fee_pct')
     .eq('is_active', true)
     .order('intake_status', { ascending: false })
     .order('nickname');
