@@ -42,8 +42,8 @@ export function AboutContent() {
             {[
               { v: '5', l: 'tiers (S → 4)' },
               { v: '22', l: 'platform ratios' },
-              { v: '3', l: 'markets (KSA · MENA · Global)' },
-              { v: '9', l: 'pricing axes' },
+              { v: '6', l: 'markets (KSA · MENA · NA · EU · APAC · Global)' },
+              { v: '19+', l: 'pricing axes' },
             ].map(s => (
               <div key={s.l} className="rounded-xl border border-white/15 bg-white/5 backdrop-blur px-3 py-2.5">
                 <div className="text-2xl font-extrabold text-white tabular-nums">{s.v}</div>
@@ -208,11 +208,14 @@ export function AboutContent() {
             <p className="text-sm text-label mt-0.5">Region drives both pricing band and currency display. Same talent, different brand audiences price differently.</p>
           </div>
         </div>
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             { code: 'KSA',    mult: '1.00×', ccy: 'SAR primary', desc: 'Saudi mass + GCC affluent. Mainstream brand demand. Highest premium for nationality + Arabic language.', tone: 'border-green/30 bg-green/10 text-greenDark dark:text-green' },
-            { code: 'MENA',   mult: '0.85×', ccy: 'SAR primary', desc: 'GCC + Levant + Egypt + Maghreb. Pan-Arab regional play. Strong appetite, slightly slimmer brand budgets vs KSA.', tone: 'border-amber-300 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300' },
-            { code: 'Global', mult: '0.65×', ccy: 'USD primary', desc: 'Default for non-MENA pros (NA / EU / SEA / Latam). Brand budgets quoted in USD. Larger reach, commodity pricing.', tone: 'border-blue-200 dark:border-blue-700/50 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
+            { code: 'MENA',   mult: '0.85×', ccy: 'SAR primary', desc: 'GCC + Levant + Egypt + Maghreb. Pan-Arab regional play. Slightly slimmer brand budgets vs KSA.', tone: 'border-amber-300 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300' },
+            { code: 'NA',     mult: '1.30×', ccy: 'USD primary', desc: 'North-American pros (US / Canada). FaZe / Cloud9 / 100T comparable bands. Highest brand-budget tier in the system.', tone: 'border-purple-200 dark:border-purple-700/50 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' },
+            { code: 'EU',     mult: '1.10×', ccy: 'USD primary', desc: 'European pros (CS2, EAFC, R6 scenes). Karmine Corp / Fnatic comparable. Mid-premium band.', tone: 'border-indigo-200 dark:border-indigo-700/50 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' },
+            { code: 'APAC',   mult: '0.85×', ccy: 'USD primary', desc: 'Asia-Pacific pros (Korean / Filipino / Australian / Pakistani). MLBB / PUBG dominant. Smaller per-deal brand budgets.', tone: 'border-teal-200 dark:border-teal-700/50 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300' },
+            { code: 'Global', mult: '1.00×', ccy: 'USD primary', desc: 'Fallback for talents without dominant region (chess, multi-game). Used sparingly post-Mig 061/063.', tone: 'border-blue-200 dark:border-blue-700/50 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
           ].map(m => (
             <div key={m.code} className={`rounded-xl border p-4 ${m.tone}`}>
               <div className="flex items-center justify-between">
