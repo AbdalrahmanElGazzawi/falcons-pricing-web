@@ -15,9 +15,10 @@ const ICONS: Record<string, LucideIcon> = {
   Activity, Compass,
 };
 
-type Status = 'live' | 'building' | 'next' | 'future';
+type Status = 'shipped' | 'live' | 'building' | 'next' | 'future';
 
 const STATUS: Record<Status, { label: string; chip: string; cellLabel: string; rowAccent: string }> = {
+  shipped:  { label: 'Shipped',  chip: 'bg-greenSoft text-greenDark border border-greenDark/30',                cellLabel: 'text-greenDark', rowAccent: 'border-l-4 border-l-greenDark/40' },
   live:     { label: 'Now',      chip: 'bg-green text-white',                 cellLabel: 'text-greenDark', rowAccent: 'border-l-4 border-l-green' },
   building: { label: 'Building', chip: 'bg-amber text-white',                 cellLabel: 'text-amber',     rowAccent: 'border-l-4 border-l-amber' },
   next:     { label: 'Up next',  chip: 'bg-navy text-white',                  cellLabel: 'text-navy',      rowAccent: 'border-l-4 border-l-navy' },
@@ -26,10 +27,12 @@ const STATUS: Record<Status, { label: string; chip: string; cellLabel: string; r
 
 function statusFromTone(tone: string | null): Status {
   switch ((tone ?? '').toLowerCase()) {
-    case 'green': return 'live';
-    case 'amber': return 'building';
-    case 'navy':  return 'next';
-    default:      return 'future';
+    case 'shipped':
+    case 'done':   return 'shipped';
+    case 'green':  return 'live';
+    case 'amber':  return 'building';
+    case 'navy':   return 'next';
+    default:       return 'future';
   }
 }
 
@@ -41,7 +44,8 @@ function parseTitle(title: string): { prefix: string; quarter: string; subject: 
   const m = title.match(/^((?:State|Phase)\s+\d+)\s*[—–\-:]?\s*(.*)$/i);
   const prefix  = (m?.[1] ?? '').trim();
   const rest    = (m?.[2] ?? title).trim();
-  const q = rest.match(/^(Q[1-4]\s+\d{4}|\d{4}\+?)\s*[·•—–\-]\s*(.+)$/i);
+  // Match: Q1 2026 / Q2 2026 etc / 2027 / 2027+ / Feb 2026 / Feb 15 2026 / March 2026 / In flight
+  const q = rest.match(/^(Q[1-4]\s+\d{4}|\d{4}\+?|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|June|July|August|September|October|November|December)(?:\s+\d{1,2})?\s+\d{4}|In\s+flight)\s*[·•—–\-]\s*(.+)$/i);
   if (q) return { prefix, quarter: q[1].trim(), subject: q[2].trim() };
   return { prefix, quarter: '', subject: rest };
 }
