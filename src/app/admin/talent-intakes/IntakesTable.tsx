@@ -20,6 +20,14 @@ type P = {
   intake_sent_at: string | null; intake_submitted_at: string | null;
   min_rates: Record<string, number> | null;
   min_rates_notes: string | null;
+  // Migration 058 — revision lockout + admin override
+  intake_revision_count?: number | null;
+  intake_locked_until?: string | null;
+  intake_admin_override_at?: string | null;
+  intake_admin_override_by?: string | null;
+  agency_status?: string | null;
+  agency_name?: string | null;
+  agency_fee_pct?: number | null;
 };
 
 const STATUS_CHIP: Record<string, string> = {
