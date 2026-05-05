@@ -13,6 +13,19 @@ type AchievementObj = {
 };
 type Achievement = string | AchievementObj;
 
+type IntakeRegion = 'KSA' | 'MENA' | 'EU' | 'NA' | 'APAC' | 'GLOBAL';
+
+const REGION_LABEL: Record<IntakeRegion, string> = {
+  KSA: 'Saudi Arabia (KSA)',
+  MENA: 'MENA',
+  EU: 'Europe',
+  NA: 'North America',
+  APAC: 'Asia-Pacific',
+  GLOBAL: 'Global',
+};
+
+type SocialLink = { handle?: string | null; url?: string | null; followers?: number | null };
+
 type PlayerInfo = {
   id: number;
   nickname: string;
@@ -27,6 +40,12 @@ type PlayerInfo = {
   followers_yt: number;
   followers_x: number;
   followers_twitch: number;
+  // URLs / handles for the editable-social block
+  instagram?: string | null;
+  tiktok?: string | null;
+  youtube?: string | null;
+  x_handle?: string | null;
+  twitch?: string | null;
   achievements: Achievement[];
   liquipedia_url: string | null;
   submitted_at: string | null;
@@ -35,6 +54,16 @@ type PlayerInfo = {
   agency_status: string | null;
   agency_name: string | null;
   agency_fee_pct: number | null;
+};
+
+type PeerOrg = {
+  org_name: string;
+  region: string;
+  primary_game: string | null;
+  hq_country: string | null;
+  followers_total: number | null;
+  source_url: string | null;
+  notes: string | null;
 };
 
 type Band = { platform: string; min_sar: number; median_sar: number; max_sar: number; audience_market: string } | null;
@@ -51,6 +80,12 @@ type Deliverable = {
 };
 
 const fmt = (n: number) => Number(n || 0).toLocaleString('en-US');
+function toIntOrNull(v: string): number | null {
+  const cleaned = String(v ?? '').replace(/[^\d]/g, '');
+  if (!cleaned) return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : null;
+}
 
 // ─── Utility: classify a submitted value into a price zone ─────────────────
 type Zone = 'below' | 'floor' | 'median' | 'premium' | 'above' | 'none';
@@ -89,12 +124,13 @@ const TONE_CLASSES: Record<string, { ring: string; bg: string; text: string; chi
 
 // ─── Main component ────────────────────────────────────────────────────────
 export function TalentIntake({
-  token, player, market, deliverables,
+  token, player, market, deliverables, peerOrgs,
 }: {
   token: string;
   player: PlayerInfo;
-  market: 'KSA' | 'MENA' | 'Global';
+  market: IntakeRegion;
   deliverables: Deliverable[];
+  peerOrgs: PeerOrg[];
 }) {
   const SAR_PER_USD = 3.75;
   const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
@@ -117,6 +153,22 @@ export function TalentIntake({
   const [agencyFeePct, setAgencyFeePct] = useState<string>(
     player.agency_fee_pct != null ? String(player.agency_fee_pct) : ''
   );
+
+  // Editable socials state (Migration 057). Talent can correct/fill missing
+  // handles + follower counts directly from the intake form.
+  const [socials, setSocials] = useState({
+    instagram:        player.instagram        ?? '',
+    tiktok:           player.tiktok           ?? '',
+    youtube:          player.youtube          ?? '',
+    x_handle:        player.x_handle        ?? '',
+    twitch:           player.twitch           ?? '',
+    followers_ig:     String(player.followers_ig     || ''),
+    followers_tiktok: String(player.followers_tiktok || ''),
+    followers_yt:     String(player.followers_yt     || ''),
+    followers_x:      String(player.followers_x      || ''),
+    followers_twitch: String(player.followers_twitch || ''),
+  });
+  const [editingSocials, setEditingSocials] = useState(false);
 
   const [notes, setNotes] = useState(player.notes ?? '');
   const [submitting, setSubmitting] = useState(false);
@@ -164,6 +216,18 @@ export function TalentIntake({
             has_agency: hasAgency,
             name: hasAgency ? agencyName.trim() : null,
             fee_pct: hasAgency ? Number(String(agencyFeePct).replace(',', '.')) : null,
+          },
+          socials: {
+            instagram:        socials.instagram.trim() || null,
+            tiktok:           socials.tiktok.trim()    || null,
+            youtube:          socials.youtube.trim()   || null,
+            x_handle:        socials.x_handle.trim() || null,
+            twitch:           socials.twitch.trim()    || null,
+            followers_ig:     toIntOrNull(socials.followers_ig),
+            followers_tiktok: toIntOrNull(socials.followers_tiktok),
+            followers_yt:     toIntOrNull(socials.followers_yt),
+            followers_x:      toIntOrNull(socials.followers_x),
+            followers_twitch: toIntOrNull(socials.followers_twitch),
           },
         }),
       });
@@ -222,7 +286,7 @@ export function TalentIntake({
                   {[player.full_name, player.game, player.team].filter(Boolean).join(' · ')}
                 </div>
                 <div className="text-[10px] sm:text-[11px] opacity-80 mt-1">
-                  {player.tier_code || 'Tier 3'} · {player.nationality || 'Region unspecified'} · benchmarks shown for {market} + World
+                  {player.tier_code || 'Tier 3'} · {player.nationality || 'Region unspecified'} · benchmarks for {REGION_LABEL[market]} + World
                 </div>
               </div>
             </div>
@@ -303,6 +367,113 @@ export function TalentIntake({
         </div>
       )}
 
+      {/* ─── Editable socials (Migration 057) ─────────────────────────── */}
+      <div className="rounded-2xl border border-line bg-card overflow-hidden">
+        <div className="px-4 sm:px-5 py-3 flex items-center justify-between gap-2 border-b border-line">
+          <div className="flex items-center gap-2">
+            <Users size={14} className="text-greenDark" />
+            <h2 className="text-sm font-semibold text-ink">Your socials</h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEditingSocials(v => !v)}
+            className="text-[11px] font-semibold text-greenDark hover:underline min-h-[44px] sm:min-h-0 px-2"
+          >
+            {editingSocials ? 'Done editing' : 'Edit / fill missing'}
+          </button>
+        </div>
+        <div className="divide-y divide-line">
+          {[
+            { key: 'instagram', label: 'Instagram',         fkey: 'followers_ig',     prefix: 'https://www.instagram.com/' },
+            { key: 'tiktok',    label: 'TikTok',            fkey: 'followers_tiktok', prefix: 'https://www.tiktok.com/@' },
+            { key: 'youtube',   label: 'YouTube',           fkey: 'followers_yt',     prefix: 'https://www.youtube.com/' },
+            { key: 'x_handle', label: 'X (Twitter)',       fkey: 'followers_x',      prefix: 'https://x.com/' },
+            { key: 'twitch',    label: 'Twitch',            fkey: 'followers_twitch', prefix: 'https://www.twitch.tv/' },
+          ].map(({ key, label, fkey, prefix }) => {
+            const handleVal = (socials as any)[key] as string;
+            const followerVal = (socials as any)[fkey] as string;
+            const isLink = handleVal && (handleVal.startsWith('http://') || handleVal.startsWith('https://'));
+            return (
+              <div key={key} className="px-4 sm:px-5 py-3 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-start sm:items-center">
+                <div className="sm:col-span-3 text-xs font-semibold text-label">{label}</div>
+                <div className="sm:col-span-6 min-w-0">
+                  {editingSocials ? (
+                    <input
+                      type="url"
+                      value={handleVal}
+                      onChange={e => setSocials(s => ({ ...s, [key]: e.target.value }))}
+                      placeholder={prefix + 'yourhandle'}
+                      className="w-full text-sm border border-line rounded-lg px-3 py-2 min-h-[44px] sm:min-h-0 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30"
+                    />
+                  ) : handleVal ? (
+                    isLink ? (
+                      <a href={handleVal} target="_blank" rel="noopener noreferrer"
+                         className="text-greenDark hover:underline break-all text-xs">
+                        {handleVal}
+                      </a>
+                    ) : (
+                      <span className="text-ink break-all text-xs">{handleVal}</span>
+                    )
+                  ) : (
+                    <span className="text-mute italic text-xs">— not on file —</span>
+                  )}
+                </div>
+                <div className="sm:col-span-3">
+                  {editingSocials ? (
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={followerVal}
+                      onChange={e => setSocials(s => ({ ...s, [fkey]: e.target.value.replace(/[^\d]/g, '') }))}
+                      placeholder="Followers"
+                      className="w-full text-right text-sm tabular-nums border border-line rounded-lg px-3 py-2 min-h-[44px] sm:min-h-0 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30"
+                    />
+                  ) : followerVal ? (
+                    <span className="text-xs text-ink tabular-nums">{Number(followerVal).toLocaleString('en-US')} followers</span>
+                  ) : (
+                    <span className="text-mute italic text-xs">unknown</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="px-4 sm:px-5 py-2 bg-bg/40 text-[11px] text-mute">
+          Click <strong className="text-greenDark">Edit / fill missing</strong> to correct handles or follower counts. Audit-logged.
+        </div>
+      </div>
+
+      {/* ─── Peer-orgs in your region (Migration 057) ──────────────────── */}
+      {peerOrgs.length > 0 && (
+        <div className="rounded-2xl border border-line bg-card overflow-hidden">
+          <div className="px-4 sm:px-5 py-3 border-b border-line">
+            <div className="flex items-center gap-2">
+              <Globe2 size={14} className="text-greenDark" />
+              <h2 className="text-sm font-semibold text-ink">Other esports orgs in {REGION_LABEL[market]}</h2>
+            </div>
+            <p className="text-[11px] text-mute mt-0.5">
+              For reference. Public follower counts only — your tier band above is the actual rate anchor.
+            </p>
+          </div>
+          <ul className="divide-y divide-line max-h-64 overflow-auto">
+            {peerOrgs.map(p => (
+              <li key={p.org_name} className="px-4 sm:px-5 py-2.5 flex items-center justify-between gap-3 text-xs">
+                <div className="min-w-0">
+                  <div className="font-semibold text-ink truncate">{p.org_name}</div>
+                  <div className="text-mute text-[11px]">
+                    {[p.primary_game, p.hq_country].filter(Boolean).join(' · ')}
+                  </div>
+                </div>
+                <div className="text-right tabular-nums whitespace-nowrap">
+                  <div className="text-ink font-semibold">{Number(p.followers_total ?? 0).toLocaleString('en-US')}</div>
+                  <div className="text-[10px] text-mute uppercase tracking-wider">followers</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ─── How this works (with explicit deal-flow trade-off) ─────────── */}
       <div className="rounded-xl border border-greenDark/30 bg-greenSoft/30 p-4 text-xs sm:text-[13px] text-ink leading-relaxed space-y-2">
         <div className="flex items-center gap-2 font-semibold text-greenDark">
@@ -310,7 +481,7 @@ export function TalentIntake({
         </div>
         <p>
           For each deliverable, set the <strong>minimum {currency} you'll accept per single posting</strong>.
-          We show you two anchors: <strong className="text-greenDark">your regional band ({market})</strong> and
+          We show you two anchors: <strong className="text-greenDark">your regional band ({REGION_LABEL[market]})</strong> and
           the <strong className="text-greenDark">world-class band</strong> for your tier.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">

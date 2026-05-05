@@ -1,0 +1,28 @@
+-- Migration 057 — Region split + peer-org reference table.
+-- Already applied via Supabase MCP. Recorded here for repo parity.
+--
+-- Adds three new audience_market codes to market_bands (EU, NA, APAC) with
+-- bands derived from GLOBAL using documented per-platform multipliers, and
+-- creates `peer_orgs` for the named-competitor reference UI.
+--
+-- DATA PROVENANCE:
+--   * KSA / MENA / GLOBAL bands: untouched. methodology_v2_baseline +
+--     closed_deal_history (Falcons internal verified).
+--   * EU / NA / APAC bands: source = 'modeled_regional_v1_2026'. Multipliers
+--     chosen from IMH 2024 regional CPM benchmarks + HypeAuditor 2024 Q4
+--     rate cards, cross-validated against limited closed_deal_history.
+--   * peer_orgs: ORG-LEVEL public follower counts ONLY, snapshotted ~2026-04.
+--     No fabricated player rates. Player rates always come from market_bands.
+--
+-- Per-platform regional multipliers over GLOBAL:
+--   Platform              EU     NA     APAC
+--   IG (reel/post/etc.)   1.10   1.30   0.85
+--   TikTok                1.05   1.30   0.90
+--   YT short              1.10   1.30   0.85
+--   YT full               1.10   1.30   0.80
+--   IRL                   1.05   1.20   0.65   (KSA holds 1.55x for IRL)
+--
+-- Replace by setting effective_to on these rows + inserting fresh data when
+-- per-region closed-deal data lands.
+
+-- See Supabase migration log for the actual INSERTs. Repo-of-record file.

@@ -64,35 +64,46 @@ export default async function TalentIntakePage({ params }: { params: { token: st
     );
   }
 
-  // Region for the player → drives which audience_market band we show
+  // Region for the player → drives which audience_market band we show.
+  // 5-region taxonomy: KSA / MENA / EU / NA / APAC + GLOBAL fallback.
   const audienceMarket = regionFromNationality(player.nationality);
 
-  // Pull market_bands for their tier × market — fetch BOTH the talent's home
-  // market AND the GLOBAL "world-class" benchmark so the intake page can
-  // anchor the talent against what world-best players in their tier charge,
-  // not just regional comps. Storage uses uppercase market codes.
-  const audienceMarketUpper = audienceMarket.toUpperCase();
+  // Pull bands for the talent's home market AND the GLOBAL ceiling. Both are
+  // shown side-by-side on the intake page so the talent can anchor against
+  // world-class peers without losing their local-market context.
   const { data: bandsTier } = await supabase
     .from('market_bands')
-    .select('platform, min_sar, median_sar, max_sar, audience_market')
+    .select('platform, min_sar, median_sar, max_sar, audience_market, source')
     .eq('tier_code', player.tier_code ?? 'Tier 3')
-    .in('audience_market', [audienceMarketUpper, 'MENA', 'KSA', 'GLOBAL']);
+    .in('audience_market', [audienceMarket, 'GLOBAL']);
 
-  // Resolve a single REGIONAL band per platform (talent's home market).
   const regionalBandFor = (platform: string) => {
     const candidates = (bandsTier ?? []).filter(b => b.platform === platform);
-    return candidates.find(b => b.audience_market === audienceMarketUpper)
-        ?? candidates.find(b => b.audience_market === 'MENA')
-        ?? candidates.find(b => b.audience_market === 'KSA')
+    return candidates.find(b => b.audience_market === audienceMarket)
+        ?? candidates.find(b => b.audience_market === 'GLOBAL')
         ?? null;
   };
 
-  // Resolve the WORLD-CLASS (GLOBAL) band per platform. Anchor for what top
-  // players in this tier charge globally — drives the deal-flow trade-off UX.
   const worldBandFor = (platform: string) => {
     const candidates = (bandsTier ?? []).filter(b => b.platform === platform);
     return candidates.find(b => b.audience_market === 'GLOBAL') ?? null;
   };
+
+  // Pull peer-org rows for this region so the intake page can show 'others
+  // in your region' as social proof. Only org-level public follower counts
+  // are surfaced — no fabricated player rates.
+  const { data: peerOrgsRaw } = await supabase
+    .from('peer_orgs')
+    .select('org_name, region, primary_game, hq_country, followers_total, source_url, notes')
+    .eq('is_active', true)
+    .eq('region', audienceMarket)
+    .order('followers_total', { ascending: false })
+    .limit(8);
+  const peerOrgs = (peerOrgsRaw ?? []) as Array<{
+    org_name: string; region: string; primary_game: string | null;
+    hq_country: string | null; followers_total: number | null;
+    source_url: string | null; notes: string | null;
+  }>;
 
   // Mark intake as 'sent' the first time they open it
   if (player.intake_status === 'not_started') {
@@ -144,20 +155,52 @@ export default async function TalentIntakePage({ params }: { params: { token: st
           agency_status:   player.agency_status ?? null,
           agency_name:     player.agency_name ?? null,
           agency_fee_pct:  player.agency_fee_pct == null ? null : Number(player.agency_fee_pct),
+          // Migration 057 — editable social handles
+          instagram:       player.instagram ?? null,
+          tiktok:          player.tiktok ?? null,
+          youtube:         player.youtube ?? null,
+          x_handle:       player.x_handle ?? null,
+          twitch:          player.twitch ?? null,
         }}
         market={audienceMarket}
         deliverables={deliverables}
+        peerOrgs={peerOrgs}
       />
     </Shell>
   );
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
-function regionFromNationality(nat: string | null | undefined): 'KSA' | 'MENA' | 'Global' {
+type IntakeRegion = 'KSA' | 'MENA' | 'EU' | 'NA' | 'APAC' | 'GLOBAL';
+function regionFromNationality(nat: string | null | undefined): IntakeRegion {
   const n = (nat ?? '').toLowerCase().trim();
+  if (!n) return 'GLOBAL';
   if (n.startsWith('saudi')) return 'KSA';
-  if (['emirati','bahraini','kuwaiti','qatari','omani','egyptian','jordanian','lebanese','tunisian','moroccan','algerian','iraqi','syrian','yemeni','libyan','sudanese','palestinian'].includes(n)) return 'MENA';
-  return 'Global';
+  if ([
+    'emirati','bahraini','kuwaiti','qatari','omani',
+    'egyptian','jordanian','lebanese','tunisian','moroccan',
+    'algerian','iraqi','syrian','yemeni','libyan','sudanese','palestinian',
+  ].includes(n)) return 'MENA';
+  if ([
+    'american','canadian','mexican',
+  ].includes(n)) return 'NA';
+  if ([
+    'british','english','scottish','welsh','irish',
+    'french','german','spanish','italian','portuguese','dutch','belgian',
+    'swiss','austrian','swedish','norwegian','danish','finnish','icelandic',
+    'polish','czech','slovak','hungarian','romanian','bulgarian',
+    'ukrainian','russian','belarusian','estonian','latvian','lithuanian',
+    'serbian','croatian','slovenian','bosnian','greek','turkish','cypriot',
+    'albanian','macedonian','montenegrin','moldovan','luxembourgish','maltese',
+  ].includes(n)) return 'EU';
+  if ([
+    'chinese','japanese','korean','south korean','north korean',
+    'thai','vietnamese','indonesian','filipino','malaysian','singaporean',
+    'indian','pakistani','bangladeshi','sri lankan','nepali',
+    'australian','new zealander','taiwanese','hong konger','mongolian',
+    'cambodian','laotian','burmese','myanmar',
+  ].includes(n)) return 'APAC';
+  return 'GLOBAL';
 }
 
 function Shell({ children }: { children: React.ReactNode }) {

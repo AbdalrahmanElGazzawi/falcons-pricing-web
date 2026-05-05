@@ -12,6 +12,18 @@ const ALLOWED_KEYS = new Set([
 ]);
 
 type AgencyPayload = { has_agency?: boolean; name?: string | null; fee_pct?: number | null };
+type SocialsPayload = {
+  instagram?: string | null;
+  tiktok?: string | null;
+  youtube?: string | null;
+  x_handle?: string | null;
+  twitch?: string | null;
+  followers_ig?: number | null;
+  followers_tiktok?: number | null;
+  followers_yt?: number | null;
+  followers_x?: number | null;
+  followers_twitch?: number | null;
+};
 
 export async function POST(
   req: NextRequest,
@@ -23,6 +35,7 @@ export async function POST(
     min_rates?: Record<string, number>;
     notes?: string;
     agency?: AgencyPayload;
+    socials?: SocialsPayload;
   } | null;
   if (!body || typeof body !== 'object') {
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
@@ -63,10 +76,40 @@ export async function POST(
     }
   }
 
+  // Sanitise socials block (Migration 057). Only persist allowed keys.
+  const cleanedSocials: Record<string, string | number | null> = {};
+  if (body.socials && typeof body.socials === 'object') {
+    const URL_KEYS = ['instagram','tiktok','youtube','x_handle','twitch'] as const;
+    for (const k of URL_KEYS) {
+      const v = (body.socials as Record<string, unknown>)[k];
+      if (v === null || v === undefined || v === '') {
+        cleanedSocials[k] = null;
+        continue;
+      }
+      if (typeof v !== 'string') continue;
+      const trimmed = v.trim().slice(0, 500);
+      // Light validation: must look URL-ish or be a bare handle (allow either).
+      // The intake page renders it as a clickable link only if it starts with
+      // http(s)://, so junk here just renders as plain text.
+      cleanedSocials[k] = trimmed || null;
+    }
+    const FOLLOWER_KEYS = ['followers_ig','followers_tiktok','followers_yt','followers_x','followers_twitch'] as const;
+    for (const k of FOLLOWER_KEYS) {
+      const v = (body.socials as Record<string, unknown>)[k];
+      if (v === null || v === undefined || v === '') {
+        cleanedSocials[k] = null;
+        continue;
+      }
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 0 || n > 100_000_000) continue;
+      cleanedSocials[k] = Math.round(n);
+    }
+  }
+
   // Find player by token
   const { data: playerRow } = await supabase
     .from('players')
-    .select('id, nickname, intake_status, min_rates, is_active, agency_status, agency_name, agency_fee_pct')
+    .select('id, nickname, intake_status, min_rates, is_active, agency_status, agency_name, agency_fee_pct, instagram, tiktok, youtube, x_handle, twitch, followers_ig, followers_tiktok, followers_yt, followers_x, followers_twitch')
     .eq('intake_token', params.token)
     .maybeSingle();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -90,6 +133,9 @@ export async function POST(
   if (agency_status !== null) update.agency_status  = agency_status;
   if (agency_status !== null) update.agency_name    = agency_name;
   if (agency_status !== null) update.agency_fee_pct = agency_fee_pct;
+  for (const [k, v] of Object.entries(cleanedSocials)) {
+    update[k] = v;
+  }
 
   const { error: updErr } = await supabase
     .from('players')
@@ -114,12 +160,25 @@ export async function POST(
         agency_status:  player.agency_status ?? null,
         agency_name:    player.agency_name ?? null,
         agency_fee_pct: player.agency_fee_pct ?? null,
+        socials: {
+          instagram: player.instagram ?? null,
+          tiktok:    player.tiktok    ?? null,
+          youtube:   player.youtube   ?? null,
+          x_handle:  player.x_handle  ?? null,
+          twitch:    player.twitch    ?? null,
+          followers_ig:     player.followers_ig     ?? null,
+          followers_tiktok: player.followers_tiktok ?? null,
+          followers_yt:     player.followers_yt     ?? null,
+          followers_x:      player.followers_x      ?? null,
+          followers_twitch: player.followers_twitch ?? null,
+        },
       },
       after:   {
         min_rates:      cleaned,
         agency_status,
         agency_name,
         agency_fee_pct,
+        socials: cleanedSocials,
       },
       notes,
     },
