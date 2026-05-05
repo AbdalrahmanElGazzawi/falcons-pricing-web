@@ -2,7 +2,7 @@
 
 **Read this file FIRST in every new Cowork session before doing anything.** It tells you what the project is, where the canonical truth lives, what's connected, and how to ship safely.
 
-> **Last refreshed:** 2026-05-05 (post Mig 056 + talent-intake / agency gross-up).
+> **Last refreshed:** 2026-05-05 evening (post Mig 065 — Tier S/1/2/3 region recalibration, intake-approval gate, all unblocks).
 > Live state numbers in this doc are accurate as of that date but **drift quickly** — always verify against Supabase before quoting them back to Koge.
 
 ---
@@ -27,7 +27,7 @@ Internal talent-pricing engine for Team Falcons. Sales build quotes for brand ca
 | `Website Esport Data Entry.xlsx` | Spreadsheet SOT for handle rebrands. Note: occasionally stale — always WebSearch-verify before applying rebrands (see Mig 054 → 055 lesson) | Roster handle hygiene |
 | `market-audit-memo.md`, `market-audit-memo-shikenso-impact-2026-04-30.md` | Audit findings + Shikenso impact analysis | Background context |
 | `repricing-019-preview.csv`, `full-roster-audit-2026-04-27.csv`, `methodology-refresh-2026-04-27.csv` | Historical audit artifacts (April 27 audit) | Cross-reference for past changes |
-| `supabase/migrations/` | DB migration history. **Latest = `056_agency_fee_pct_for_intake.sql`.** Always re-check `ls supabase/migrations/ \| tail -3` before assuming. | Before writing new migrations |
+| `supabase/migrations/` | DB migration history. **Latest = `065_thewitty21_correct_id_fix.sql`.** Always re-check `ls supabase/migrations/ \| tail -3` before assuming. | Before writing new migrations |
 
 If anything in the codebase contradicts the SOT principles, the SOT principles win. If the SOT *numbers* contradict pricing.ts, **pricing.ts wins** — it's been refactored past v1.0.
 
@@ -130,6 +130,11 @@ Old `pending|estimated|rounded|exact` values still exist on stored quote rows fo
 
 **Channel multiplier (Mig 035)** scales `baseFee` and `irl` *before* axes. Sales channel determines the floor.
 
+**Intake-approval gate (Mig 062, May 5).** Engine reads `players.min_rates` and `agency_fee_pct` ONLY when `players.intake_status = 'approved'`. Submitted-but-not-yet-approved intakes pass 0 / no-op. Admin approves via:
+- One-click **"Approve as-submitted"** button on `/admin/talent-intakes` — promotes `submitted` → `approved`, no rate edits. Endpoint: `POST /api/admin/talent-intake/[id]/approve`.
+- **"Override"** button — edit min_rates / agency, then approve in same action.
+Once approved, prices auto-propagate across every quote line — Calculator, QuoteBuilder, QuoteConfigurator, PricingWizard.
+
 **Talent-submitted floor + agency gross-up (Mig 056, May 5).** A second floor layer sits ON TOP of the engine output. Talent fills `/talent/<token>` (a public, token-gated intake form) with their per-deliverable minimum rate + agency status + agency fee %. At quote time the engine computes its own number, then:
 
 ```
@@ -153,7 +158,7 @@ select rate_source, count(*) from public.players where is_active group by rate_s
 
 ### Apply a migration
 
-1. Write the SQL file in `supabase/migrations/0XX_*.sql`. Number the file sequentially after the highest existing migration. Latest currently = **056**.
+1. Write the SQL file in `supabase/migrations/0XX_*.sql`. Number the file sequentially after the highest existing migration. Latest currently = **065**.
 2. Apply via Supabase MCP `apply_migration`, OR Koge applies via Supabase SQL editor.
 3. **Never apply without showing Koge the SQL first.**
 
@@ -177,33 +182,25 @@ See "Local workspace vs GitHub" above. Edit-in-clone, `git diff`, **show Koge**,
 
 ## What's currently TRUE about pricing state (May 5, 2026)
 
-- **Migrations 001-056 applied.** Numbering has gaps (no 026-029, 035-044) — that's intentional, not missing files.
+- **Migrations 001-065 applied.** Numbering has gaps (no 026-029, 035-044) — that's intentional, not missing files.
 - **Active roster:** 183 players + 16 creators. Tier counts: S 12 · 1 34 · 2 18 · 3 112 · 4 7. Saved quotes: 4. `market_bands`: 185 rows. `channel_multipliers`: 5 rows.
-- **`rate_source` distribution (active players):** `reach_calibrated` 94 · `tier_baseline` 83 · `unverified` 2 · `methodology_v2_with_data` 1 · NULL 3.
-  - `reach_calibrated` is the post-Mig 030 dominant source — talents whose floor was set from real reach math.
-  - `tier_baseline` residual is largely low-data international pros + staff.
-  - `methodology_v2_with_data` is the SOT v1.0 legacy tag, effectively retired.
-  - 2 `unverified` rows must be blocked from quoting.
-- **Recent activity (May 1-5):** Falcons Extreme Roster Dossier ingest (Mig 046) and a roster-data hygiene pass (047-055): bare-handle URL expansion, REMUNDO/LIV/Abo Ghazi drift fix, full-roster wrong-person socials audit, Livii IG correction, Abo Najd K2NN8 confirmation, 8 SOT rebrands of which 5 were reverted on WebSearch verification (net: 3 kept, 5 reverted). **May 5 morning:** talent-intake flow shipped end-to-end — `/talent/<token>` form with regional + world benchmark anchors and 3-zone (Floor/Median/Premium) deal-flow framing, agency gross-up engine layer (Mig 056), `priceController` output, WhyPrice popover Phase 6.
-- **Engine state:** Floor-First (Mig 030) + Channel multiplier (Mig 035) + ProductionStyle (Mig 039) + StreamActivity (Mig 040) + World-class axes (Mig 042) + Talent-floor / agency gross-up (Mig 056) all live. Pre-039 lower anchors deliberately restored in Mig 045.
+- **`rate_source` distribution:** dominantly `reach_calibrated` + `tier_baseline`. Post Mig 064/065: 0 `unverified`, 0 NULL. Refresh via `select rate_source, count(*) from public.players where is_active group by rate_source;`.
+- **Bookable status (Mig 059):** 100% of active roster bookable as of Mig 065 — 183 players + 16 creators = 199/199, 0 hard blockers.
+- **Recent activity:** Roster-data hygiene 047-055; talent-intake flow 056-058; **May 5 evening recalibration:** Bookable + Profile-strength (Mig 059), Tier S region recalibration (Mig 061), creator multipliers wired + intake-approval gate (Mig 062), Tier 1/2/3 recalibration (Mig 063), Phase 3 unblocks (Mig 064-065). 99 talents touched in the recalibration.
+- **Engine state:** Floor-First (Mig 030) + Channel multiplier (Mig 035) + ProductionStyle (Mig 039) + StreamActivity (Mig 040) + World-class axes (Mig 042) + Talent-floor / agency gross-up (Mig 056) + Bookable / Profile-strength (Mig 059) + 4 creator multipliers wired (Mig 062 part 1) + Intake-approval gate (Mig 062 part 2) — all live. Tier S (Mig 061) and Tier 1/2/3 (Mig 063) recalibrated to band-median anchors per actual region (NA/EU/APAC/KSA/MENA).
 
 For the per-talent state, open `falcons-market-value-reference.xlsx` (refresh date may lag — also cross-check the dossier).
 
-### Known incomplete wiring
+### Engine wiring status
 
-These are accepted by `LineInput` in `pricing.ts` but **not yet consumed** by the SocialPrice math (passed through, surfaced in PDF, but not factored):
-- `brandLoyaltyPct`
-- `exclusivityPremiumPct`
-- `crossVerticalMultiplier`
-- `engagementQualityModifier`
-
-`productionStyleMultiplier` IS wired. The four above are deliberate phase-2 follow-ups per the comment in pricing.ts. Confirm with Koge before wiring any of them.
+All 19+ axes wired and consumed in `computeLine` SocialPrice. Mig 062 (May 5) closed the last gap by wiring `brandLoyaltyPct`, `exclusivityPremiumPct`, `crossVerticalMultiplier`, `engagementQualityModifier` (clamped to sane ranges; default neutral for player lines).
 
 ### Known unfinished work / open opportunities
 
 - **Rights/exclusivity uplift gap closure.** SOT §13 flagged Falcons underprices exclusivity (+10pp) and rights (+5-10pp) vs industry. No migration has closed this gap yet.
-- **Unverified quote-blocking UI.** 2 talents tagged `unverified`; verify `/quote/new` actually blocks them.
-- **Intake coverage rollout.** `/talent/<token>` is live but most players have no intake on file yet. Engine progressively shifts to talent-controlled floors as intakes come in. No engine work needed — operational push to send tokens.
+- **Intake coverage rollout.** `/talent/<token>` is live but only 1 of 183 players has submitted an intake (Abo Najd). Engine gates floors on `intake_status='approved'` — admin approves via the Approve button on `/admin/talent-intakes`. Operational push to send tokens.
+- **Arabic labels for multiplier dropdowns.** No `dict.axes.*` entries for AXIS_OPTIONS / CREATOR_AXIS_OPTIONS labels. Multipliers render English even in Arabic mode.
+- **/about hero stats stale.** Says "3 markets · 9 axes" — actual is 6 markets (KSA, MENA, EU, NA, APAC, GLOBAL) and 19+ axes including the 4 newly-wired creator multipliers. Quick copy-edit.
 - **Shikenso non-IG/FB coverage.** Won't come from Shikenso (their demo is IG+FB only). Liquipedia + dossier do the rest.
 
 ---

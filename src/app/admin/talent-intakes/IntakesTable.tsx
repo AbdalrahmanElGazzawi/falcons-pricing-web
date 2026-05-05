@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { Copy, ExternalLink, Check, Search, RefreshCw, Sparkles, Globe, ChevronDown, ChevronRight, Edit3, Trash2, Unlock } from 'lucide-react';
+import {  Copy, ExternalLink, Check, Search, RefreshCw, Sparkles, Globe, ChevronDown, ChevronRight, Edit3, Trash2, Unlock, CheckCircle2 } from 'lucide-react';
 import { resolveTalentPhoto, isAuto, audienceMarketFor } from '@/lib/talent-photo';
 import { useLocale } from '@/lib/i18n/Locale';
 import { fmtCurrency } from '@/lib/utils';
@@ -96,7 +96,7 @@ export function IntakesTable({ players: initialPlayers }: { players: P[] }) {
     { k:'irl',             label:'IRL' },
   ];
 
-  async function callAdmin(playerId: number, path: 'override'|'clear'|'unlock', body?: unknown) {
+  async function callAdmin(playerId: number, path: 'override'|'clear'|'unlock'|'approve', body?: unknown) {
     setBusyId(playerId);
     try {
       const res = await fetch(`/api/admin/talent-intake/${playerId}/${path}`, {
@@ -136,6 +136,19 @@ export function IntakesTable({ players: initialPlayers }: { players: P[] }) {
         ...r,
         intake_revision_count: 0,
         intake_locked_until: null,
+      } : r));
+    }
+  }
+
+  // Approve as-submitted (Mig 062 workflow) — promotes status submitted/revised
+  // to approved without changing min_rates. Engine immediately starts using
+  // the floor on the next quote line.
+  async function onApprove(p: P) {
+    if (!confirm(`Approve ${p.nickname}'s submitted floor as-is? Their min_rates start applying to every quote line on the next reload.`)) return;
+    if (await callAdmin(p.id, 'approve')) {
+      setPlayers(rows => rows.map(r => r.id === p.id ? {
+        ...r,
+        intake_status: 'approved',
       } : r));
     }
   }
@@ -407,6 +420,17 @@ export function IntakesTable({ players: initialPlayers }: { players: P[] }) {
                     </td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-0.5">
+                        {(p.intake_status === 'submitted' || p.intake_status === 'revised') && (
+                          <button
+                            onClick={() => onApprove(p)}
+                            disabled={busyId === p.id}
+                            className="p-1.5 rounded-md text-greenDark hover:text-green hover:bg-greenSoft/40 disabled:opacity-50"
+                            title="Approve as-submitted — engine starts using these floors on the next quote line"
+                            aria-label="Approve as-submitted"
+                          >
+                            <CheckCircle2 size={14} />
+                          </button>
+                        )}
                         <button
                           onClick={() => onOverride(p)}
                           disabled={busyId === p.id}
