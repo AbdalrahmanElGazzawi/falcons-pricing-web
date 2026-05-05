@@ -58,6 +58,16 @@ type PlayerInfo = {
   // Migration 058 — revision lockout
   revision_count: number;
   locked_until: string | null;
+  // Pricing-stack inputs (passed in for educational panel)
+  authority_factor: number | null;
+  reach_multiplier: number | null;
+  default_seasonality: number | null;
+  default_language: number | null;
+  er_ig: number | null;
+  er_tiktok: number | null;
+  er_yt: number | null;
+  peak_tournament_tier: string | null;
+  prize_money_24mo_usd: number | null;
 };
 
 type PeerOrg = {
@@ -493,144 +503,112 @@ export function TalentIntake({
         </div>
       </div>
 
-      {/* ─── Peer-orgs in your region (Migration 057) ──────────────────── */}
-      {peerOrgs.length > 0 && (
-        <div className="rounded-2xl border border-line bg-card overflow-hidden">
-          <div className="px-4 sm:px-5 py-3 border-b border-line">
-            <div className="flex items-center gap-2">
-              <Globe2 size={14} className="text-greenDark" />
-              <h2 className="text-sm font-semibold text-ink">Other esports orgs in {REGION_LABEL[market]}</h2>
-            </div>
-            <p className="text-[11px] text-mute mt-0.5">
-              For reference. Public follower counts only — your tier band above is the actual rate anchor.
-            </p>
-          </div>
-          <ul className="divide-y divide-line max-h-64 overflow-auto">
-            {peerOrgs.map(p => (
-              <li key={p.org_name} className="px-4 sm:px-5 py-2.5 flex items-center justify-between gap-3 text-xs">
-                <div className="min-w-0">
-                  <div className="font-semibold text-ink truncate">{p.org_name}</div>
-                  <div className="text-mute text-[11px]">
-                    {[p.primary_game, p.hq_country].filter(Boolean).join(' · ')}
-                  </div>
-                </div>
-                <div className="text-right tabular-nums whitespace-nowrap">
-                  <div className="text-ink font-semibold">{Number(p.followers_total ?? 0).toLocaleString('en-US')}</div>
-                  <div className="text-[10px] text-mute uppercase tracking-wider">followers</div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* ─── Industry brand-spend reference ───────────────────────────── */}
+      {/* ─── How your price is built ───────────────────────────────────── */}
       <div className="rounded-2xl border border-line bg-card overflow-hidden">
         <div className="px-4 sm:px-5 py-3 border-b border-line">
           <div className="flex items-center gap-2">
             <BarChart3 size={14} className="text-greenDark" />
-            <h2 className="text-sm font-semibold text-ink">Industry reference — what brands actually pay</h2>
+            <h2 className="text-sm font-semibold text-ink">How your price is built</h2>
           </div>
           <p className="text-[11px] text-mute mt-0.5">
-            Real-world context so your floor isn&apos;t a guess. Anchored to closed-deal data, public market sizing, and regional reach.
+            Your floor is one input. Sales never quotes below it. The engine may price <strong>above</strong> based on the factors below — your tier, achievements, audience fit, language, and per-deal context.
           </p>
         </div>
-        <div className="p-3 sm:p-5 grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Card 1 — Falcons live deal flow */}
-          <div className="rounded-xl border border-greenDark/30 bg-greenSoft/20 dark:bg-green/10 p-3 sm:p-4 space-y-2">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-greenDark">
-              <DollarSign size={11} /> Falcons closed deals — last 12 months
+
+        <div className="p-3 sm:p-5 space-y-3">
+          {/* Top: 3-card "what you bring" */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Card 1 — Tier × region anchor (this is the BASE) */}
+            <div className="rounded-xl border border-greenDark/30 bg-greenSoft/20 dark:bg-green/10 p-3 sm:p-4 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-greenDark">
+                <DollarSign size={11} /> Base anchor
+              </div>
+              <div className="text-xs text-ink leading-snug">
+                <span className="text-mute">Tier:</span>{' '}
+                <span className="font-semibold">{player.tier_code || '—'}</span>{' · '}
+                <span className="text-mute">Region:</span>{' '}
+                <span className="font-semibold">{REGION_LABEL[market]}</span>
+              </div>
+              <div className="text-[11px] text-mute leading-snug">
+                Engine starts from your tier × region market band. Bigger tier and richer region = higher base. This is the number sales would land at if every other factor was neutral.
+              </div>
             </div>
-            {industryReference.falcons.dealsCount > 0 ? (
-              <>
-                <div className="text-2xl font-extrabold text-ink tabular-nums leading-none">
-                  {industryReference.falcons.dealsCount}
-                  <span className="text-[11px] font-medium text-mute ml-1.5">campaigns</span>
-                </div>
-                <div className="text-xs text-ink">
-                  <span className="text-mute">Avg deal:</span>{' '}
-                  <span className="font-semibold tabular-nums">SAR {industryReference.falcons.avgSar.toLocaleString('en-US')}</span>{' '}
-                  <span className="text-mute">/ ${industryReference.falcons.avgUsd.toLocaleString('en-US')}</span>
-                </div>
-                <div className="text-[11px] text-mute">
-                  Across <span className="font-semibold text-ink">{industryReference.falcons.dealsBrands}</span> distinct brands
-                </div>
-                {industryReference.falcons.topPlatforms.length > 0 && (
-                  <div className="text-[11px] text-mute">
-                    Most active:{' '}
-                    {industryReference.falcons.topPlatforms.map((tp, i) => (
-                      <span key={tp.name}>
-                        {i > 0 && <span className="text-mute">, </span>}
-                        <span className="text-ink">{tp.name}</span>
-                        <span className="text-mute"> ({tp.count})</span>
-                      </span>
-                    ))}
-                  </div>
+
+            {/* Card 2 — Esports achievements (Authority axis) */}
+            <div className="rounded-xl border border-line bg-bg/40 p-3 sm:p-4 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-label">
+                <Trophy size={11} /> Esports authority
+              </div>
+              <div className="text-xs text-ink leading-snug">
+                <span className="font-semibold">{player.achievements.length}</span>{' '}
+                <span className="text-mute">tracked achievement{player.achievements.length === 1 ? '' : 's'}</span>
+                {player.peak_tournament_tier && (<><br/><span className="text-mute">Peak tier:</span> <span className="font-semibold">{player.peak_tournament_tier}</span></>)}
+                {typeof player.prize_money_24mo_usd === 'number' && player.prize_money_24mo_usd > 0 && (
+                  <><br/><span className="text-mute">Earnings 24mo:</span> <span className="font-semibold">${player.prize_money_24mo_usd.toLocaleString('en-US')}</span></>
                 )}
-              </>
-            ) : (
-              <p className="text-[11px] text-mute italic">
-                No closed-deal data available for the last 12 months yet — using regional and world-class bands as the only anchors.
-              </p>
-            )}
-          </div>
+              </div>
+              <div className="text-[11px] text-mute leading-snug">
+                Engine&apos;s Authority axis lifts price from <span className="tabular-nums">1.00×</span> (baseline) up to <span className="tabular-nums">1.50×</span> (Global Star / Major Winner). Wins, podiums, and prize money raise this.
+              </div>
+            </div>
 
-          {/* Card 2 — Industry market size (cited) */}
-          <div className="rounded-xl border border-line bg-bg/40 p-3 sm:p-4 space-y-2">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-label">
-              <TrendingUp size={11} /> Industry market — 2024
-            </div>
-            <div className="text-xs text-ink leading-snug space-y-1.5">
-              <div>
-                <span className="font-bold text-ink">$1.4B</span>{' '}
-                <span className="text-mute">global esports influencer marketing</span>
+            {/* Card 3 — Audience + reach calibration */}
+            <div className="rounded-xl border border-line bg-bg/40 p-3 sm:p-4 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-label">
+                <Users size={11} /> Reach & engagement
               </div>
-              <div>
-                <span className="font-bold text-ink">~$180M</span>{' '}
-                <span className="text-mute">MENA / GCC share</span>
+              <div className="text-xs text-ink leading-snug">
+                <span className="font-semibold tabular-nums">{fmt(totalReach)}</span>{' '}
+                <span className="text-mute">aggregate followers</span>
+                {typeof player.er_ig === 'number' && player.er_ig > 0 && (
+                  <><br/><span className="text-mute">IG ER:</span> <span className="font-semibold tabular-nums">{(player.er_ig * 100).toFixed(1)}%</span></>
+                )}
               </div>
-              <div>
-                <span className="font-bold text-greenDark">+40% YoY</span>{' '}
-                <span className="text-mute">Saudi gaming brand spend 2023→2024</span>
+              <div className="text-[11px] text-mute leading-snug">
+                Reach calibration adjusts your tier baseline up or down vs cohort median. Engagement axis adds <span className="tabular-nums">0.85×</span> to <span className="tabular-nums">1.45×</span> based on your ER vs the Tier 1–4 bands.
               </div>
-            </div>
-            <div className="text-[10px] text-mute pt-1 border-t border-line/60">
-              Sources: <span className="text-ink">HypeAuditor 2024 Q4</span>, <span className="text-ink">Newzoo MENA Esports 2024</span>, <span className="text-ink">Influencer Marketing Hub 2024</span>
             </div>
           </div>
 
-          {/* Card 3 — Regional reach-aware context */}
-          <div className="rounded-xl border border-line bg-bg/40 p-3 sm:p-4 space-y-2">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-label">
-              <Globe2 size={11} /> {REGION_LABEL[market]} regional context
+          {/* Bottom: per-quote multipliers stack */}
+          <div className="rounded-xl border border-line bg-bg/30 p-3 sm:p-4">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-label mb-2 flex items-center gap-1.5">
+              <TrendingUp size={11} /> Per-deal multipliers (sales tunes these per campaign)
             </div>
-            {industryReference.peerOrgs.count > 0 ? (
-              <>
-                <div className="text-xs text-ink leading-snug">
-                  <span className="font-bold text-ink tabular-nums">{industryReference.peerOrgs.count}</span>{' '}
-                  <span className="text-mute">peer esports orgs in your region</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-[11px]">
+              {[
+                { label: 'Audience fit',     range: '0.95×–1.25×', hint: 'Gaming-core / KSA / MENA / GCC' },
+                { label: 'Content type',     range: '0.85×–1.25×', hint: 'Organic / Integrated / Sponsored' },
+                { label: 'Seasonality',      range: '1.00×–1.35×', hint: 'Playoffs / EWC / Game launch' },
+                { label: 'Language',         range: '1.00×–1.20×', hint: 'Arabic / Bilingual / Trilingual' },
+                { label: 'Production',       range: '1.00×–1.35×', hint: 'Standard / Scripted / On-ground' },
+                { label: 'Rights & usage',   range: '+0%–+120%',   hint: 'Whitelisting / Paid usage / Exclusivity' },
+              ].map(m => (
+                <div key={m.label} className="rounded-lg border border-line bg-card px-2 py-1.5">
+                  <div className="text-mute text-[10px] uppercase tracking-wider font-semibold">{m.label}</div>
+                  <div className="text-ink font-semibold tabular-nums">{m.range}</div>
+                  <div className="text-[10px] text-mute leading-tight mt-0.5">{m.hint}</div>
                 </div>
-                <div className="text-xs text-ink leading-snug">
-                  <span className="font-bold text-ink tabular-nums">
-                    {industryReference.peerOrgs.totalReach >= 1_000_000
-                      ? `${(industryReference.peerOrgs.totalReach / 1_000_000).toFixed(1)}M`
-                      : `${(industryReference.peerOrgs.totalReach / 1_000).toFixed(0)}k`}
-                  </span>{' '}
-                  <span className="text-mute">aggregate org-level reach</span>
-                </div>
-              </>
-            ) : (
-              <div className="text-[11px] text-mute italic">
-                No comparable peer-org data for {REGION_LABEL[market]} on file yet.
-              </div>
-            )}
-            <div className="text-[11px] text-ink leading-snug pt-1">
-              Your tier band below uses <span className="font-semibold">{REGION_LABEL[market]} market CPMs</span> as the anchor — typical brand spend per posting at your tier in this region. World-class column shows what top-tier global talents charge for the same deliverable.
+              ))}
             </div>
-            <div className="text-[10px] text-mute pt-1 border-t border-line/60">
-              Reach varies by talent. Bands are tier-aware not follower-driven; reach uplift applies at quote time via the 9-axis engine.
+            <div className="text-[11px] text-mute mt-3 leading-snug">
+              <strong className="text-ink">Final quoted price</strong> = max(your floor × agency gross-up, base anchor × all multipliers above). The floor sets the bottom; the engine prices above when factors justify.
             </div>
           </div>
+
+          {/* Industry context (compact, cited) */}
+          {industryReference.falcons.dealsCount > 0 && (
+            <div className="rounded-xl border border-line bg-bg/40 p-3 sm:p-4 text-[11px] text-mute leading-snug flex items-start gap-2">
+              <DollarSign size={12} className="text-greenDark mt-0.5 flex-shrink-0" />
+              <div>
+                <span className="text-ink font-semibold">Falcons deal flow (last 12 mo):</span>{' '}
+                <span className="tabular-nums">{industryReference.falcons.dealsCount} campaigns</span> across{' '}
+                <span className="tabular-nums">{industryReference.falcons.dealsBrands} brands</span>, avg{' '}
+                <span className="tabular-nums">SAR {industryReference.falcons.avgSar.toLocaleString('en-US')} / ${industryReference.falcons.avgUsd.toLocaleString('en-US')}</span>{' · '}
+                Industry: ~$1.4B global esports influencer marketing 2024 (HypeAuditor), MENA gaming brand spend +40% YoY (Newzoo 2024).
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

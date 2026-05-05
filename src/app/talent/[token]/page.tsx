@@ -13,7 +13,8 @@ const DELIVERABLES: Array<{
   band_platform: string;             // matches market_bands.platform
   label: string;
   blurb: string;
-  group: 'Instagram' | 'TikTok' | 'YouTube' | 'X (Twitter)' | 'Twitch' | 'IRL';
+  group: 'Instagram' | 'TikTok' | 'YouTube' | 'X (Twitter)' | 'Twitch' | 'IRL'
+       | 'Snapchat' | 'Kick' | 'Live & Stream' | 'Game Ads';
 }> = [
   { key: 'ig_reel',         rate_col: 'rate_ig_reel',         band_platform: 'rate_ig_reel',     label: 'Instagram Reel',           blurb: '15–60s sponsored vertical video on your IG.',           group: 'Instagram' },
   { key: 'ig_static',       rate_col: 'rate_ig_static',       band_platform: 'rate_ig_post',     label: 'Instagram Static / Carousel', blurb: 'Single image or carousel grid post.',                group: 'Instagram' },
@@ -27,6 +28,15 @@ const DELIVERABLES: Array<{
   { key: 'twitch_stream',   rate_col: 'rate_twitch_stream',   band_platform: 'rate_yt_full',     label: 'Twitch Sponsored Stream',  blurb: 'Full live stream with brand integration.',             group: 'Twitch' },
   { key: 'twitch_integ',    rate_col: 'rate_twitch_integ',    band_platform: 'rate_yt_short',    label: 'Twitch Integration',       blurb: 'In-stream segment, mid-roll mention or chat overlay.', group: 'Twitch' },
   { key: 'irl',             rate_col: 'rate_irl',             band_platform: 'rate_irl',         label: 'IRL / Event Appearance',   blurb: 'Per-day on-site brand activation.',                    group: 'IRL' },
+  // ── Migration 040 — Snapchat / Kick / Watch party
+  { key: 'snapchat',        rate_col: 'rate_snapchat',        band_platform: 'rate_ig_post',     label: 'Snapchat (single)',        blurb: 'One sponsored Snap on your story.',                    group: 'Snapchat' },
+  { key: 'kick_stream',     rate_col: 'rate_kick_stream',     band_platform: 'rate_yt_full',     label: 'Kick Sponsored Stream',    blurb: 'Full sponsored stream on your Kick channel.',          group: 'Kick' },
+  { key: 'kick_integ',      rate_col: 'rate_kick_integ',      band_platform: 'rate_yt_short',    label: 'Kick Integration',         blurb: 'Mid-stream brand segment / mention on Kick.',          group: 'Kick' },
+  { key: 'watchparty',      rate_col: 'rate_watchparty',      band_platform: 'rate_yt_full',     label: 'Watch Party Stream',       blurb: 'Co-stream of a tournament / event with brand integration.', group: 'Live & Stream' },
+  // ── Migration 042 — Game-ad deliverables (Xsolla-class partners)
+  { key: 'game_playthrough_full', rate_col: 'rate_game_playthrough_full', band_platform: 'rate_yt_full',  label: 'Game Playthrough (Full)',     blurb: 'Long-form sponsored playthrough of a brand title.', group: 'Game Ads' },
+  { key: 'game_sponsored_match',  rate_col: 'rate_game_sponsored_match',  band_platform: 'rate_yt_full',  label: 'Sponsored Match',             blurb: 'Branded sponsored match / scrim with overlay.',     group: 'Game Ads' },
+  { key: 'game_branded_skin_use', rate_col: 'rate_game_branded_skin_use', band_platform: 'rate_yt_short', label: 'Branded Skin / Loadout Use',  blurb: 'Featuring a brand skin or loadout in stream.',      group: 'Game Ads' },
 ];
 
 type PlayerRateColumns = {
@@ -36,6 +46,14 @@ type PlayerRateColumns = {
   rate_x_post: number; rate_x_repost: number;
   rate_twitch_stream: number; rate_twitch_integ: number;
   rate_irl: number;
+  // Mig 040 — Snapchat / Kick / Watch party
+  rate_snapchat: number;
+  rate_kick_stream: number; rate_kick_integ: number;
+  rate_watchparty: number;
+  // Mig 042 — Game-ad deliverables
+  rate_game_playthrough_full: number;
+  rate_game_sponsored_match: number;
+  rate_game_branded_skin_use: number;
 };
 
 export default async function TalentIntakePage({ params }: { params: { token: string } }) {
@@ -210,6 +228,16 @@ export default async function TalentIntakePage({ params }: { params: { token: st
           // Migration 058 — revision lockout
           revision_count:  Number(player.intake_revision_count ?? 0),
           locked_until:    player.intake_locked_until ?? null,
+          // Pricing-stack education inputs (mig 042/043 9-axis context)
+          authority_factor: player.authority_factor == null ? null : Number(player.authority_factor),
+          reach_multiplier: player.reach_multiplier == null ? null : Number(player.reach_multiplier),
+          default_seasonality: player.default_seasonality == null ? null : Number(player.default_seasonality),
+          default_language:    player.default_language == null ? null : Number(player.default_language),
+          er_ig:           player.er_ig == null ? null : Number(player.er_ig),
+          er_tiktok:       player.er_tiktok == null ? null : Number(player.er_tiktok),
+          er_yt:           player.er_yt == null ? null : Number(player.er_yt),
+          peak_tournament_tier: player.peak_tournament_tier ?? null,
+          prize_money_24mo_usd: player.prize_money_24mo_usd == null ? null : Number(player.prize_money_24mo_usd),
         }}
         market={audienceMarket}
         deliverables={deliverables}
