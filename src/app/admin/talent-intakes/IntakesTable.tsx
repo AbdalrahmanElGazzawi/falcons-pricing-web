@@ -59,7 +59,10 @@ function sumFloors(min: Record<string, number> | null): number {
   return Object.values(min).reduce((a, v) => a + (Number(v) || 0), 0);
 }
 
-export function IntakesTable({ players }: { players: P[] }) {
+type OverrideState = { player: P; rates: Record<string, string>; agencyOn: boolean; agencyName: string; agencyFee: string };
+
+export function IntakesTable({ players: initialPlayers }: { players: P[] }) {
+  const [players, setPlayers] = useState<P[]>(initialPlayers);
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [marketFilter, setMarketFilter] = useState<'' | 'KSA' | 'MENA' | 'Global'>('');
