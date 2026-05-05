@@ -67,22 +67,31 @@ export default async function TalentIntakePage({ params }: { params: { token: st
   // Region for the player → drives which audience_market band we show
   const audienceMarket = regionFromNationality(player.nationality);
 
-  // Pull market_bands for their tier × market — fall back to MENA if their
-  // home market isn't seeded yet
+  // Pull market_bands for their tier × market — fetch BOTH the talent's home
+  // market AND the GLOBAL "world-class" benchmark so the intake page can
+  // anchor the talent against what world-best players in their tier charge,
+  // not just regional comps. Storage uses uppercase market codes.
+  const audienceMarketUpper = audienceMarket.toUpperCase();
   const { data: bandsTier } = await supabase
     .from('market_bands')
     .select('platform, min_sar, median_sar, max_sar, audience_market')
     .eq('tier_code', player.tier_code ?? 'Tier 3')
-    .in('audience_market', [audienceMarket, 'MENA', 'KSA', 'Global']);
+    .in('audience_market', [audienceMarketUpper, 'MENA', 'KSA', 'GLOBAL']);
 
-  // Resolve a single band per platform: prefer exact market match, else MENA, else first
-  const bandFor = (platform: string) => {
+  // Resolve a single REGIONAL band per platform (talent's home market).
+  const regionalBandFor = (platform: string) => {
     const candidates = (bandsTier ?? []).filter(b => b.platform === platform);
-    return candidates.find(b => b.audience_market === audienceMarket)
+    return candidates.find(b => b.audience_market === audienceMarketUpper)
         ?? candidates.find(b => b.audience_market === 'MENA')
         ?? candidates.find(b => b.audience_market === 'KSA')
-        ?? candidates.find(b => b.audience_market === 'Global')
         ?? null;
+  };
+
+  // Resolve the WORLD-CLASS (GLOBAL) band per platform. Anchor for what top
+  // players in this tier charge globally — drives the deal-flow trade-off UX.
+  const worldBandFor = (platform: string) => {
+    const candidates = (bandsTier ?? []).filter(b => b.platform === platform);
+    return candidates.find(b => b.audience_market === 'GLOBAL') ?? null;
   };
 
   // Mark intake as 'sent' the first time they open it
@@ -104,7 +113,8 @@ export default async function TalentIntakePage({ params }: { params: { token: st
     blurb:      d.blurb,
     group:      d.group,
     internal:   Number((player as any)[d.rate_col] || 0),    // current internal price
-    band:       bandFor(d.band_platform),                    // {min,median,max} SAR
+    band:       regionalBandFor(d.band_platform),            // talent's home-market band
+    worldBand:  worldBandFor(d.band_platform),               // GLOBAL world-class anchor
     existing:   Number((player.min_rates ?? {})[d.key] || 0),// what they previously submitted
   }));
 
@@ -131,6 +141,9 @@ export default async function TalentIntakePage({ params }: { params: { token: st
           submitted_at:    player.intake_submitted_at,
           status:          player.intake_status,
           notes:           player.min_rates_notes ?? '',
+          agency_status:   player.agency_status ?? null,
+          agency_name:     player.agency_name ?? null,
+          agency_fee_pct:  player.agency_fee_pct == null ? null : Number(player.agency_fee_pct),
         }}
         market={audienceMarket}
         deliverables={deliverables}

@@ -1,27 +1,17 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { Trophy, ShieldCheck, Send, CheckCircle2, AlertCircle, Lock, Info, Instagram, Music2, Youtube, Twitch, Users } from 'lucide-react';
+import {
+  Trophy, ShieldCheck, Send, CheckCircle2, AlertCircle, Lock, Info,
+  Instagram, Music2, Youtube, Twitch, Users, Target, Zap, TrendingDown, Globe2, Building2,
+} from 'lucide-react';
 
+// ─── Types ──────────────────────────────────────────────────────────────────
 type AchievementObj = {
   title?: string; year?: string | number; placement?: string; tier?: string;
   prize_usd?: number | string;
   [k: string]: unknown;
 };
 type Achievement = string | AchievementObj;
-
-function splitYear(text: string): { rest: string; year: string | null } {
-  const range = text.match(/\b(20\d{2}\s*[–\-]\s*20\d{2})\b/);
-  if (range) return { year: range[1].replace(/\s+/g, ''), rest: text.replace(range[0], '').replace(/\s{2,}/g, ' ').trim() };
-  const single = text.match(/\b(20\d{2})\b/);
-  if (single) return { year: single[1], rest: text.replace(single[0], '').replace(/\s{2,}/g, ' ').trim() };
-  return { year: null, rest: text };
-}
-
-function leadingPlacement(text: string): { lead: string | null; rest: string } {
-  const m = text.match(/^(\d+(st|nd|rd|th)|top\s*\d+|champion|world\s+champion|gold|silver|bronze|\dx\s+\w+|\d+x\s+\w+)\b\s*[—\-:•]?\s*/i);
-  if (!m) return { lead: null, rest: text };
-  return { lead: m[1].trim(), rest: text.slice(m[0].length).trim() };
-}
 
 type PlayerInfo = {
   id: number;
@@ -42,6 +32,9 @@ type PlayerInfo = {
   submitted_at: string | null;
   status: string;
   notes: string;
+  agency_status: string | null;
+  agency_name: string | null;
+  agency_fee_pct: number | null;
 };
 
 type Band = { platform: string; min_sar: number; median_sar: number; max_sar: number; audience_market: string } | null;
@@ -52,12 +45,49 @@ type Deliverable = {
   blurb: string;
   group: string;
   internal: number;
-  band: Band;
+  band: Band;       // regional band (talent's home market)
+  worldBand: Band;  // GLOBAL "world-class" band
   existing: number;
 };
 
 const fmt = (n: number) => Number(n || 0).toLocaleString('en-US');
 
+// ─── Utility: classify a submitted value into a price zone ─────────────────
+type Zone = 'below' | 'floor' | 'median' | 'premium' | 'above' | 'none';
+function zoneFor(submittedSar: number, band: Band): Zone {
+  if (!band || submittedSar <= 0) return 'none';
+  const min = Number(band.min_sar);
+  const med = Number(band.median_sar);
+  const max = Number(band.max_sar);
+  if (submittedSar < min) return 'below';
+  if (submittedSar > max) return 'above';
+  // 3 zones inside the band: floor (min..mid-low), median (mid), premium (mid-high..max)
+  const lowMid  = min + (med - min) * 0.6;
+  const highMid = med + (max - med) * 0.4;
+  if (submittedSar <= lowMid)  return 'floor';
+  if (submittedSar <= highMid) return 'median';
+  return 'premium';
+}
+
+const ZONE_META: Record<Zone, { label: string; tone: string; sub: string; Icon: any }> = {
+  below:   { label: 'Below benchmark',   tone: 'amber',   sub: 'Highest deal-flow — but you may be underselling.',   Icon: TrendingDown },
+  floor:   { label: 'Floor zone',        tone: 'green',   sub: 'High inbound. Brands close fastest in this band.',     Icon: Zap },
+  median:  { label: 'Median zone',       tone: 'blue',    sub: 'Balanced. Good close-rate, fair compensation.',         Icon: Target },
+  premium: { label: 'Premium zone',      tone: 'purple',  sub: 'Lower inbound. Brands push back harder, fewer closed.',Icon: TrendingDown },
+  above:   { label: 'Above world max',   tone: 'red',     sub: 'Almost no inbound at this level. Reserved for top global names.', Icon: AlertCircle },
+  none:    { label: '',                  tone: 'mute',    sub: '',                                                       Icon: Info },
+};
+
+const TONE_CLASSES: Record<string, { ring: string; bg: string; text: string; chipBg: string; chipText: string }> = {
+  green:  { ring: 'ring-emerald-300',  bg: 'bg-emerald-50', text: 'text-emerald-800',  chipBg: 'bg-emerald-100',  chipText: 'text-emerald-900' },
+  blue:   { ring: 'ring-blue-300',     bg: 'bg-blue-50',    text: 'text-blue-800',     chipBg: 'bg-blue-100',     chipText: 'text-blue-900' },
+  purple: { ring: 'ring-purple-300',   bg: 'bg-purple-50',  text: 'text-purple-800',   chipBg: 'bg-purple-100',   chipText: 'text-purple-900' },
+  amber:  { ring: 'ring-amber-300',    bg: 'bg-amber-50',   text: 'text-amber-800',    chipBg: 'bg-amber-100',    chipText: 'text-amber-900' },
+  red:    { ring: 'ring-red-300',      bg: 'bg-red-50',     text: 'text-red-800',      chipBg: 'bg-red-100',      chipText: 'text-red-900' },
+  mute:   { ring: 'ring-line',         bg: 'bg-bg/50',      text: 'text-mute',         chipBg: 'bg-bg',           chipText: 'text-mute' },
+};
+
+// ─── Main component ────────────────────────────────────────────────────────
 export function TalentIntake({
   token, player, market, deliverables,
 }: {
@@ -77,11 +107,17 @@ export function TalentIntake({
 
   const [mins, setMins] = useState<Record<string, string>>(() => {
     const m: Record<string, string> = {};
-    for (const d of deliverables) {
-      m[d.key] = d.existing > 0 ? String(d.existing) : '';
-    }
+    for (const d of deliverables) m[d.key] = d.existing > 0 ? String(d.existing) : '';
     return m;
   });
+
+  // Agency state
+  const [hasAgency, setHasAgency] = useState<boolean>(player.agency_status === 'agency');
+  const [agencyName, setAgencyName] = useState<string>(player.agency_name ?? '');
+  const [agencyFeePct, setAgencyFeePct] = useState<string>(
+    player.agency_fee_pct != null ? String(player.agency_fee_pct) : ''
+  );
+
   const [notes, setNotes] = useState(player.notes ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<null | { ok: true } | { ok: false; error: string }>(null);
@@ -98,6 +134,19 @@ export function TalentIntake({
   const totalReach = player.followers_ig + player.followers_tiktok + player.followers_yt + player.followers_x + player.followers_twitch;
 
   async function submit() {
+    // Validate agency state
+    if (hasAgency) {
+      const n = Number(String(agencyFeePct).replace(',', '.'));
+      if (!Number.isFinite(n) || n < 0 || n > 50) {
+        setDone({ ok: false, error: 'Agency fee % must be between 0 and 50.' });
+        return;
+      }
+      if (!agencyName.trim()) {
+        setDone({ ok: false, error: 'Please enter your agency name (or untoggle "I have an agency").' });
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const payload: Record<string, number> = {};
@@ -108,7 +157,15 @@ export function TalentIntake({
       const res = await fetch(`/api/talent/${token}/submit`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ min_rates: payload, notes }),
+        body: JSON.stringify({
+          min_rates: payload,
+          notes,
+          agency: {
+            has_agency: hasAgency,
+            name: hasAgency ? agencyName.trim() : null,
+            fee_pct: hasAgency ? Number(String(agencyFeePct).replace(',', '.')) : null,
+          },
+        }),
       });
       if (!res.ok) {
         const t = await res.text().catch(() => '');
@@ -135,10 +192,7 @@ export function TalentIntake({
             this same link stays active.
           </p>
         </div>
-        <button
-          onClick={() => setDone(null)}
-          className="text-xs text-mute hover:text-ink underline mx-auto block min-h-[44px] px-3"
-        >
+        <button onClick={() => setDone(null)} className="text-xs text-mute hover:text-ink underline mx-auto block min-h-[44px] px-3">
           Revise my minimums
         </button>
       </div>
@@ -150,7 +204,6 @@ export function TalentIntake({
       {/* ─── Header card ────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-line bg-card overflow-hidden shadow-sm">
         <div className="bg-gradient-to-br from-greenDark to-greenDark/80 text-white p-4 sm:p-6">
-          {/* Avatar + name + meta + currency: stacks on mobile, side-by-side at sm+ */}
           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
               {player.avatar_url ? (
@@ -169,26 +222,21 @@ export function TalentIntake({
                   {[player.full_name, player.game, player.team].filter(Boolean).join(' · ')}
                 </div>
                 <div className="text-[10px] sm:text-[11px] opacity-80 mt-1">
-                  {player.tier_code || 'Tier 3'} · {player.nationality || 'Region unspecified'} · benchmarks shown for {market}
+                  {player.tier_code || 'Tier 3'} · {player.nationality || 'Region unspecified'} · benchmarks shown for {market} + World
                 </div>
               </div>
             </div>
-            {/* Currency switcher: full row on mobile, top-right on desktop */}
             <div className="flex sm:flex-col sm:items-end justify-between gap-2 sm:gap-1 sm:ml-auto sm:flex-shrink-0">
               <div className="inline-flex items-center rounded-lg border border-white/30 bg-white/10 overflow-hidden text-xs font-semibold">
                 {(['SAR', 'USD'] as const).map((c, i) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setCurrency(c)}
+                  <button key={c} type="button" onClick={() => setCurrency(c)}
                     className={[
                       'px-3 py-2 min-h-[44px] sm:min-h-0 sm:py-1.5 transition',
                       i > 0 ? 'border-l border-white/30' : '',
                       currency === c ? 'bg-white text-greenDark' : 'text-white/90 hover:bg-white/10',
                     ].join(' ')}
                     title={`Show prices in ${c}`}
-                    aria-label={`Show prices in ${c}`}
-                  >
+                    aria-label={`Show prices in ${c}`}>
                     {c}
                   </button>
                 ))}
@@ -227,15 +275,9 @@ export function TalentIntake({
               const isStr = typeof raw === 'string';
               if (isStr) {
                 const text = raw as string;
-                const { rest: noYear, year } = splitYear(text);
-                const { lead, rest } = leadingPlacement(noYear);
                 return (
                   <li key={i} className="flex items-baseline justify-between gap-2 sm:gap-3 border-b border-line/60 pb-1">
-                    <span className="text-ink min-w-0">
-                      {lead && <span className="font-semibold text-greenDark mr-1.5">{lead}</span>}
-                      <span className="break-words">{rest || text}</span>
-                    </span>
-                    {year && <span className="text-mute tabular-nums whitespace-nowrap">{year}</span>}
+                    <span className="text-ink min-w-0 break-words">{text}</span>
                   </li>
                 );
               }
@@ -261,15 +303,24 @@ export function TalentIntake({
         </div>
       )}
 
-      {/* ─── How this works ────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-greenDark/30 bg-greenSoft/30 p-4 text-xs sm:text-[13px] text-ink leading-relaxed">
-        <div className="flex items-center gap-2 mb-1.5 font-semibold text-greenDark">
-          <Info size={14} /> How this works
+      {/* ─── How this works (with explicit deal-flow trade-off) ─────────── */}
+      <div className="rounded-xl border border-greenDark/30 bg-greenSoft/30 p-4 text-xs sm:text-[13px] text-ink leading-relaxed space-y-2">
+        <div className="flex items-center gap-2 font-semibold text-greenDark">
+          <Info size={14} /> How to set your floor
         </div>
-        For each deliverable below, set the <strong>minimum {currency} you'll accept</strong> per single posting.
-        The benchmark column shows what {market} talent at your tier typically charges (Min / Median / Max).
-        Sales will never quote a brand below your minimum without coming back to you first.
-        Leave blank to skip a deliverable you don't want to do.
+        <p>
+          For each deliverable, set the <strong>minimum {currency} you'll accept per single posting</strong>.
+          We show you two anchors: <strong className="text-greenDark">your regional band ({market})</strong> and
+          the <strong className="text-greenDark">world-class band</strong> for your tier.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+          <ZoneHint zone="floor"   title="Floor"   />
+          <ZoneHint zone="median"  title="Median" />
+          <ZoneHint zone="premium" title="Premium" />
+        </div>
+        <p className="text-[11px] text-mute pt-1">
+          You'll never be quoted below your floor without us calling you first. Leave blank to skip a deliverable you don't want to do.
+        </p>
       </div>
 
       {/* ─── Deliverable rows ──────────────────────────────────────────── */}
@@ -297,6 +348,63 @@ export function TalentIntake({
         ))}
       </div>
 
+      {/* ─── Agency representation ─────────────────────────────────────── */}
+      <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 space-y-3">
+        <label className="flex items-center justify-between gap-3 cursor-pointer">
+          <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <Building2 size={16} className="text-greenDark" />
+            Are you represented by an agency?
+          </span>
+          <span className={[
+            'relative inline-flex h-6 w-11 items-center rounded-full transition',
+            hasAgency ? 'bg-greenDark' : 'bg-line',
+          ].join(' ')}>
+            <input type="checkbox" className="sr-only" checked={hasAgency}
+              onChange={e => setHasAgency(e.target.checked)} />
+            <span className={[
+              'inline-block h-5 w-5 transform rounded-full bg-white shadow transition',
+              hasAgency ? 'translate-x-5' : 'translate-x-0.5',
+            ].join(' ')}/>
+          </span>
+        </label>
+        {hasAgency && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-mute font-bold">Agency name</label>
+              <input
+                type="text"
+                value={agencyName}
+                onChange={e => setAgencyName(e.target.value)}
+                placeholder="e.g. CAA Sports, Loaded, CodeRed…"
+                className="mt-1 w-full text-sm border border-line rounded-lg px-3 py-2 min-h-[44px] sm:min-h-0 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-mute font-bold">Agency fee % (off the top)</label>
+              <div className="relative mt-1">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={agencyFeePct}
+                  onChange={e => setAgencyFeePct(e.target.value.replace(/[^\d.,]/g, '').slice(0, 5))}
+                  placeholder="e.g. 15"
+                  className="w-full text-sm border border-line rounded-lg px-3 py-2 pr-8 min-h-[44px] sm:min-h-0 bg-bg focus:outline-none focus:ring-2 focus:ring-greenDark/30 tabular-nums"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mute text-sm">%</span>
+              </div>
+              <p className="text-[10px] text-mute mt-1">
+                Used to gross up your floor before we show internal pricing. Range 0–50.
+              </p>
+            </div>
+          </div>
+        )}
+        {!hasAgency && (
+          <p className="text-[11px] text-mute">
+            We'll book you directly. You can change this any time.
+          </p>
+        )}
+      </div>
+
       {/* ─── Notes ─────────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 space-y-2">
         <label className="text-xs font-semibold text-ink">Notes for your account manager (optional)</label>
@@ -314,12 +422,8 @@ export function TalentIntake({
         <div className="flex items-center gap-2 text-[11px] text-mute order-2 sm:order-1">
           <Lock size={12} /> Private to you and Falcons Talent. Audit-logged.
         </div>
-        <button
-          type="button"
-          onClick={submit}
-          disabled={submitting}
-          className="btn btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 min-h-[48px] sm:min-h-[44px] disabled:opacity-50 w-full sm:w-auto order-1 sm:order-2 text-base sm:text-sm font-semibold"
-        >
+        <button type="button" onClick={submit} disabled={submitting}
+          className="btn btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 min-h-[48px] sm:min-h-[44px] disabled:opacity-50 w-full sm:w-auto order-1 sm:order-2 text-base sm:text-sm font-semibold">
           <Send size={14} />
           {submitting ? 'Saving…' : (player.submitted_at ? 'Save revision' : 'Submit my minimums')}
         </button>
@@ -328,9 +432,7 @@ export function TalentIntake({
       {done && !done.ok && (
         <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-xs text-red-700 flex items-start gap-2">
           <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-          <div>
-            <strong>Couldn't save.</strong> {done.error}
-          </div>
+          <div><strong>Couldn't save.</strong> {done.error}</div>
         </div>
       )}
     </div>
@@ -345,6 +447,20 @@ function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: st
         {icon}{label}
       </div>
       <div className={`text-sm font-bold tabular-nums ${accent ? 'text-greenDark' : 'text-ink'}`}>{value}</div>
+    </div>
+  );
+}
+
+function ZoneHint({ zone, title }: { zone: 'floor' | 'median' | 'premium'; title: string }) {
+  const meta = ZONE_META[zone];
+  const tone = TONE_CLASSES[meta.tone];
+  const Icon = meta.Icon;
+  return (
+    <div className={`rounded-lg p-2.5 ${tone.bg} ring-1 ${tone.ring}`}>
+      <div className={`text-[11px] font-bold flex items-center gap-1.5 ${tone.text}`}>
+        <Icon size={12} /> {title}
+      </div>
+      <div className={`text-[11px] mt-0.5 ${tone.text}`}>{meta.sub}</div>
     </div>
   );
 }
@@ -365,44 +481,138 @@ function DeliverableRow({
     if (cleaned === '') { onChange(''); return; }
     onChange(String(toSar(Number(cleaned))));
   };
+
+  // Use REGIONAL band as the primary "what zone are you in?" anchor.
+  const submittedSar = Number(value) || 0;
+  const zone = zoneFor(submittedSar, d.band);
+  const zoneMeta = ZONE_META[zone];
+  const tone = TONE_CLASSES[zoneMeta.tone];
+  const ZoneIcon = zoneMeta.Icon;
+
   return (
-    /* MOBILE: pure stack — label, then benchmark, then input. SM+: 12-col grid. */
-    <div className="px-3 sm:px-4 py-3 sm:py-3.5 space-y-3 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-3 sm:items-center">
-      <div className="sm:col-span-4">
-        <div className="text-sm font-semibold text-ink">{d.label}</div>
-        <div className="text-[11px] text-mute mt-0.5">{d.blurb}</div>
+    <div className="px-3 sm:px-4 py-3.5 space-y-3 sm:space-y-3">
+      {/* Title row */}
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold text-ink">{d.label}</div>
+          <div className="text-[11px] text-mute mt-0.5">{d.blurb}</div>
+        </div>
       </div>
 
-      <div className="sm:col-span-5">
-        {d.band ? (
-          <div className="rounded-lg border border-line bg-bg/50 px-3 py-2 text-[11px] tabular-nums">
-            <div className="text-mute font-semibold uppercase tracking-wider text-[10px] mb-1">
-              {d.band.audience_market} benchmark
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-ink">
-              <div><span className="text-mute">Min</span> <span className="font-semibold">{fmtMoney(Number(d.band.min_sar))}</span></div>
-              <div><span className="text-mute">Med</span> <span className="font-semibold text-greenDark">{fmtMoney(Number(d.band.median_sar))}</span></div>
-              <div><span className="text-mute">Max</span> <span className="font-semibold">{fmtMoney(Number(d.band.max_sar))}</span></div>
+      {/* Benchmark row: Regional + World, side by side */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <BenchmarkChip
+          band={d.band}
+          marketLabel={d.band ? d.band.audience_market : 'Region'}
+          icon={<Target size={11} />}
+          fmtMoney={fmtMoney}
+          accent="green"
+        />
+        <BenchmarkChip
+          band={d.worldBand}
+          marketLabel="World"
+          icon={<Globe2 size={11} />}
+          fmtMoney={fmtMoney}
+          accent="purple"
+        />
+      </div>
+
+      {/* Visual zone bar (regional), with the talent's submitted floor positioned on it */}
+      {d.band && (
+        <ZoneBar
+          band={d.band}
+          submittedSar={submittedSar}
+          fmtMoney={fmtMoney}
+        />
+      )}
+
+      {/* Input + live zone callout */}
+      <div className="flex flex-col sm:flex-row sm:items-stretch gap-2">
+        <div className="flex-1 sm:max-w-xs">
+          <label className="text-[10px] uppercase tracking-wider text-mute font-bold flex items-center gap-1 mb-1">
+            <ShieldCheck size={11} /> Your floor ({currency})
+          </label>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={displayValue}
+            onChange={e => handleInput(e.target.value)}
+            placeholder={currency === 'USD' ? 'e.g. 2,000' : 'e.g. 8,000'}
+            className="w-full text-right text-base sm:text-sm font-semibold tabular-nums border border-line rounded-lg px-3 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 bg-card focus:outline-none focus:ring-2 focus:ring-greenDark/40"
+          />
+        </div>
+        {zone !== 'none' && (
+          <div className={`flex-1 rounded-lg ${tone.bg} ring-1 ${tone.ring} px-3 py-2 text-[11px] flex items-start gap-2`}>
+            <ZoneIcon size={14} className={`${tone.text} mt-0.5 flex-shrink-0`} />
+            <div className={tone.text}>
+              <div className="font-bold">{zoneMeta.label}</div>
+              <div>{zoneMeta.sub}</div>
             </div>
           </div>
-        ) : (
-          <div className="text-[11px] text-mute italic">No regional benchmark on file yet — use your judgement.</div>
         )}
       </div>
+    </div>
+  );
+}
 
-      <div className="sm:col-span-3">
-        <label className="text-[10px] uppercase tracking-wider text-mute font-bold flex items-center gap-1 mb-1">
-          <ShieldCheck size={11} /> Your minimum ({currency})
-        </label>
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={displayValue}
-          onChange={e => handleInput(e.target.value)}
-          placeholder={currency === 'USD' ? 'e.g. 2000' : 'e.g. 8000'}
-          className="w-full text-right text-base sm:text-sm font-semibold tabular-nums border border-line rounded-lg px-3 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 bg-card focus:outline-none focus:ring-2 focus:ring-greenDark/40"
-        />
+function BenchmarkChip({
+  band, marketLabel, icon, fmtMoney, accent,
+}: {
+  band: Band; marketLabel: string;
+  icon: React.ReactNode;
+  fmtMoney: (sar: number) => string;
+  accent: 'green' | 'purple';
+}) {
+  if (!band) {
+    return (
+      <div className="rounded-lg border border-dashed border-line bg-bg/30 px-3 py-2 text-[11px] text-mute italic">
+        {marketLabel}: not seeded yet
+      </div>
+    );
+  }
+  const accentText = accent === 'green' ? 'text-greenDark' : 'text-purple-700';
+  return (
+    <div className="rounded-lg border border-line bg-bg/50 px-3 py-2 text-[11px] tabular-nums">
+      <div className={`font-semibold uppercase tracking-wider text-[10px] mb-1 flex items-center gap-1 ${accentText}`}>
+        {icon} {marketLabel} benchmark
+      </div>
+      <div className="grid grid-cols-3 gap-2 text-ink">
+        <div><span className="text-mute">Floor</span><div className="font-semibold">{fmtMoney(Number(band.min_sar))}</div></div>
+        <div><span className="text-mute">Median</span><div className={`font-semibold ${accentText}`}>{fmtMoney(Number(band.median_sar))}</div></div>
+        <div><span className="text-mute">Premium</span><div className="font-semibold">{fmtMoney(Number(band.max_sar))}</div></div>
+      </div>
+    </div>
+  );
+}
+
+function ZoneBar({ band, submittedSar, fmtMoney }: { band: NonNullable<Band>; submittedSar: number; fmtMoney: (sar: number) => string }) {
+  const min = Number(band.min_sar);
+  const med = Number(band.median_sar);
+  const max = Number(band.max_sar);
+  const span = max - min;
+  // Position the marker on a [0..1] axis. Clamp.
+  let pct: number | null = null;
+  if (submittedSar > 0 && span > 0) {
+    pct = Math.max(0, Math.min(1, (submittedSar - min) / span));
+  }
+  return (
+    <div className="space-y-1">
+      <div className="relative h-2 rounded-full overflow-hidden bg-line/40">
+        {/* Three colored zones: emerald (floor), blue (median), purple (premium) */}
+        <div className="absolute inset-y-0 left-0 w-1/3 bg-emerald-300/70"></div>
+        <div className="absolute inset-y-0 left-1/3 w-1/3 bg-blue-300/70"></div>
+        <div className="absolute inset-y-0 left-2/3 w-1/3 bg-purple-300/70"></div>
+        {pct != null && (
+          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-ink ring-2 ring-card shadow"
+               style={{ left: `${(pct * 100).toFixed(1)}%` }}
+               title={`Your floor: ${fmtMoney(submittedSar)}`}/>
+        )}
+      </div>
+      <div className="flex justify-between text-[10px] text-mute tabular-nums">
+        <span>{fmtMoney(min)}</span>
+        <span>{fmtMoney(med)}</span>
+        <span>{fmtMoney(max)}</span>
       </div>
     </div>
   );
