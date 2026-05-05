@@ -1,5 +1,6 @@
 'use client';
 import { useLocale } from '@/lib/i18n/Locale';
+import { labelByLocale } from '@/lib/i18n/axis-labels-ar';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus, X as XIcon, ChevronDown, ChevronUp, Check,
@@ -138,7 +139,7 @@ export function QuoteConfigurator({
   onCurrencyChange?: (next: string) => void;
   onPreviewChange?: (p: { count: number; total: number; talent: string }) => void;
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const isEditing = !!initialEdit;
 
   // ── Picker state
@@ -1416,6 +1417,13 @@ function PriceBreakdownChip({
   /** Talent record used to render the data-state context block at the top. */
   talent: any;
 }) {
+  const { locale } = useLocale();
+  const rowK = (en: string) => locale === 'ar' ? ({
+    'Base':'الأساس','Engagement':'التفاعل','Audience':'الجمهور','Seasonality':'الموسمية',
+    'Content':'المحتوى','Language':'اللغة','Authority':'الموثوقية',
+    'Confidence cap':'سقف الثقة','Rights uplift':'علاوة الحقوق','Companion':'موهبة مرافقة',
+    'Floor':'الحد الأدنى',
+  } as Record<string,string>)[en] ?? en : en;
   const [open, setOpen] = useState(false);
   const chipRef = useRef<HTMLDivElement>(null);
   const [popPos, setPopPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
@@ -1461,44 +1469,44 @@ function PriceBreakdownChip({
     isOverridden?: boolean;
   };
   const rows: AxisRow[] = [
-    { k: 'Base',  v: m.base, note: 'Per-platform anchor — calibration multipliers apply next' },
+    { k: rowK('Base'),  v: m.base, note: 'Per-platform anchor — calibration multipliers apply next' },
     {
-      k: 'Engagement', v: line.engGated, axisKey: 'o_eng',
+      k: rowK('Engagement'), v: line.engGated, axisKey: 'o_eng',
       options: axisOptions.engagement.map((e: any) => e.factor),
-      labels:  axisOptions.engagement.map((e: any) => e.label.replace(/ —.*$/, '')),
+      labels:  axisOptions.engagement.map((e: any) => labelByLocale(e.label, locale).replace(/ —.*$/, '')),
       isOverridden: overrides.o_eng != null,
     },
     {
-      k: 'Audience', v: line.audGated, axisKey: 'o_aud',
+      k: rowK('Audience'), v: line.audGated, axisKey: 'o_aud',
       options: axisOptions.audience.map((e: any) => e.factor),
-      labels:  axisOptions.audience.map((e: any) => e.label.replace(/ \/.*$/, '')),
+      labels:  axisOptions.audience.map((e: any) => labelByLocale(e.label, locale).replace(/ \/.*$/, '')),
       isOverridden: overrides.o_aud != null,
     },
     {
-      k: 'Seasonality', v: line.seasGated, axisKey: 'o_seas',
+      k: rowK('Seasonality'), v: line.seasGated, axisKey: 'o_seas',
       options: (axisOptions.seasonality ?? axisOptions.production)?.map((e: any) => e.factor) ?? [],
-      labels:  (axisOptions.seasonality ?? axisOptions.production)?.map((e: any) => e.label) ?? [],
+      labels:  (axisOptions.seasonality ?? axisOptions.production)?.map((e: any) => labelByLocale(e.label, locale)) ?? [],
       isOverridden: overrides.o_seas != null,
     },
-    { k: 'Content', v: m.ctype },
+    { k: rowK('Content'), v: m.ctype },
     {
-      k: 'Language', v: m.lang, axisKey: 'o_lang',
+      k: rowK('Language'), v: m.lang, axisKey: 'o_lang',
       options: axisOptions.language.map((e: any) => e.factor),
-      labels:  axisOptions.language.map((e: any) => e.label),
+      labels:  axisOptions.language.map((e: any) => labelByLocale(e.label, locale)),
       isOverridden: overrides.o_lang != null,
     },
     {
-      k: 'Authority', v: line.authGated,
+      k: rowK('Authority'), v: line.authGated,
       note: m.auth !== line.authGated ? `gated from ${m.auth}` : undefined,
       axisKey: 'o_auth',
       options: axisOptions.authority.map((e: any) => e.factor),
-      labels:  axisOptions.authority.map((e: any) => e.label),
+      labels:  axisOptions.authority.map((e: any) => labelByLocale(e.label, locale)),
       isOverridden: overrides.o_auth != null,
     },
   ];
-  if (line.confCap !== 1) rows.push({ k: 'Confidence cap', v: line.confCap });
-  if (m.rightsPct > 0)    rows.push({ k: 'Rights uplift', v: 1 + m.rightsPct, note: `+${Math.round(m.rightsPct * 100)}%` });
-  if (m.isCompanion)      rows.push({ k: 'Companion', v: 0.5, note: '50% — supporting role' });
+  if (line.confCap !== 1) rows.push({ k: rowK('Confidence cap'), v: line.confCap });
+  if (m.rightsPct > 0)    rows.push({ k: rowK('Rights uplift'), v: 1 + m.rightsPct, note: `+${Math.round(m.rightsPct * 100)}%` });
+  if (m.isCompanion)      rows.push({ k: rowK('Companion'), v: 0.5, note: '50% — supporting role' });
   const flooredByIRL = line.floorPrice > line.socialPrice;
   return (
     <div ref={chipRef} className="relative text-right mr-1 hidden sm:block">

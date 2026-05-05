@@ -1,5 +1,6 @@
 'use client';
 import { useLocale } from '@/lib/i18n/Locale';
+import { labelByLocale } from '@/lib/i18n/axis-labels-ar';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { computeLine, computeQuoteTotals, AXIS_OPTIONS, CREATOR_AXIS_OPTIONS, CHANNEL_PRESETS, resolveChannelMultiplier, type MeasurementConfidence, type SalesChannel, type ChannelIntensity } from '@/lib/pricing';
@@ -78,7 +79,7 @@ export function QuoteBuilder({
   canEditLayout: boolean;
   drafts?: DraftSummary[];
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -921,24 +922,24 @@ export function QuoteBuilder({
         <p className="text-xs text-label mb-4">These multipliers apply to every line by default. Some are auto-suggested from your Brand Brief above (look for the green <span className="px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold bg-green/15 text-greenDark">auto</span> badge) — change them anytime. Override per-line in the Build tab.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <AxisSelect label="Content type" hint="Who directs the creative — Organic 0.85× / Integrated 1.00× / Sponsored 1.15×." value={ctype} setValue={setCtype}
-            options={AXIS_OPTIONS.contentType.map(o => ({ label: o.label, val: o.factor }))} />
+            options={AXIS_OPTIONS.contentType.map(o => ({ label: labelByLocale(o.label, locale), val: o.factor }))} />
           <AxisSelect label="Engagement" hint="Talent's last-90-day ER. 4–6% is baseline; >10% is elite." value={eng} setValue={setEng}
-            options={AXIS_OPTIONS.engagement.map(o => ({ label: o.label, val: o.factor }))} />
+            options={AXIS_OPTIONS.engagement.map(o => ({ label: labelByLocale(o.label, locale), val: o.factor }))} />
           <AxisSelect label="Audience" hint="Audience match. MENA / Saudi unlocks +30% premium." value={aud} setValue={setAud}
-            options={AXIS_OPTIONS.audience.map(o => ({ label: o.label, val: o.factor }))} />
+            options={AXIS_OPTIONS.audience.map(o => ({ label: labelByLocale(o.label, locale), val: o.factor }))} />
           <AxisSelect label="Seasonality" hint="Campaign window. Ramadan + Worlds = peak demand." value={seas} setValue={setSeas}
-            options={AXIS_OPTIONS.seasonality.map(o => ({ label: o.label, val: o.factor }))} />
+            options={AXIS_OPTIONS.seasonality.map(o => ({ label: labelByLocale(o.label, locale), val: o.factor }))} />
           <AxisSelect label="Language" hint="Bilingual reaches both audiences in one activation." value={lang} setValue={setLangManual} auto={autoAxes.has('lang')} onClearAuto={() => setAutoAxes(s => { const n = new Set(s); n.delete('lang'); return n; })}
-            options={AXIS_OPTIONS.language.map(o => ({ label: o.label, val: o.factor }))} />
+            options={AXIS_OPTIONS.language.map(o => ({ label: labelByLocale(o.label, locale), val: o.factor }))} />
           <AxisSelect label="Authority" hint="Championship credentials. Normal = standard player · Proven = regional champ or 2yr+ pro · Elite Contender = top-10 world rank or major finalist · Global Star = world champ / EWC winner / iconic name. Sets the IRL price floor so pros are never priced below appearance value." value={auth} setValue={setAuth}
-            options={AXIS_OPTIONS.authority.map(o => ({ label: o.label, val: o.factor }))} />
+            options={AXIS_OPTIONS.authority.map(o => ({ label: labelByLocale(o.label, locale), val: o.factor }))} />
           <AxisSelect label="Objective weight" hint="How much the Authority bump matters in this campaign. Awareness 0.2× (logo placement) → Conversion 0.7× (pro endorsement = the product) → Authority 1.0× (credibility is the entire pitch)." value={obj} setValue={setObjManual} auto={autoAxes.has('obj')} onClearAuto={() => setAutoAxes(s => { const n = new Set(s); n.delete('obj'); return n; })}
-            options={AXIS_OPTIONS.objective.map(o => ({ label: o.label, val: o.weight }))} />
+            options={AXIS_OPTIONS.objective.map(o => ({ label: labelByLocale(o.label, locale), val: o.weight }))} />
           <div>
             <label className="label">Measurement confidence</label>
             <select value={conf} onChange={e => setConf(e.target.value as MeasurementConfidence)} className="input">
               {AXIS_OPTIONS.confidence.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>{labelByLocale(o.label, locale)}</option>
               ))}
             </select>
           </div>
@@ -1228,7 +1229,7 @@ export function QuoteBuilder({
                         <LineAxisSelect label="Engagement" value={r.o_eng}   campaign={eng}   onChange={v => inlineUpdateLine(r.uid, { o_eng:   v })} options={axisOpts.engagement.map(e => ({ label: e.label, val: e.factor }))} />
                         <LineAxisSelect label="Audience"   value={r.o_aud}   campaign={aud}   onChange={v => inlineUpdateLine(r.uid, { o_aud:   v })} options={axisOpts.audience.map(e => ({ label: e.label, val: e.factor }))} />
                         <LineAxisSelect label={r.talent_type === 'creator' ? 'Production' : 'Seasonality'} value={r.o_seas}  campaign={seas}  onChange={v => inlineUpdateLine(r.uid, { o_seas:  v })} options={(r.talent_type === 'creator' ? (axisOpts as any).production : (axisOpts as any).seasonality).map((e: any) => ({ label: e.label, val: e.factor }))} />
-                        <LineAxisSelect label="Content type" value={r.o_ctype} campaign={ctype} onChange={v => inlineUpdateLine(r.uid, { o_ctype: v })} options={AXIS_OPTIONS.contentType.map(e => ({ label: e.label, val: e.factor }))} />
+                        <LineAxisSelect label="Content type" value={r.o_ctype} campaign={ctype} onChange={v => inlineUpdateLine(r.uid, { o_ctype: v })} options={AXIS_OPTIONS.contentType.map(e => ({ label: labelByLocale(e.label, locale), val: e.factor }))} />
                         <LineAxisSelect label="Language"   value={r.o_lang}  campaign={lang}  onChange={v => inlineUpdateLine(r.uid, { o_lang:  v })} options={axisOpts.language.map(e => ({ label: e.label, val: e.factor }))} />
                         <LineAxisSelect label="Authority"  value={r.o_auth}  campaign={auth}  onChange={v => inlineUpdateLine(r.uid, { o_auth:  v })} options={axisOpts.authority.map(e => ({ label: e.label, val: e.factor }))} />
                       </div>

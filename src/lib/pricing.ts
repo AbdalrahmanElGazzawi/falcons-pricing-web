@@ -898,15 +898,25 @@ export function axisOptionsForTalent(
   return AXIS_OPTIONS;
 }
 
-/** Resolve a numeric factor → human label, preferring the talent-aware catalog */
+/** Resolve a numeric factor → human label, preferring the talent-aware catalog.
+ *  Mig 066 (May 5): now locale-aware. Pass locale='ar' to get Arabic labels
+ *  via the AXIS_LABELS_AR dictionary; default 'en' returns English. */
 export function labelForFactor(
   axis: 'engagement' | 'audience' | 'authority' | 'language' | 'seasonality' | 'production' | 'contentType',
   factor: number,
   kind: 'player' | 'creator',
+  locale: 'en' | 'ar' = 'en',
 ): string {
   const cat = kind === 'creator' ? (CREATOR_AXIS_OPTIONS as any) : (AXIS_OPTIONS as any);
   const list = cat[axis] as Array<{ label: string; factor: number }> | undefined;
   if (!list) return factor.toFixed(2) + '×';
   const m = list.find(o => Math.abs(o.factor - factor) < 0.005);
-  return m ? m.label : factor.toFixed(2) + '×';
+  if (!m) return factor.toFixed(2) + '×';
+  if (locale === 'ar') {
+    // Lazy import to keep pricing.ts independent of the i18n module's bundle.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { AXIS_LABELS_AR } = require('./i18n/axis-labels-ar');
+    return AXIS_LABELS_AR[m.label] ?? m.label;
+  }
+  return m.label;
 }

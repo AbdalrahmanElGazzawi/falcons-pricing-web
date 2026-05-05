@@ -1,4 +1,6 @@
 'use client';
+import { labelByLocale } from '@/lib/i18n/axis-labels-ar';
+import { useLocale } from '@/lib/i18n/Locale';
 import { useEffect, useMemo, useState } from 'react';
 import { computeLine, type MeasurementConfidence } from '@/lib/pricing';
 import { fmtMoney, tierClass } from '@/lib/utils';
@@ -976,6 +978,7 @@ function AxisRow({ label, sourceHint, options, globalVal, value, onChange }: {
   value: number | null;
   onChange: (v: number | null) => void;
 }) {
+  const { locale } = useLocale();
   const isInherited = value === null;
   // Surface the matched campaign-default label so sales sees the actual choice
   // (e.g. "Below average 2-4%") instead of an opaque multiplier number.
@@ -1003,7 +1006,7 @@ function AxisRow({ label, sourceHint, options, globalVal, value, onChange }: {
           const active = !isInherited && Math.abs((value ?? -999) - o.factor) < 0.0001;
           return (
             <FilterChip key={o.label} active={active} onClick={() => onChange(o.factor)}>
-              {o.label} <span className="opacity-60">({o.factor.toFixed(2)}x)</span>
+              {labelByLocale(o.label, locale)} <span className="opacity-60">({o.factor.toFixed(2)}x)</span>
             </FilterChip>
           );
         })}
