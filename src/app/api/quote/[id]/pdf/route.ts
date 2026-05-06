@@ -151,6 +151,21 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   doc.on('data', (c: Buffer) => chunks.push(c));
   const done = new Promise<Buffer>(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
 
+  // Cap total pages at MAX_PAGES. We draw exactly 2 (cover + body); anything
+  // beyond is PDFKit auto-paginating because text() with `width` overflowed
+  // the A4 page bottom. With margin:0 + many absolute-positioned text() calls,
+  // overflowed content is harmless (gets clipped at the page edge) but the
+  // auto-spawned pages are blank padding. Hard-cap so quotes never balloon
+  // to 49+ pages again. Bug repro: QT-20260506-001 was 49 pages.
+  const MAX_PAGES = 2;
+  let pagesUsed = 1; // PDFKit auto-creates page 1 on construction
+  const _origAddPage = doc.addPage.bind(doc);
+  doc.addPage = function (...args: any[]): any {
+    if (pagesUsed >= MAX_PAGES) return doc; // swallow auto-pagination overflows
+    pagesUsed++;
+    return _origAddPage(...args);
+  };
+
   const W = doc.page.width;
   const H = doc.page.height;
   const MARGIN = 40;
