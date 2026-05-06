@@ -53,6 +53,7 @@ export const PLATFORM_RATIO: Record<string, number> = {
   rate_yt_short:       0.32,
   rate_yt_short_repost: 0.16,    // M041: 50% of yt_short (0.32)
   rate_yt_full:        1.85,
+  rate_yt_preroll:     1.30,    // Migration 066 — sponsored pre-roll ad-read
   rate_x_post:         0.20,
   rate_x_repost:       0.10,
   rate_x_share:        0.10,
@@ -67,7 +68,6 @@ export const PLATFORM_RATIO: Record<string, number> = {
   // Creator-specific (not in players.platform_ratio but useful for hints)
   rate_tiktok_ours:    0.80,
   rate_tiktok_client:  0.95,
-  rate_yt_preroll:     1.20,
   rate_x_post_quote:   0.20,
   rate_snapchat:       0.40,
   rate_event_snap:     1.20,

@@ -26,6 +26,7 @@ const DELIVERABLES: Array<{
   // ── YouTube
   { key: 'yt_short',        rate_col: 'rate_yt_short',        band_platform: 'rate_yt_short',    label: 'YouTube Short',            blurb: 'Vertical short — clips, teasers, drink-in-content moments.',                   group: 'YouTube' },
   { key: 'yt_video',        rate_col: 'rate_yt_full',         band_platform: 'rate_yt_full',     label: 'YouTube Video (long-form)',blurb: 'Full review, sponsored playthrough, brand narrative — most-common product-review asset globally.', group: 'YouTube' },
+  { key: 'yt_preroll',      rate_col: 'rate_yt_preroll',      band_platform: 'rate_yt_full',     label: 'YouTube Pre-roll (1–2 min)',blurb: 'Sponsored ad-read at the start of your long-form video — CPM-priced from your YT subscriber base.', group: 'YouTube' },
   { key: 'yt_short_repost', rate_col: 'rate_yt_short_repost', band_platform: 'rate_yt_short',    label: 'YouTube Short Repost',     blurb: 'Re-upload of brand-supplied vertical short.',                                  group: 'YouTube' },
   // ── X / Twitter
   { key: 'x_post',          rate_col: 'rate_x_post',          band_platform: 'rate_ig_post',     label: 'X / Twitter Post',         blurb: 'Sponsored tweet — announcements, brand mentions, link shares.',                group: 'X (Twitter)' },
@@ -52,7 +53,8 @@ type PlayerRateColumns = {
   rate_ig_reel: number; rate_ig_post: number; rate_ig_story: number;
   rate_tiktok_video: number; rate_tiktok_repost: number;
   rate_yt_short: number; rate_yt_short_repost: number;
-  rate_yt_full: number;  // long-form sponsored video (Migration 066)
+  rate_yt_full: number;     // long-form sponsored video (Migration 066)
+  rate_yt_preroll: number;  // 1-2min pre-roll ad-read (Migration 066)
   rate_x_post: number; rate_x_repost: number;
   rate_twitch_stream: number; rate_twitch_integ: number;
   rate_irl: number;
