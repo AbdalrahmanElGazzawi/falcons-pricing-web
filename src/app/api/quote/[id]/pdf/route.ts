@@ -157,7 +157,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   // overflowed content is harmless (gets clipped at the page edge) but the
   // auto-spawned pages are blank padding. Hard-cap so quotes never balloon
   // to 49+ pages again. Bug repro: QT-20260506-001 was 49 pages.
-  const MAX_PAGES = 2;
+  const MAX_PAGES = 3;
   let pagesUsed = 1; // PDFKit auto-creates page 1 on construction
   const _origAddPage = doc.addPage.bind(doc);
   doc.addPage = function (...args: any[]): any {
@@ -405,6 +405,24 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
   doc.moveTo(tableX, y).lineTo(tableX + tableW, y).strokeColor(LINE).lineWidth(0.5).stroke();
   y += 16;
+
+  // If the lines table consumed most of the page, start a 3rd page for the
+  // methodology / notes / totals / payment / signatures block. ~370px is the
+  // headroom that block needs to render without clipping above the footer.
+  const BODY_TAIL_NEEDED = 370;
+  if (y + BODY_TAIL_NEEDED > H - 70) {
+    doc.addPage({ size: 'A4', margin: 0 });
+    // redraw the navy/green header strip on the new page so it doesn't look
+    // orphaned, then reset y just below it
+    doc.rect(0, 0, W, 110).fill(NAVY);
+    doc.rect(0, 90, W, 8).fill(GREEN);
+    doc.fillColor('white').font('Helvetica-Bold').fontSize(11)
+      .text('TEAM FALCONS', MARGIN, 36, { characterSpacing: 1 });
+    doc.fillColor('#94A3B8').font('Helvetica').fontSize(8)
+      .text('PRICING OS  ·  ESPORTS TALENT QUOTATION  ·  ' + (quote.quote_number || ''),
+        MARGIN, 56, { characterSpacing: 1 });
+    y = 130;
+  }
 
   // ═══ PRICING METHODOLOGY (left col) + SPECIAL NOTES (right col) ═══
   const methX = tableX;
