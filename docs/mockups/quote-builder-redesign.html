@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Falcons Quote Builder — Redesign Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #0B2340;
+    --navy-2: #06182A;
+    --navy-3: #112E4F;
+    --green: #2ED06E;
+    --green-d: #22A35A;
+    --gold: #D4A514;
+    --gold-soft: #F1E1A6;
+    --ink: #0E1A2F;
+    --ink-2: #1F2B40;
+    --label: #5A6678;
+    --mute: #94A3B8;
+    --line: #E6EAF0;
+    --line-strong: #CFD6E1;
+    --bg: #F4F6FA;
+    --bg-2: #ECEFF5;
+    --card: #FFFFFF;
+    --danger: #E53935;
+    --amber: #F7B500;
+  }
+  html[data-theme="dark"]{
+    --navy: #0B2340;
+    --navy-2: #04101D;
+    --navy-3: #122944;
+    --ink: #E2E8F0;
+    --ink-2: #CBD5E1;
+    --label: #94A3B8;
+    --mute: #64748B;
+    --line: #1E293B;
+    --line-strong: #334155;
+    --bg: #0A1629;
+    --bg-2: #0E1B30;
+    --card: #0F1E36;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01"}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .mono{font-family:'JetBrains Mono',ui-monospace,SF Mono,Menlo,monospace}
+
+  /* ── Top chrome ────────────────────────────────────── */
+  .topbar{
+    position:sticky;top:0;z-index:30;
+    height:60px;display:flex;align-items:center;gap:24px;
+    padding:0 32px;
+    background:var(--navy);color:#fff;
+    border-bottom:1px solid var(--navy-3);
+  }
+  .topbar .mark{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px}
+  .mark .lozenge{
+    width:26px;height:26px;border-radius:7px;
+    background:linear-gradient(180deg,#F2C94C 0%,#D4A514 100%);
+    display:grid;place-items:center;color:#0B2340;font-weight:800;font-size:13px;letter-spacing:0
+  }
+  .topbar .crumb{display:flex;align-items:center;gap:10px;color:#A8B7CC;font-size:13px;font-weight:500}
+  .topbar .crumb b{color:#fff;font-weight:600}
+  .topbar .crumb .sep{opacity:.4}
+  .topbar .pill{
+    padding:4px 10px;border-radius:999px;background:rgba(212,165,20,.12);
+    color:var(--gold-soft);font-size:11px;letter-spacing:.6px;text-transform:uppercase;font-weight:600;
+    border:1px solid rgba(212,165,20,.3)
+  }
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+  .topbar .right .ic{
+    width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:#A8B7CC;cursor:pointer;
+    transition:.15s;
+  }
+  .topbar .right .ic:hover{background:rgba(255,255,255,.06);color:#fff}
+  .topbar .actor{display:flex;align-items:center;gap:9px;color:#fff;font-size:13px;font-weight:500}
+  .topbar .actor .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(180deg,#2ED06E,#22A35A);display:grid;place-items:center;color:#0B2340;font-weight:700;font-size:12px}
+
+  /* ── Layout shell — three panes ────────────────────── */
+  .shell{
+    display:grid;
+    grid-template-columns:340px minmax(0,1fr) 380px;
+    gap:0;
+    min-height:calc(100vh - 60px);
+  }
+  .rail-l{background:var(--bg-2);border-right:1px solid var(--line);padding:28px 22px 80px;overflow:auto;height:calc(100vh - 60px);position:sticky;top:60px}
+  .canvas{padding:36px 40px 80px;min-width:0}
+  .rail-r{background:var(--card);border-left:1px solid var(--line);padding:28px 26px 28px;overflow:auto;height:calc(100vh - 60px);position:sticky;top:60px}
+
+  /* ── Left rail — accordions ────────────────────────── */
+  .rail-title{
+    font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--mute);
+    font-weight:600;margin:0 4px 14px
+  }
+  .acc{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    margin-bottom:10px;
+    overflow:hidden;
+    transition:.18s ease;
+  }
+  .acc:hover{border-color:var(--line-strong)}
+  .acc.open{border-color:var(--navy-3)}
+  .acc-h{
+    padding:14px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;
+  }
+  .acc-h .step{
+    width:22px;height:22px;border-radius:50%;
+    border:1px solid var(--line-strong);display:grid;place-items:center;
+    font-size:11px;color:var(--label);font-weight:600
+  }
+  .acc.done .step{background:var(--green);border-color:var(--green);color:#fff}
+  .acc.open .step{border-color:var(--navy);color:var(--navy);background:#fff}
+  .acc-t{flex:1;min-width:0}
+  .acc-t .lbl{font-size:13px;font-weight:600;color:var(--ink)}
+  .acc-t .sum{font-size:11.5px;color:var(--label);margin-top:2px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .acc-h .chev{color:var(--mute);transition:.2s}
+  .acc.open .acc-h .chev{transform:rotate(180deg);color:var(--navy)}
+  .acc-b{
+    padding:0 16px 16px;border-top:1px dashed var(--line);
+    display:none;
+  }
+  .acc.open .acc-b{display:block;animation:rev .25s ease-out}
+  @keyframes rev{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+  .field{margin-top:12px}
+  .field label{display:block;font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--label);font-weight:600;margin-bottom:5px}
+  .field input,.field select,.field textarea{
+    width:100%;padding:9px 11px;font:500 13px/1.4 Inter,sans-serif;
+    color:var(--ink);background:var(--bg);
+    border:1px solid transparent;border-bottom:1px solid var(--line-strong);
+    border-radius:8px;outline:none;transition:.15s
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{
+    background:#fff;border-color:var(--navy);box-shadow:0 0 0 3px rgba(11,35,64,.08)
+  }
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  .axis-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
+  .axis-row{
+    display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;
+    padding:9px 11px;background:var(--bg);border-radius:9px;
+    border:1px solid transparent;
+  }
+  .axis-row:hover{border-color:var(--line-strong)}
+  .axis-row .nm{font-size:12px;color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}
+  .axis-row .auto{
+    font-size:9px;letter-spacing:.4px;text-transform:uppercase;font-weight:700;
+    background:rgba(46,208,110,.12);color:var(--green-d);
+    padding:1px 5px;border-radius:4px
+  }
+  .axis-row .val{
+    font:600 12px/1 'JetBrains Mono',monospace;color:var(--navy);
+    background:#fff;border:1px solid var(--line-strong);padding:4px 8px;border-radius:6px;cursor:pointer
+  }
+  .axis-row .val:hover{border-color:var(--navy)}
+
+  .addon{
+    display:flex;gap:10px;align-items:flex-start;
+    padding:10px 12px;background:var(--bg);border-radius:10px;margin-bottom:6px;
+    border:1px solid transparent;cursor:pointer
+  }
+  .addon.on{background:rgba(46,208,110,.06);border-color:rgba(46,208,110,.4)}
+  .addon .check{
+    width:16px;height:16px;border-radius:5px;border:1.5px solid var(--line-strong);
+    margin-top:2px;flex-shrink:0;display:grid;place-items:center;color:#fff;font-size:11px
+  }
+  .addon.on .check{background:var(--green);border-color:var(--green)}
+  .addon .nm{font-size:12.5px;font-weight:500;color:var(--ink)}
+  .addon .nm .pct{color:var(--green-d);font-weight:600;margin-left:4px}
+  .addon .desc{font-size:11px;color:var(--label);margin-top:2px;line-height:1.4}
+  .addon .stp{margin-top:6px;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--label)}
+  .addon .stp button{
+    width:20px;height:20px;border-radius:5px;border:1px solid var(--line-strong);background:#fff;color:var(--ink);
+    font-weight:600;cursor:pointer
+  }
+  .addon .stp .ct{font-weight:600;color:var(--ink);min-width:14px;text-align:center}
+
+  /* ── Canvas — deliverables ─────────────────────────── */
+  .canvas-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px}
+  .canvas-head h1{font:700 22px/1.2 Inter,sans-serif;letter-spacing:-.3px;color:var(--ink);margin:0 0 4px}
+  .canvas-head .sub{font-size:13px;color:var(--label);font-weight:500}
+  .canvas-head .qmeta{display:flex;align-items:center;gap:8px;margin-top:6px}
+  .canvas-head .qmeta .tag{
+    font-size:11px;font-weight:600;color:var(--navy);
+    background:#fff;padding:4px 10px;border-radius:999px;border:1px solid var(--line)
+  }
+  .canvas-head .right-info{text-align:right}
+  .canvas-head .right-info .lbl{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--mute);font-weight:600}
+  .canvas-head .right-info .v{font:600 13px/1 Inter,sans-serif;color:var(--ink);margin-top:3px}
+
+  .lines{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+  }
+  .lines-h{
+    display:grid;
+    grid-template-columns:1.4fr 1fr 90px 90px 130px 30px;
+    gap:14px;align-items:center;
+    padding:14px 22px;
+    background:var(--bg-2);
+    font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mute);font-weight:600;
+    border-bottom:1px solid var(--line)
+  }
+  .lines-h .r{text-align:right}
+  .line{
+    display:grid;
+    grid-template-columns:1.4fr 1fr 90px 90px 130px 30px;
+    gap:14px;align-items:center;
+    padding:18px 22px;
+    border-bottom:1px solid var(--line);
+    transition:.15s;
+    cursor:pointer
+  }
+  .line:hover{background:var(--bg-2)}
+  .line:last-child{border-bottom:none}
+  .line.expanded{background:rgba(212,165,20,.04)}
+
+  .talent{display:flex;align-items:center;gap:12px;min-width:0}
+  .av-talent{
+    width:42px;height:42px;border-radius:11px;
+    flex-shrink:0;display:grid;place-items:center;
+    color:var(--navy);font-weight:700;font-size:14px;
+    background:#fff;border:1px solid var(--line-strong);position:relative
+  }
+  .av-talent.tier-S{box-shadow:0 0 0 2px var(--gold) inset;color:var(--gold)}
+  .av-talent.tier-1{box-shadow:0 0 0 2px var(--green) inset;color:var(--green-d)}
+  .av-talent.tier-2{box-shadow:0 0 0 2px var(--amber) inset;color:#A07700}
+  .talent .nm{font:600 14px/1.3 Inter,sans-serif;color:var(--ink);margin-bottom:2px;display:flex;align-items:center;gap:8px}
+  .tier-chip{
+    font:700 9px/1 Inter,sans-serif;letter-spacing:.6px;text-transform:uppercase;
+    padding:3px 6px;border-radius:4px
+  }
+  .tier-chip.tS{background:rgba(212,165,20,.15);color:#9C7800}
+  .tier-chip.t1{background:rgba(46,208,110,.15);color:var(--green-d)}
+  .tier-chip.t2{background:rgba(247,181,0,.18);color:#A07700}
+  .talent .meta{font-size:11.5px;color:var(--label);font-weight:500;display:flex;gap:8px;align-items:center}
+  .talent .meta .dot{width:3px;height:3px;border-radius:50%;background:var(--mute)}
+
+  .platform{
+    font:500 12.5px/1.3 Inter,sans-serif;color:var(--ink-2);
+    background:var(--bg);padding:7px 11px;border-radius:8px;
+    display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line)
+  }
+  .platform svg{width:13px;height:13px;color:var(--label)}
+
+  .qty,.rate{font:600 13px/1 'JetBrains Mono',monospace;color:var(--ink);text-align:right}
+  .rate .ccy{font-size:10px;color:var(--mute);font-weight:500;margin-right:2px}
+
+  .total-cell{text-align:right}
+  .total-cell .v{font:700 16px/1.05 'JetBrains Mono',monospace;color:var(--ink);letter-spacing:-.3px}
+  .total-cell .alt{font:500 11px/1 'JetBrains Mono',monospace;color:var(--mute);margin-top:3px}
+
+  .line .cog{
+    width:24px;height:24px;display:grid;place-items:center;color:var(--mute);
+    border-radius:6px;transition:.15s
+  }
+  .line:hover .cog{color:var(--navy);background:var(--card)}
+
+  /* expanded body */
+  .line-x{
+    grid-column:1/-1;padding-top:18px;border-top:1px dashed var(--line);
+    display:grid;grid-template-columns:1fr 1fr;gap:24px
+  }
+  .line-x h4{font:600 11px/1 Inter,sans-serif;letter-spacing:.8px;text-transform:uppercase;color:var(--label);margin:0 0 10px}
+  .line-x .ovr-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .line-x .ovr{
+    background:var(--bg);padding:8px 10px;border-radius:8px;
+    display:flex;flex-direction:column;gap:3px
+  }
+  .line-x .ovr .l{font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+  .line-x .ovr .v{font:600 12px/1 'JetBrains Mono',monospace;color:var(--ink)}
+  .line-x .ovr .v.inh{color:var(--mute);font-weight:500}
+
+  .add-cta{
+    margin-top:14px;padding:18px;
+    background:var(--card);
+    border:1.5px dashed var(--line-strong);
+    border-radius:16px;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    color:var(--label);font-weight:500;font-size:14px;cursor:pointer;transition:.15s
+  }
+  .add-cta:hover{border-color:var(--navy);color:var(--navy);background:#fff}
+  .add-cta .pl{
+    width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;
+    display:grid;place-items:center;font-size:14px;font-weight:600
+  }
+
+  /* ── Right rail — running total ───────────────────── */
+  .total-block{
+    background:linear-gradient(180deg,var(--navy) 0%,var(--navy-2) 100%);
+    color:#fff;border-radius:18px;padding:24px 22px;
+    margin-bottom:18px;position:relative;overflow:hidden
+  }
+  .total-block::after{
+    content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;
+    border-radius:50%;background:rgba(212,165,20,.08);pointer-events:none
+  }
+  .total-block .lbl{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#A8B7CC;font-weight:600;margin-bottom:14px}
+  .total-block .row{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:8px;color:#CBD5E1}
+  .total-block .row .v{font:600 13px/1 'JetBrains Mono',monospace;color:#fff}
+  .total-block .div{height:1px;background:rgba(255,255,255,.1);margin:14px 0}
+  .total-block .grand .lbl2{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#A8B7CC;font-weight:600;margin-bottom:6px}
+  .total-block .grand .v{
+    font:800 38px/1 'JetBrains Mono',monospace;color:var(--gold);
+    letter-spacing:-1px;text-shadow:0 0 22px rgba(212,165,20,.3)
+  }
+  .total-block .grand .alt{font:500 13px/1 'JetBrains Mono',monospace;color:#A8B7CC;margin-top:6px}
+  .total-block .summary-tag{
+    margin-top:14px;display:inline-flex;align-items:center;gap:6px;
+    padding:5px 10px;border-radius:999px;background:rgba(46,208,110,.15);
+    color:#A7E5C0;font-size:10.5px;letter-spacing:.4px;font-weight:500
+  }
+
+  .breakdown{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:18px 18px 8px;margin-bottom:18px
+  }
+  .breakdown h3{font:600 11px/1 Inter,sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:var(--mute);margin:0 0 12px}
+  .breakdown .r{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px
+  }
+  .breakdown .r:last-of-type{border-bottom:none}
+  .breakdown .r .nm{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:7px}
+  .breakdown .r .nm .dot{width:7px;height:7px;border-radius:50%}
+  .breakdown .r .v{font:600 13px/1 'JetBrains Mono',monospace;color:var(--ink-2)}
+
+  .actions{display:flex;flex-direction:column;gap:10px}
+  .btn{
+    padding:13px 16px;border-radius:11px;font:600 13.5px/1 Inter,sans-serif;
+    border:1px solid transparent;cursor:pointer;transition:.15s;text-align:center;
+    display:flex;align-items:center;justify-content:center;gap:8px
+  }
+  .btn-primary{background:var(--navy);color:#fff;letter-spacing:.2px}
+  .btn-primary:hover{background:var(--navy-3)}
+  .btn-primary .arrow{font-weight:600}
+  .btn-ghost{background:transparent;color:var(--label);border-color:var(--line-strong)}
+  .btn-ghost:hover{color:var(--ink);border-color:var(--ink-2)}
+  .actions .helper{font-size:11px;color:var(--mute);text-align:center;margin-top:2px}
+
+  .ref-link{
+    margin-top:18px;text-align:center;font-size:12px;color:var(--label);
+    cursor:pointer;font-weight:500
+  }
+  .ref-link:hover{color:var(--navy)}
+  .ref-link u{text-decoration-color:var(--line-strong);text-underline-offset:3px}
+
+  /* ── tiny svg icon helpers ────────────────────────── */
+  .ic-svg{width:16px;height:16px;flex-shrink:0}
+
+  /* dark mode adjustments */
+  html[data-theme="dark"] .talent .nm,html[data-theme="dark"] .canvas-head h1{color:var(--ink)}
+  html[data-theme="dark"] .av-talent{background:var(--card);color:var(--ink);border-color:var(--line-strong)}
+  html[data-theme="dark"] .platform,html[data-theme="dark"] .axis-row{background:var(--bg-2);color:var(--ink)}
+  html[data-theme="dark"] .field input,html[data-theme="dark"] .field select{background:var(--bg-2);color:var(--ink);border-bottom-color:var(--line-strong)}
+  html[data-theme="dark"] .field input:focus,html[data-theme="dark"] .field select:focus{background:var(--card)}
+  html[data-theme="dark"] .lines,html[data-theme="dark"] .breakdown,html[data-theme="dark"] .acc{background:var(--card)}
+  html[data-theme="dark"] .lines-h{background:var(--bg-2)}
+  html[data-theme="dark"] .add-cta{background:var(--bg-2)}
+  html[data-theme="dark"] .canvas-head .qmeta .tag{background:var(--bg-2);color:var(--ink)}
+
+  /* small screens — stack panes */
+  @media (max-width:1280px){
+    .shell{grid-template-columns:300px minmax(0,1fr) 340px}
+    .canvas{padding:28px}
+  }
+  @media (max-width:1024px){
+    .shell{grid-template-columns:1fr;height:auto}
+    .rail-l,.rail-r{position:static;height:auto}
+  }
+</style>
+</head>
+<body>
+
+<!-- ── TOP BAR ───────────────────────────────────────── -->
+<div class="topbar">
+  <div class="mark">
+    <div class="lozenge">F</div>
+    <span>FALCONS PRICING</span>
+  </div>
+  <div class="crumb">
+    <span style="opacity:.6">New Quote</span>
+    <span class="sep">/</span>
+    <b>Red Bull Arabia</b>
+    <span class="sep">·</span>
+    <span style="opacity:.7">Q-2026-1041</span>
+  </div>
+  <span class="pill">Draft</span>
+  <div class="right">
+    <div class="ic" title="Reference">
+      <svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11h6M9 15h4M5 21V5a2 2 0 0 1 2-2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/></svg>
+    </div>
+    <div class="ic" id="theme-toggle" title="Toggle theme">
+      <svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </div>
+    <div class="ic" title="Settings">
+      <svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </div>
+    <div class="actor"><div class="av">K</div>Koge</div>
+  </div>
+</div>
+
+<!-- ── SHELL ─────────────────────────────────────────── -->
+<div class="shell">
+
+  <!-- LEFT RAIL — config accordions -->
+  <aside class="rail-l">
+    <div class="rail-title">Configure</div>
+
+    <!-- CLIENT (closed, done) -->
+    <div class="acc done" data-acc>
+      <div class="acc-h">
+        <div class="step">✓</div>
+        <div class="acc-t">
+          <div class="lbl">Client</div>
+          <div class="sum">Red Bull Arabia · KSA · VAT 310482538300003</div>
+        </div>
+        <svg class="chev ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="acc-b">
+        <div class="row2">
+          <div class="field"><label>Client name</label><input value="Red Bull Arabia"></div>
+          <div class="field"><label>Country</label><input value="Saudi Arabia"></div>
+        </div>
+        <div class="field"><label>Contact email</label><input value="brandteam@redbull.sa"></div>
+        <div class="field"><label>VAT number</label><input value="310482538300003"></div>
+        <div class="field"><label>Billing address</label><textarea rows="2">Khalid Bin Al Walid 208\nAl Hamra, Riyadh 13216</textarea></div>
+      </div>
+    </div>
+
+    <!-- CAMPAIGN (open, active) -->
+    <div class="acc open" data-acc>
+      <div class="acc-h">
+        <div class="step">2</div>
+        <div class="acc-t">
+          <div class="lbl">Campaign</div>
+          <div class="sum">Ramadan Esports Push · KSA · 18-34</div>
+        </div>
+        <svg class="chev ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="acc-b">
+        <div class="field"><label>Campaign name</label><input value="Ramadan Esports Push 2026"></div>
+        <div class="row2">
+          <div class="field"><label>Region</label><select><option>KSA</option><option>MENA</option><option>Global</option></select></div>
+          <div class="field"><label>KPI focus</label><select><option>Awareness</option><option selected>Conversion</option><option>Authority</option></select></div>
+        </div>
+        <div class="field"><label>Target demographic</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="tag" style="font-size:11px;padding:5px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--mute);font-weight:500">13-17</span>
+            <span class="tag" style="font-size:11px;padding:5px 10px;border-radius:999px;background:var(--navy);border:1px solid var(--navy);color:#fff;font-weight:500">18-24</span>
+            <span class="tag" style="font-size:11px;padding:5px 10px;border-radius:999px;background:var(--navy);border:1px solid var(--navy);color:#fff;font-weight:500">25-34</span>
+            <span class="tag" style="font-size:11px;padding:5px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--mute);font-weight:500">35-44</span>
+            <span class="tag" style="font-size:11px;padding:5px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--mute);font-weight:500">45+</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRICING AXES (closed) -->
+    <div class="acc" data-acc>
+      <div class="acc-h">
+        <div class="step">3</div>
+        <div class="acc-t">
+          <div class="lbl">Pricing axes</div>
+          <div class="sum">8 multipliers · 3 auto · Net 1.42×</div>
+        </div>
+        <svg class="chev ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="acc-b">
+        <div class="axis-grid">
+          <div class="axis-row"><div class="nm">Engagement</div><div class="val">1.10×</div></div>
+          <div class="axis-row"><div class="nm">Audience <span class="auto">Auto</span></div><div class="val">1.30×</div></div>
+          <div class="axis-row"><div class="nm">Seasonality <span class="auto">Auto</span></div><div class="val">1.25×</div></div>
+          <div class="axis-row"><div class="nm">Content type</div><div class="val">1.00×</div></div>
+          <div class="axis-row"><div class="nm">Language <span class="auto">Auto</span></div><div class="val">1.15×</div></div>
+          <div class="axis-row"><div class="nm">Authority</div><div class="val">1.20×</div></div>
+          <div class="axis-row"><div class="nm">Objective wt.</div><div class="val">0.70×</div></div>
+          <div class="axis-row"><div class="nm">Confidence</div><div class="val">Verified</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD-ONS -->
+    <div class="acc" data-acc>
+      <div class="acc-h">
+        <div class="step">4</div>
+        <div class="acc-t">
+          <div class="lbl">Rights add-ons</div>
+          <div class="sum">2 active · +14% uplift</div>
+        </div>
+        <svg class="chev ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="acc-b">
+        <div class="addon on">
+          <div class="check">✓</div>
+          <div style="flex:1;min-width:0">
+            <div class="nm">1-month digital usage <span class="pct">+8%/mo</span></div>
+            <div class="desc">Right to use creative on the brand's owned digital channels.</div>
+            <div class="stp">Months <button>−</button><div class="ct">1</div><button>+</button></div>
+          </div>
+        </div>
+        <div class="addon on">
+          <div class="check">✓</div>
+          <div style="flex:1;min-width:0">
+            <div class="nm">Whitelisting <span class="pct">+6%/mo</span></div>
+            <div class="desc">Promote talent's organic post via brand's ad account.</div>
+            <div class="stp">Months <button>−</button><div class="ct">1</div><button>+</button></div>
+          </div>
+        </div>
+        <div class="addon">
+          <div class="check"></div>
+          <div style="flex:1;min-width:0">
+            <div class="nm">Paid media boost <span class="pct">+10%/mo</span></div>
+            <div class="desc">Brand-funded paid amplification of the post.</div>
+          </div>
+        </div>
+        <div class="addon">
+          <div class="check"></div>
+          <div style="flex:1;min-width:0">
+            <div class="nm">TV / OOH usage <span class="pct">+25%/mo</span></div>
+            <div class="desc">Talent likeness on linear TV or out-of-home placements.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMERCIAL -->
+    <div class="acc" data-acc>
+      <div class="acc-h">
+        <div class="step">5</div>
+        <div class="acc-t">
+          <div class="lbl">Commercial</div>
+          <div class="sum">SAR · 15% VAT · Net 30 · Approver: M. Ahmed</div>
+        </div>
+        <svg class="chev ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="acc-b">
+        <div class="row2">
+          <div class="field"><label>Currency</label><select><option selected>SAR</option><option>USD</option><option>AED</option></select></div>
+          <div class="field"><label>VAT</label><select><option selected>15% (KSA)</option><option>5% (UAE)</option><option>0% (Export)</option></select></div>
+        </div>
+        <div class="field"><label>Payment terms</label><input value="Net 30"></div>
+        <div class="field"><label>Designated approver</label><select><option>Mostafa Ahmed</option></select></div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- CENTER — deliverables canvas -->
+  <main class="canvas">
+    <div class="canvas-head">
+      <div>
+        <h1>Deliverables</h1>
+        <div class="sub">Build the campaign · per-line overrides expand inline · prices recalculate live</div>
+        <div class="qmeta">
+          <span class="tag">5 lines</span>
+          <span class="tag">3 talents</span>
+          <span class="tag" style="background:rgba(212,165,20,.1);border-color:rgba(212,165,20,.3);color:#9C7800">+14% rights uplift</span>
+        </div>
+      </div>
+      <div class="right-info">
+        <div class="lbl">Currency</div>
+        <div class="v">SAR · USD parity 3.75</div>
+      </div>
+    </div>
+
+    <div class="lines">
+      <div class="lines-h">
+        <div>Talent</div>
+        <div>Platform</div>
+        <div class="r">Qty</div>
+        <div class="r">Base rate</div>
+        <div class="r">Line total</div>
+        <div></div>
+      </div>
+
+      <!-- LINE 1: NiKo CS2 IG Reel -->
+      <div class="line">
+        <div class="talent">
+          <div class="av-talent tier-S">N</div>
+          <div style="min-width:0">
+            <div class="nm">NiKo <span class="tier-chip tS">Tier S</span></div>
+            <div class="meta">CS2 · Rifler<span class="dot"></span>FaZe alum</div>
+          </div>
+        </div>
+        <div><span class="platform"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>IG Reel</span></div>
+        <div class="qty">1</div>
+        <div class="rate"><span class="ccy">SAR</span>62,400</div>
+        <div class="total-cell"><div class="v">82,118</div><div class="alt">≈ $21,898</div></div>
+        <div><div class="cog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:14px;height:14px"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      </div>
+
+      <!-- LINE 2: NiKo CS2 IG Story (companion) -->
+      <div class="line">
+        <div class="talent">
+          <div class="av-talent tier-S" style="opacity:.65">N</div>
+          <div style="min-width:0">
+            <div class="nm">NiKo <span class="tier-chip" style="background:#FFE4CC;color:#A06400">½× companion</span></div>
+            <div class="meta">CS2 · Rifler</div>
+          </div>
+        </div>
+        <div><span class="platform"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/></svg>IG Story</span></div>
+        <div class="qty">1</div>
+        <div class="rate"><span class="ccy">SAR</span>17,160</div>
+        <div class="total-cell"><div class="v">11,290</div><div class="alt">≈ $3,011</div></div>
+        <div><div class="cog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:14px;height:14px"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      </div>
+
+      <!-- LINE 3: Drb7h IG Reel - EXPANDED -->
+      <div class="line expanded" style="display:block">
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 90px 90px 130px 30px;gap:14px;align-items:center">
+          <div class="talent">
+            <div class="av-talent tier-1">D</div>
+            <div style="min-width:0">
+              <div class="nm">Drb7h <span class="tier-chip t1">Tier 1</span></div>
+              <div class="meta">Creator · KSA<span class="dot"></span>1.4M IG · 920K TikTok</div>
+            </div>
+          </div>
+          <div><span class="platform"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/></svg>IG Reel</span></div>
+          <div class="qty">2</div>
+          <div class="rate"><span class="ccy">SAR</span>38,000</div>
+          <div class="total-cell"><div class="v">94,392</div><div class="alt">≈ $25,171</div></div>
+          <div><div class="cog" style="color:var(--gold)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;transform:rotate(180deg)"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+        </div>
+
+        <div class="line-x">
+          <div>
+            <h4>Per-line axis overrides</h4>
+            <div class="ovr-grid">
+              <div class="ovr"><div class="l">Engagement</div><div class="v">1.20×</div></div>
+              <div class="ovr"><div class="l">Audience</div><div class="v inh">1.30× (inherit)</div></div>
+              <div class="ovr"><div class="l">Seasonality</div><div class="v">1.40× <span style="color:var(--gold);font-size:9px;letter-spacing:.4px;text-transform:uppercase">·  Override</span></div></div>
+              <div class="ovr"><div class="l">Content type</div><div class="v inh">1.00× (inherit)</div></div>
+              <div class="ovr"><div class="l">Language</div><div class="v inh">1.15× (inherit)</div></div>
+              <div class="ovr"><div class="l">Authority</div><div class="v inh">1.20× (inherit)</div></div>
+            </div>
+          </div>
+          <div>
+            <h4>Per-line rights · band check</h4>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;font-size:12px">
+                <div style="width:14px;height:14px;border-radius:4px;background:var(--green);display:grid;place-items:center;color:#fff;font-size:9px">✓</div>
+                <div style="flex:1;color:var(--ink)">1-month digital usage</div>
+                <div class="mono" style="color:var(--green-d);font-size:11px;font-weight:600">+8%</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;font-size:12px">
+                <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid var(--line-strong)"></div>
+                <div style="flex:1;color:var(--label)">Whitelisting</div>
+              </div>
+            </div>
+            <h4 style="margin-top:8px">Market band · KSA Tier 1 IG Reel</h4>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--label);margin-bottom:6px">
+              <span class="mono">Floor 32K</span><span style="opacity:.5">→</span>
+              <span class="mono" style="color:var(--ink);font-weight:600">Med 47K</span><span style="opacity:.5">→</span>
+              <span class="mono">Ceil 68K</span>
+            </div>
+            <div style="height:6px;background:var(--bg);border-radius:99px;position:relative;overflow:visible">
+              <div style="position:absolute;left:0;width:100%;height:100%;background:linear-gradient(90deg,#E2E8F0 0%,#2ED06E 50%,#E2E8F0 100%);border-radius:99px;opacity:.6"></div>
+              <div style="position:absolute;left:50%;top:-3px;width:2px;height:12px;background:var(--ink);transform:translateX(-1px)" title="Median"></div>
+              <div style="position:absolute;left:62%;top:-5px;width:14px;height:14px;border-radius:50%;background:var(--gold);transform:translateX(-7px);box-shadow:0 0 0 3px var(--card)" title="Your line"></div>
+            </div>
+            <div style="font-size:10.5px;color:var(--green-d);margin-top:8px;font-weight:500">+ 0.4% above median · within band</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LINE 4: oPiiLz TikTok -->
+      <div class="line">
+        <div class="talent">
+          <div class="av-talent tier-1">O</div>
+          <div style="min-width:0">
+            <div class="nm">oPiiLz <span class="tier-chip t1">Tier 1</span></div>
+            <div class="meta">Creator · KSA<span class="dot"></span>2.1M TikTok</div>
+          </div>
+        </div>
+        <div><span class="platform"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>TikTok Video</span></div>
+        <div class="qty">1</div>
+        <div class="rate"><span class="ccy">SAR</span>29,640</div>
+        <div class="total-cell"><div class="v">36,802</div><div class="alt">≈ $9,814</div></div>
+        <div><div class="cog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:14px;height:14px"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      </div>
+
+      <!-- LINE 5: Aziz IRL appearance -->
+      <div class="line">
+        <div class="talent">
+          <div class="av-talent tier-2">A</div>
+          <div style="min-width:0">
+            <div class="nm">Aziz <span class="tier-chip t2">Tier 2</span></div>
+            <div class="meta">Creator · KSA<span class="dot"></span>800K IG · 1.1M TikTok</div>
+          </div>
+        </div>
+        <div><span class="platform"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>IRL Appearance</span></div>
+        <div class="qty">1</div>
+        <div class="rate"><span class="ccy">SAR</span>24,200</div>
+        <div class="total-cell"><div class="v">29,524</div><div class="alt">≈ $7,873</div></div>
+        <div><div class="cog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:14px;height:14px"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      </div>
+    </div>
+
+    <div class="add-cta">
+      <div class="pl">+</div>
+      <div>Add deliverable</div>
+    </div>
+
+    <div style="margin-top:36px">
+      <h2 style="font:600 11px/1 Inter,sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:var(--mute);margin:0 0 14px">Internal notes</h2>
+      <textarea placeholder="Anything the approver should know — tight timeline, exclusivity carve-outs, why a line is off-band..." style="width:100%;min-height:84px;padding:14px 16px;font:400 13px/1.5 Inter,sans-serif;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:14px;outline:none;resize:vertical"></textarea>
+    </div>
+
+  </main>
+
+  <!-- RIGHT RAIL — running total + actions -->
+  <aside class="rail-r">
+    <div class="total-block">
+      <div class="lbl">Running total</div>
+      <div class="row"><span>Subtotal</span><span class="v">220,786</span></div>
+      <div class="row"><span>Rights uplift (+14%)</span><span class="v">30,910</span></div>
+      <div class="row"><span>VAT (15%)</span><span class="v">37,754</span></div>
+      <div class="div"></div>
+      <div class="grand">
+        <div class="lbl2">Total · SAR</div>
+        <div class="v num">289,450</div>
+        <div class="alt">≈ $77,187 USD</div>
+      </div>
+      <div class="summary-tag">5 deliverables · 3 talents · KSA</div>
+    </div>
+
+    <div class="breakdown">
+      <h3>By talent</h3>
+      <div class="r"><div class="nm"><span class="dot" style="background:var(--gold)"></span>NiKo</div><div class="v num">93,408</div></div>
+      <div class="r"><div class="nm"><span class="dot" style="background:var(--green)"></span>Drb7h</div><div class="v num">94,392</div></div>
+      <div class="r"><div class="nm"><span class="dot" style="background:var(--green)"></span>oPiiLz</div><div class="v num">36,802</div></div>
+      <div class="r"><div class="nm"><span class="dot" style="background:var(--amber)"></span>Aziz</div><div class="v num">29,524</div></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary">Send for approval <span class="arrow">→</span></button>
+      <button class="btn btn-ghost">Save draft</button>
+      <div class="helper">Auto-saves every 12s · last saved 4s ago</div>
+    </div>
+
+    <div class="ref-link"><u>Open methodology reference ↗</u></div>
+  </aside>
+
+</div>
+
+<script>
+  document.querySelectorAll('[data-acc]').forEach(el=>{
+    el.querySelector('.acc-h').addEventListener('click',()=>el.classList.toggle('open'));
+  });
+  document.getElementById('theme-toggle').addEventListener('click',()=>{
+    const h=document.documentElement;
+    h.setAttribute('data-theme',h.getAttribute('data-theme')==='dark'?'light':'dark');
+  });
+</script>
+</body>
+</html>

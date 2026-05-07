@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Falcons · Activations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B2340; --navy-2:#06182A; --navy-3:#112E4F;
+    --gold:#D4A514; --gold-soft:#E5C66E; --gold-pale:#F4E5B3;
+    --green:#2ED06E; --green-d:#22A35A;
+    --cream:#F8F4ED; --cream-2:#EFE8DA;
+    --ink:#0E1A2F; --ink-2:#324159;
+    --label:#5A6678; --mute:#94A3B8;
+    --line:#E6EAF0; --line-2:#CFD6E1;
+    --cat-stream:#7C5CFF;
+    --cat-content:#2ED06E;
+    --cat-event:#D4A514;
+    --cat-ip:#FF6D52;
+    --cat-bespoke:#475569;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--cream);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01"}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .serif{font-family:'Cormorant Garamond',serif;font-weight:400;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+
+  /* ─── nav ─── */
+  nav.top{
+    position:sticky;top:0;z-index:50;height:68px;
+    display:flex;align-items:center;padding:0 56px;gap:48px;
+    background:rgba(248,244,237,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid rgba(11,35,64,.08)
+  }
+  nav.top .mark{display:flex;align-items:center;gap:12px;color:var(--navy)}
+  nav.top .mark .lzg{width:32px;height:32px;border-radius:9px;background:linear-gradient(180deg,#F2C94C,#D4A514);display:grid;place-items:center;color:var(--navy);font-weight:800;font-size:15px}
+  nav.top .mark span{font-weight:600;letter-spacing:1.4px;font-size:13px;text-transform:uppercase}
+  nav.top .mark span em{font-style:normal;color:var(--gold);font-weight:400;margin-left:4px}
+  nav.top .links{display:flex;gap:28px;font-size:13.5px;color:var(--ink-2);font-weight:500}
+  nav.top .links a:hover,nav.top .links a.active{color:var(--navy)}
+  nav.top .links a.active{position:relative}
+  nav.top .links a.active::after{content:"";position:absolute;left:0;right:0;bottom:-22px;height:2px;background:var(--gold)}
+  nav.top .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+  nav.top .admin-pill{
+    font:600 10.5px/1 Inter,sans-serif;letter-spacing:1px;text-transform:uppercase;
+    padding:6px 11px;border-radius:6px;background:rgba(212,165,20,.14);color:#A07700;
+    border:1px solid rgba(212,165,20,.35);
+    display:inline-flex;align-items:center;gap:6px
+  }
+  nav.top .admin-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  nav.top .cta{padding:9px 18px;border-radius:999px;background:var(--navy);color:#fff;font-size:13px;font-weight:600;letter-spacing:.3px;transition:.2s}
+  nav.top .cta:hover{background:var(--navy-3)}
+
+  /* ─── hero ─── */
+  .hero{
+    position:relative;padding:96px 56px 72px;
+    background:
+      radial-gradient(circle at 25% 20%,rgba(212,165,20,.18),transparent 50%),
+      radial-gradient(circle at 80% 75%,rgba(46,208,110,.1),transparent 55%),
+      var(--cream);
+    border-bottom:1px solid rgba(11,35,64,.08)
+  }
+  .hero .inner{max-width:1280px;margin:0 auto}
+  .hero .eb{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:20px;display:flex;align-items:center;gap:14px}
+  .hero .eb::before{content:"";width:32px;height:1px;background:currentColor}
+  .hero h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(48px,7vw,96px);line-height:.98;letter-spacing:-.025em;margin-bottom:28px;color:var(--navy);max-width:1100px}
+  .hero h1 em{font-style:italic;color:var(--gold);font-weight:400}
+  .hero .lede{max-width:680px;font-size:17px;line-height:1.7;color:var(--ink-2);font-weight:400;margin-bottom:48px}
+
+  /* ─── category nav ─── */
+  .catnav{display:flex;gap:0;border-bottom:1px solid rgba(11,35,64,.1);padding-top:8px;overflow-x:auto}
+  .catnav button{
+    padding:18px 22px 22px;font-size:13px;color:var(--label);font-weight:500;letter-spacing:.2px;
+    border-bottom:2px solid transparent;display:flex;align-items:center;gap:9px;white-space:nowrap;
+    transition:.18s ease
+  }
+  .catnav button:hover{color:var(--navy)}
+  .catnav button.active{color:var(--navy);border-bottom-color:var(--navy);font-weight:600}
+  .catnav button .cnt{
+    font:600 10px/1 'JetBrains Mono',monospace;
+    padding:3px 7px;border-radius:5px;background:rgba(11,35,64,.08);color:var(--label)
+  }
+  .catnav button.active .cnt{background:var(--navy);color:#fff}
+  .catnav button .pip{width:7px;height:7px;border-radius:50%;background:var(--c)}
+
+  /* ─── search ─── */
+  .toolbar{
+    display:flex;gap:16px;align-items:center;justify-content:space-between;
+    margin-top:28px;flex-wrap:wrap
+  }
+  .search{
+    flex:1;min-width:280px;max-width:480px;display:flex;align-items:center;gap:10px;
+    padding:11px 16px;background:#fff;border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 1px 0 rgba(11,35,64,.02)
+  }
+  .search svg{width:15px;height:15px;color:var(--mute)}
+  .search input{flex:1;border:none;outline:none;font:500 13.5px/1.4 Inter,sans-serif;color:var(--ink);background:transparent}
+  .search input::placeholder{color:var(--mute);font-weight:400}
+  .search .kbd{font:500 10.5px/1 Inter,sans-serif;color:var(--mute);padding:4px 6px;border-radius:4px;background:rgba(11,35,64,.05)}
+  .filter-chips{display:flex;gap:8px;flex-wrap:wrap}
+  .fchip{
+    padding:8px 14px;border-radius:999px;font:500 12px/1 Inter,sans-serif;
+    border:1px solid var(--line);background:#fff;color:var(--ink-2);
+    display:inline-flex;align-items:center;gap:7px;transition:.15s
+  }
+  .fchip:hover{border-color:var(--ink-2)}
+  .fchip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+
+  /* ─── catalogue ─── */
+  .catalogue{padding:56px 56px 96px;max-width:1280px;margin:0 auto}
+  .cat-section{margin-bottom:80px}
+  .cat-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;gap:24px;flex-wrap:wrap}
+  .cat-h .left{display:flex;align-items:center;gap:14px}
+  .cat-h .pip{width:10px;height:10px;border-radius:50%}
+  .cat-h h2{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:38px;line-height:1;letter-spacing:-.02em;color:var(--navy)}
+  .cat-h h2 em{font-style:italic;color:var(--gold)}
+  .cat-h .desc{font-size:13.5px;line-height:1.6;color:var(--ink-2);max-width:520px;font-weight:400}
+  .cat-h .meta{font:500 12px/1 Inter,sans-serif;color:var(--mute);letter-spacing:.3px}
+
+  /* ─── card grid ─── */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:18px}
+
+  /* ─── card ─── */
+  .card{
+    background:#fff;border:1px solid rgba(11,35,64,.08);border-radius:18px;
+    padding:24px 24px 22px;display:flex;flex-direction:column;gap:16px;
+    transition:.22s ease;position:relative;overflow:hidden
+  }
+  .card:hover{border-color:rgba(11,35,64,.18);transform:translateY(-2px);box-shadow:0 12px 32px -16px rgba(11,35,64,.18)}
+  .card.featured{
+    background:linear-gradient(180deg,#FFFEF8 0%,#FFFCEC 100%);
+    border:1px solid rgba(212,165,20,.4);
+    box-shadow:0 12px 32px -16px rgba(212,165,20,.25)
+  }
+  .card.featured::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,var(--gold-soft),var(--gold),var(--gold-soft))
+  }
+  .card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .cat-tag{
+    display:inline-flex;align-items:center;gap:6px;
+    font:600 10px/1 Inter,sans-serif;letter-spacing:1.2px;text-transform:uppercase;
+    padding:5px 9px;border-radius:5px
+  }
+  .cat-tag .pip{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .ct-stream{background:rgba(124,92,255,.1);color:#5B43BF}
+  .ct-content{background:rgba(46,208,110,.12);color:var(--green-d)}
+  .ct-event{background:rgba(212,165,20,.14);color:#A07700}
+  .ct-ip{background:rgba(255,109,82,.12);color:#C0492F}
+
+  .card-actions{display:flex;align-items:center;gap:6px;opacity:.6;transition:.2s}
+  .card:hover .card-actions{opacity:1}
+  .card-actions .ic-btn{
+    width:28px;height:28px;display:grid;place-items:center;border-radius:7px;
+    color:var(--label);transition:.15s
+  }
+  .card-actions .ic-btn:hover{background:rgba(11,35,64,.05);color:var(--navy)}
+  .card-actions .ic-btn svg{width:14px;height:14px}
+  .card-actions .ic-btn.gear{color:var(--gold);background:rgba(212,165,20,.08)}
+  .card-actions .ic-btn.gear:hover{background:rgba(212,165,20,.14);color:#9C7800}
+
+  .card h3{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:30px;line-height:1.05;letter-spacing:-.015em;color:var(--navy);margin-top:2px}
+  .card h3 em{font-style:italic;color:var(--gold);font-weight:400}
+  .card .sub{font-size:13px;line-height:1.55;color:var(--ink-2);margin-top:-6px}
+  .card .featured-flag{
+    display:inline-flex;align-items:center;gap:6px;
+    font:700 10px/1 Inter,sans-serif;letter-spacing:1px;text-transform:uppercase;
+    color:#9C7800;margin-bottom:-6px
+  }
+  .card .featured-flag svg{width:11px;height:11px}
+
+  /* ROI block */
+  .roi{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;
+    background:rgba(11,35,64,.08);border-radius:11px;overflow:hidden;
+    border:1px solid rgba(11,35,64,.06)
+  }
+  .roi .stat{
+    background:#FCFAF5;padding:11px 12px;display:flex;flex-direction:column;gap:3px
+  }
+  .roi .l{font:600 9.5px/1 Inter,sans-serif;letter-spacing:.8px;text-transform:uppercase;color:var(--mute)}
+  .roi .v{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:22px;color:var(--navy);line-height:1;letter-spacing:-.01em}
+  .roi .v small{font:500 10.5px/1 'JetBrains Mono',monospace;color:var(--ink-2);margin-left:3px;letter-spacing:.2px}
+  .roi .tip{font:400 10.5px/1 Inter,sans-serif;color:var(--mute);margin-top:1px}
+
+  /* deliverables */
+  .deliv{display:flex;flex-direction:column;gap:7px;margin-top:2px}
+  .deliv .row{
+    display:grid;grid-template-columns:18px 1fr;gap:10px;align-items:flex-start;
+    font-size:12.5px;line-height:1.5;color:var(--ink-2)
+  }
+  .deliv .row svg{width:14px;height:14px;color:var(--green-d);margin-top:3px}
+  .deliv .row b{font-weight:600;color:var(--navy)}
+
+  /* plug-and-play */
+  .pnp{
+    background:rgba(11,35,64,.03);border-radius:10px;padding:11px 13px;
+    border-left:2.5px solid var(--gold);
+    display:flex;flex-direction:column;gap:5px;border-radius:0 8px 8px 0
+  }
+  .pnp .l{font:600 9.5px/1 Inter,sans-serif;letter-spacing:.9px;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:5px}
+  .pnp .l svg{width:11px;height:11px}
+  .pnp .req{font:500 11.5px/1.45 Inter,sans-serif;color:var(--ink-2)}
+  .pnp .req b{color:var(--navy);font-weight:600}
+
+  /* talent strip */
+  .talent-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .ts-orb{
+    width:30px;height:30px;border-radius:50%;
+    background:linear-gradient(180deg,var(--cream-2),var(--cream));
+    border:1.5px solid rgba(11,35,64,.12);
+    display:grid;place-items:center;
+    font:600 11px/1 'Cormorant Garamond',serif;color:var(--navy)
+  }
+  .ts-orb.tS{border-color:var(--gold);color:var(--gold)}
+  .ts-orb.t1{border-color:var(--green-d);color:var(--green-d)}
+  .ts-orb.t2{border-color:#C7951A;color:#A07700}
+  .ts-more{font:500 11px/1 Inter,sans-serif;color:var(--label);padding-left:4px}
+
+  /* footer of card — price + ctas */
+  .card-foot{
+    margin-top:auto;padding-top:14px;border-top:1px dashed rgba(11,35,64,.12);
+    display:flex;align-items:flex-end;justify-content:space-between;gap:14px
+  }
+  .price-block{display:flex;flex-direction:column;gap:2px}
+  .price-block .from{font:600 9.5px/1 Inter,sans-serif;letter-spacing:1px;text-transform:uppercase;color:var(--mute);margin-bottom:1px}
+  .price-block .pv{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:30px;color:var(--gold);line-height:.9;letter-spacing:-.02em;display:flex;align-items:baseline;gap:5px}
+  .price-block .pv .ccy{font:500 11px/1 Inter,sans-serif;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase}
+  .price-block .alt{font:500 10.5px/1 'JetBrains Mono',monospace;color:var(--mute);margin-top:3px}
+
+  .know-more{
+    padding:10px 16px;border-radius:10px;background:var(--navy);color:#fff;
+    font:600 12px/1 Inter,sans-serif;letter-spacing:.2px;
+    display:inline-flex;align-items:center;gap:8px;transition:.15s
+  }
+  .know-more:hover{background:var(--navy-3)}
+  .know-more svg{width:13px;height:13px}
+
+  /* talent named line */
+  .named{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--label);margin-top:-4px}
+  .named b{font-weight:600;color:var(--ink)}
+  .named .dot{width:3px;height:3px;border-radius:50%;background:var(--mute);margin:0 3px}
+
+  /* ─── methodology block ─── */
+  .method{
+    margin:80px auto;max-width:1280px;padding:64px 56px;
+    background:var(--navy-2);color:#fff;border-radius:24px;
+    display:grid;grid-template-columns:1fr 1.4fr;gap:80px;align-items:center
+  }
+  .method .eb{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;margin-bottom:18px}
+  .method h3{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:48px;line-height:1.05;letter-spacing:-.02em;margin-bottom:20px}
+  .method h3 em{font-style:italic;color:var(--gold)}
+  .method .lede{font-size:15px;line-height:1.7;color:rgba(255,255,255,.75)}
+  .method-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .method-stat{
+    padding:20px 22px;background:rgba(255,255,255,.04);border-radius:14px;
+    border:1px solid rgba(255,255,255,.08)
+  }
+  .method-stat .l{font:600 10px/1 Inter,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:10px}
+  .method-stat .v{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:32px;color:#fff;line-height:1;margin-bottom:8px}
+  .method-stat .d{font-size:12px;line-height:1.55;color:rgba(255,255,255,.65)}
+
+  /* ─── footer ─── */
+  footer{background:var(--navy-2);color:rgba(255,255,255,.55);padding:48px 56px;font-size:12px}
+  footer .inner{max-width:1280px;margin:0 auto;display:flex;justify-content:space-between;gap:32px;flex-wrap:wrap}
+  footer .legal{margin-top:28px;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);text-align:center;font-size:11px}
+
+  @media(max-width:900px){
+    .hero,.catalogue,nav.top{padding-left:24px;padding-right:24px}
+    .method{padding:40px 28px;grid-template-columns:1fr;gap:40px;margin:48px 16px}
+    .grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav class="top">
+  <div class="mark"><div class="lzg">F</div><span>Falcons<em>· talent</em></span></div>
+  <div class="links">
+    <a href="#">Roster</a>
+    <a href="#" class="active">Activations</a>
+    <a href="#">Methodology</a>
+    <a href="#">Case studies</a>
+  </div>
+  <div class="right">
+    <span class="admin-pill"><span class="dot"></span>Admin · prices unlocked</span>
+    <button class="cta">Speak to a partner</button>
+  </div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section class="hero">
+  <div class="inner">
+    <div class="eb">The activation menu · Spring 2026</div>
+    <h1>Plug-and-play <em>activations</em>,<br>priced for clarity.</h1>
+    <p class="lede">
+      Twenty-four pre-composed brand activations across our roster of esports stars,
+      Saudi creators, and Falcons-owned game IP. Every package is asset-ready —
+      brand sends the spot, banner, or script; we deliver the placement, the talent,
+      the reporting. No creative briefs, no talent management, no surprise invoices.
+    </p>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input placeholder="Search by activation, talent, game, or asset type..." />
+        <span class="kbd">⌘ K</span>
+      </div>
+      <div class="filter-chips">
+        <button class="fchip on">All markets</button>
+        <button class="fchip">KSA</button>
+        <button class="fchip">GCC</button>
+        <button class="fchip">Global</button>
+      </div>
+    </div>
+
+    <!-- category tabs -->
+    <div class="catnav" style="margin-top:28px">
+      <button class="active"><span class="pip" style="background:var(--navy)"></span>All<span class="cnt">24</span></button>
+      <button><span class="pip" style="background:var(--cat-stream)"></span>Stream integrations<span class="cnt">8</span></button>
+      <button><span class="pip" style="background:var(--cat-content)"></span>Content<span class="cnt">6</span></button>
+      <button><span class="pip" style="background:var(--cat-event)"></span>Event moments<span class="cnt">5</span></button>
+      <button><span class="pip" style="background:var(--cat-ip)"></span>Game IP<span class="cnt">4</span></button>
+      <button><span class="pip" style="background:var(--cat-bespoke)"></span>Bespoke<span class="cnt">1</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CATALOGUE ─── -->
+<div class="catalogue">
+
+  <!-- ════ STREAM INTEGRATIONS ════ -->
+  <section class="cat-section">
+    <div class="cat-h">
+      <div class="left">
+        <div class="pip" style="background:var(--cat-stream)"></div>
+        <div>
+          <h2>Stream <em>integrations</em></h2>
+          <div class="desc" style="margin-top:6px">Twitch, Kick, YouTube Live. Where viewers watch for hours and a 30-second pre-roll lands harder than any feed post.</div>
+        </div>
+      </div>
+      <div class="meta">8 packages · live inventory</div>
+    </div>
+
+    <div class="grid">
+
+      <!-- ExitLag-style MENA pre-roll -->
+      <div class="card featured">
+        <div class="card-h">
+          <div>
+            <div class="featured-flag">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.1L12 16.5 5.8 21l2.4-7.1L2 9.4h7.6L12 2z"/></svg>
+              Most requested · MENA
+            </div>
+            <span class="cat-tag ct-stream"><span class="pip"></span>Stream · Pre-roll</span>
+          </div>
+          <div class="card-actions">
+            <button class="ic-btn" title="Save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+            <button class="ic-btn gear" title="Adjust prices · admin only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+          </div>
+        </div>
+        <h3>MENA Esports <em>Pre-Roll</em></h3>
+        <p class="sub">Your 30-second spot before peak-hour gameplay streams across 8 MENA esports influencers. Designed for VPN, gear, energy-drink, and gaming-platform brands.</p>
+
+        <div class="talent-strip">
+          <div class="ts-orb tS">A</div><div class="ts-orb t1">F</div><div class="ts-orb t1">M</div><div class="ts-orb t1">K</div><div class="ts-orb t2">N</div><div class="ts-orb t2">S</div>
+          <span class="ts-more">+ 2 more · 8 talents</span>
+        </div>
+
+        <div class="roi">
+          <div class="stat"><div class="l">Combined reach</div><div class="v num">9.4<small>M</small></div><div class="tip">Followers across IG/Tw/TT</div></div>
+          <div class="stat"><div class="l">Projected impressions</div><div class="v num">5.8<small>M</small></div><div class="tip">14-day window</div></div>
+          <div class="stat"><div class="l">KSA audience</div><div class="v num">68<small>%</small></div><div class="tip">In-market viewers</div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>32 pre-roll plays</b> — 4 plays per talent across two scheduled streams</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>14-day campaign window</b> — flexible scheduling across 2 weeks</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Reporting at day 7 + day 30</b> — concurrents, watch-time, click-throughs</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>1 video file</b> (MP4, 30s, 1080p) · <b>1 tracking link</b> · <b>1 pixel</b> (optional). We do the rest.</div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">42,000</span></div>
+            <div class="alt">≈ $11,200 USD</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Mobile Legends Squad pre-roll -->
+      <div class="card">
+        <div class="card-h">
+          <span class="cat-tag ct-stream"><span class="pip"></span>Stream · Pre-roll · Mobile</span>
+          <div class="card-actions">
+            <button class="ic-btn" title="Save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+            <button class="ic-btn gear" title="Adjust prices · admin only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <h3>Mobile Legends <em>Squad Pre-Roll</em></h3>
+        <p class="sub">Falcons MLBB roster + 3 partner mobile-gaming creators. Native to mobile-first audiences — Indonesia, Philippines, MENA mobile gamers.</p>
+
+        <div class="talent-strip">
+          <div class="ts-orb t1">F1</div><div class="ts-orb t1">F2</div><div class="ts-orb t1">F3</div><div class="ts-orb t2">P</div><div class="ts-orb t2">M</div>
+          <span class="ts-more">5 talents · MLBB squad</span>
+        </div>
+
+        <div class="roi">
+          <div class="stat"><div class="l">Combined reach</div><div class="v num">3.2<small>M</small></div></div>
+          <div class="stat"><div class="l">Proj. impressions</div><div class="v num">2.1<small>M</small></div></div>
+          <div class="stat"><div class="l">Mobile share</div><div class="v num">94<small>%</small></div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>20 pre-roll plays</b> across 10 streams</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>10-day window</b> — spans tournament weekends</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>1 video</b> (15s or 30s, vertical 9:16 or 16:9) · <b>tracking link</b></div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">28,000</span></div>
+            <div class="alt">≈ $7,470 USD</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Persistent Banner -->
+      <div class="card">
+        <div class="card-h">
+          <span class="cat-tag ct-stream"><span class="pip"></span>Stream · Banner</span>
+          <div class="card-actions">
+            <button class="ic-btn" title="Save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5"/></svg></button>
+            <button class="ic-btn gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <h3>Persistent <em>Stream Banner</em></h3>
+        <p class="sub">Your branding lives on the lower-third or sidebar of a talent's overlay for the entire stream. Long-form impressions at fraction of pre-roll cost.</p>
+
+        <div class="talent-strip">
+          <div class="ts-orb tS">N</div><div class="ts-orb t1">D</div><div class="ts-orb t1">O</div>
+          <span class="ts-more">Per talent — pick from roster</span>
+        </div>
+
+        <div class="roi">
+          <div class="stat"><div class="l">Avg watch time</div><div class="v num">3.2<small>h</small></div></div>
+          <div class="stat"><div class="l">Branded minutes</div><div class="v num">192<small>min</small></div></div>
+          <div class="stat"><div class="l">CPM equiv.</div><div class="v num">$2<small>.40</small></div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>1 stream · 3-4 hour duration</b> — full session branding</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>VOD inclusion</b> — banner stays on the recorded VOD for 30 days</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>Banner artwork</b> (PNG, transparent, 1920×140 lower-third or 320×900 sidebar)</div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">12,500</span></div>
+            <div class="alt">≈ $3,330</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Twitch Chatbot CTA -->
+      <div class="card">
+        <div class="card-h">
+          <span class="cat-tag ct-stream"><span class="pip"></span>Stream · Chatbot CTA</span>
+          <div class="card-actions">
+            <button class="ic-btn" title="Save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5"/></svg></button>
+            <button class="ic-btn gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <h3>Chatbot <em>CTA Drop</em></h3>
+        <p class="sub">Talent's chatbot drops your code or link every 8-12 minutes during stream. Direct response. Trackable. Loved by gear and software brands.</p>
+
+        <div class="talent-strip">
+          <div class="ts-orb tS">N</div><div class="ts-orb t1">D</div><div class="ts-orb t1">O</div>
+          <span class="ts-more">Single talent — your pick</span>
+        </div>
+
+        <div class="roi">
+          <div class="stat"><div class="l">CTA drops</div><div class="v num">18<small>+</small></div></div>
+          <div class="stat"><div class="l">Click rate</div><div class="v num">3.2<small>%</small></div></div>
+          <div class="stat"><div class="l">Code redeem</div><div class="v num">0.8<small>%</small></div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>1 stream</b> · chatbot active throughout</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Pinned chat message</b> — sticky for stream duration</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>1-2 line script</b> + <b>promo code</b> + <b>tracking URL</b></div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">6,500</span></div>
+            <div class="alt">≈ $1,730</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ════ EVENT MOMENTS ════ -->
+  <section class="cat-section">
+    <div class="cat-h">
+      <div class="left">
+        <div class="pip" style="background:var(--cat-event)"></div>
+        <div>
+          <h2>Event <em>moments</em></h2>
+          <div class="desc" style="margin-top:6px">Time-bound, high-attention windows. Built around tournaments, marathons, and victory lap moments where the audience is locked in.</div>
+        </div>
+      </div>
+      <div class="meta">5 packages · seasonal</div>
+    </div>
+
+    <div class="grid">
+
+      <!-- Abo Najd 14h Marathon -->
+      <div class="card featured">
+        <div class="card-h">
+          <div>
+            <div class="featured-flag">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.1L12 16.5 5.8 21l2.4-7.1L2 9.4h7.6L12 2z"/></svg>
+              Signature format · Saudi
+            </div>
+            <span class="cat-tag ct-event"><span class="pip"></span>Event · Marathon</span>
+          </div>
+          <div class="card-actions">
+            <button class="ic-btn" title="Save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5"/></svg></button>
+            <button class="ic-btn gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <h3>Saudi Esports <em>Marathon</em></h3>
+        <p class="sub">A 14-hour live broadcast with Abo Najd covering every active Falcons tournament — CS2, Valorant, EAFC, Mobile Legends. The moment-of-record for KSA esports.</p>
+
+        <div class="named">
+          Hosted by <b>Abo Najd</b> <span class="dot"></span> Tier S Saudi caster <span class="dot"></span> 1.8M IG · 920K Twitch
+        </div>
+
+        <div class="roi">
+          <div class="stat"><div class="l">Live concurrents</div><div class="v num">350<small>K-500K</small></div><div class="tip">Peak hours</div></div>
+          <div class="stat"><div class="l">Unique viewers</div><div class="v num">2.1<small>M</small></div><div class="tip">Across 14h</div></div>
+          <div class="stat"><div class="l">Brand-adj. min.</div><div class="v num">8<small>hrs avg</small></div><div class="tip">Per repeat viewer</div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>14-hour single broadcast</b> across Twitch + Falcons.gg + YouTube</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Headline sponsor</b> — title-card branding, persistent overlay, 6 talent reads</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>VOD distribution</b> — full broadcast lives on Falcons channels for 60 days</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Cross-platform amplification</b> — 4 Falcons social channels post highlights</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>Logo lockup</b> · <b>title-card video</b> (10s) · <b>talent read script</b> (60 words) · <b>banner artwork</b>. Two-week lead time.</div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">385,000</span></div>
+            <div class="alt">≈ $102,700</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Tournament Victory Mention -->
+      <div class="card">
+        <div class="card-h">
+          <span class="cat-tag ct-event"><span class="pip"></span>Event · Victory celebration</span>
+          <div class="card-actions">
+            <button class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5"/></svg></button>
+            <button class="ic-btn gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <h3>Tournament <em>Victory Mention</em></h3>
+        <p class="sub">Falcons squad wins a tournament — your brand gets named in the celebration moment. Post-match interview, victory IG Reel, championship announcement.</p>
+
+        <div class="talent-strip">
+          <div class="ts-orb tS">F</div>
+          <span class="ts-more">Falcons squad — game of choice</span>
+        </div>
+
+        <div class="roi">
+          <div class="stat"><div class="l">Avg viewership</div><div class="v num">1.2<small>M</small></div></div>
+          <div class="stat"><div class="l">Press hits</div><div class="v num">25<small>+</small></div></div>
+          <div class="stat"><div class="l">Earned media</div><div class="v num">4×<small> spend</small></div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Win-or-no-fee structure</b> — pay only if Falcons wins the tournament</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Live victory mention</b> + <b>3 social posts</b> + <b>1 IG Reel celebration</b></div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Championship merch tag</b> — your brand on the trophy lift photo</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>Logo</b> · <b>brand tagline</b> (under 8 words) · <b>tracking handles</b>. Pre-cleared by squad management.</div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">95,000</span></div>
+            <div class="alt">≈ $25,330 · win bonus</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Tournament-Week Saturation -->
+      <div class="card">
+        <div class="card-h">
+          <span class="cat-tag ct-event"><span class="pip"></span>Event · Saturation</span>
+          <div class="card-actions">
+            <button class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5"/></svg></button>
+            <button class="ic-btn gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <h3>Tournament-Week <em>Saturation</em></h3>
+        <p class="sub">EWC, Worlds, Major. Six talents covering the same event from six angles — pre-game predictions, watch parties, post-match takes — for one whole week.</p>
+
+        <div class="talent-strip">
+          <div class="ts-orb tS">N</div><div class="ts-orb t1">F</div><div class="ts-orb t1">A</div><div class="ts-orb t1">M</div><div class="ts-orb t2">K</div><div class="ts-orb t2">S</div>
+          <span class="ts-more">6 talents · 1 event</span>
+        </div>
+
+        <div class="roi">
+          <div class="stat"><div class="l">Combined reach</div><div class="v num">7.6<small>M</small></div></div>
+          <div class="stat"><div class="l">Posts/streams</div><div class="v num">18</div></div>
+          <div class="stat"><div class="l">Event align</div><div class="v num">100<small>%</small></div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>18 deliverables</b> — 3 per talent across the tournament window</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Tournament seasonality 1.40×</b> already priced in</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>Brand mention guide</b> (1 pager) · <b>logo</b> · <b>2 video assets</b> for embeds</div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">520,000</span></div>
+            <div class="alt">≈ $138,700</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ════ GAME IP ════ -->
+  <section class="cat-section">
+    <div class="cat-h">
+      <div class="left">
+        <div class="pip" style="background:var(--cat-ip)"></div>
+        <div>
+          <h2>Game <em>IP</em> activations</h2>
+          <div class="desc" style="margin-top:6px">Falcons-owned channels — squad accounts, the Falcons.gg site, bootcamp facilities. Direct integration into the team's identity, not adjacent to it.</div>
+        </div>
+      </div>
+      <div class="meta">4 packages · Falcons-owned</div>
+    </div>
+
+    <div class="grid">
+
+      <!-- Game Launch Tryout -->
+      <div class="card">
+        <div class="card-h">
+          <span class="cat-tag ct-ip"><span class="pip"></span>Game IP · Launch tryout</span>
+          <div class="card-actions">
+            <button class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5"/></svg></button>
+            <button class="ic-btn gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <h3>Game-Launch <em>Tryout</em></h3>
+        <p class="sub">Your unreleased game tested live by a Falcons squad — first-look stream, IG story diary, written impression piece. Built for game studios and platforms.</p>
+
+        <div class="talent-strip">
+          <div class="ts-orb tS">F</div>
+          <span class="ts-more">Falcons squad — discipline match</span>
+        </div>
+
+        <div class="roi">
+          <div class="stat"><div class="l">First-look reach</div><div class="v num">1.8<small>M</small></div></div>
+          <div class="stat"><div class="l">Wishlist lift</div><div class="v num">+8<small>%</small></div></div>
+          <div class="stat"><div class="l">Steam click-thru</div><div class="v num">2.1<small>%</small></div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>1 first-look stream</b> · 90 minutes · branded overlay</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Story diary</b> across 3 squad members for 5 days</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Falcons.gg long-form review</b> — editorial credibility</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>Pre-release build</b> · <b>NDA-cleared press kit</b> · <b>Steam / store link</b>. NDA managed by Falcons legal.</div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">165,000</span></div>
+            <div class="alt">≈ $44,000</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Falcons.gg Site Takeover -->
+      <div class="card">
+        <div class="card-h">
+          <span class="cat-tag ct-ip"><span class="pip"></span>Game IP · Site takeover</span>
+          <div class="card-actions">
+            <button class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5"/></svg></button>
+            <button class="ic-btn gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <h3>Falcons.gg <em>Banner Takeover</em></h3>
+        <p class="sub">Hero banner on falcons.gg homepage + every squad page. Branded for 30 days. Average 280K monthly visits — 70% MENA, 22-34 male skew.</p>
+
+        <div class="roi">
+          <div class="stat"><div class="l">Monthly visits</div><div class="v num">280<small>K</small></div></div>
+          <div class="stat"><div class="l">Avg session</div><div class="v num">2.4<small>min</small></div></div>
+          <div class="stat"><div class="l">Banner CTR</div><div class="v num">1.4<small>%</small></div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>30-day exclusive banner</b> across 12 site pages</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>1 sponsored editorial</b> piece on falcons.gg</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>Banner artwork</b> (1920×420 + 1024×320 mobile) · <b>tracking link</b> · <b>editorial brief</b> (200 words)</div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">75,000</span></div>
+            <div class="alt">≈ $20,000</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Bootcamp Tour -->
+      <div class="card">
+        <div class="card-h">
+          <span class="cat-tag ct-ip"><span class="pip"></span>Game IP · Facility tour</span>
+          <div class="card-actions">
+            <button class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5"/></svg></button>
+            <button class="ic-btn gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <h3>Bootcamp <em>Day Visit</em></h3>
+        <p class="sub">Brand executives spend a day at the Falcons Riyadh bootcamp — facility tour, squad meet-and-greet, branded content shoot. For internal comms and trade marketing.</p>
+
+        <div class="roi">
+          <div class="stat"><div class="l">Content captured</div><div class="v num">40<small>+</small></div><div class="tip">Photos + B-roll</div></div>
+          <div class="stat"><div class="l">Squad time</div><div class="v num">2<small>hrs</small></div></div>
+          <div class="stat"><div class="l">Use rights</div><div class="v num">1<small>yr</small></div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>1 day on-site</b> · up to 8 brand attendees</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Photo + video deliverables</b> branded for internal use</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>Attendee list</b> · <b>shoot brief</b> · <b>logo lockup</b>. Three weeks lead time.</div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">42,000</span></div>
+            <div class="alt">≈ $11,200</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ════ CONTENT ACTIVATIONS ════ -->
+  <section class="cat-section">
+    <div class="cat-h">
+      <div class="left">
+        <div class="pip" style="background:var(--cat-content)"></div>
+        <div>
+          <h2>Content <em>activations</em></h2>
+          <div class="desc" style="margin-top:6px">The classics — Reels, TikToks, Stories, long-form. Single-talent or multi-talent spreads, plug-and-play scripts or full creative latitude.</div>
+        </div>
+      </div>
+      <div class="meta">6 packages · feed</div>
+    </div>
+
+    <div class="grid">
+
+      <div class="card">
+        <div class="card-h">
+          <span class="cat-tag ct-content"><span class="pip"></span>Content · Single Reel</span>
+          <div class="card-actions">
+            <button class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5"/></svg></button>
+            <button class="ic-btn gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <h3>Single <em>Branded Reel</em></h3>
+        <p class="sub">One IG Reel by your chosen talent. Brief, script approval, posting, 30-day digital rights. Cleanest unit on the menu.</p>
+
+        <div class="talent-strip">
+          <span class="ts-more">Pick from 200-talent roster</span>
+        </div>
+
+        <div class="roi">
+          <div class="stat"><div class="l">Avg views</div><div class="v num">240<small>K</small></div></div>
+          <div class="stat"><div class="l">Engagement</div><div class="v num">5.8<small>%</small></div></div>
+          <div class="stat"><div class="l">Saves</div><div class="v num">8<small>K</small></div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>1 Reel · 30-day digital rights</b> · whitelisting available</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>Brief</b> (1 page) · <b>brand assets</b> · <b>2 review cycles</b></div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">18,500</span></div>
+            <div class="alt">≈ $4,930</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <span class="cat-tag ct-content"><span class="pip"></span>Content · Story spread</span>
+          <div class="card-actions">
+            <button class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5"/></svg></button>
+            <button class="ic-btn gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <h3>Story <em>Spread × 5</em></h3>
+        <p class="sub">Five talents post coordinated IG/TikTok stories on the same day. Awareness saturation in a 24-hour window. Built for product launches and event pushes.</p>
+
+        <div class="talent-strip">
+          <div class="ts-orb t1">D</div><div class="ts-orb t1">O</div><div class="ts-orb t2">A</div><div class="ts-orb t2">M</div><div class="ts-orb t2">K</div>
+          <span class="ts-more">5 talents · curated</span>
+        </div>
+
+        <div class="roi">
+          <div class="stat"><div class="l">Combined reach</div><div class="v num">4.8<small>M</small></div></div>
+          <div class="stat"><div class="l">Story views</div><div class="v num">1.2<small>M</small></div></div>
+          <div class="stat"><div class="l">Swipe-ups</div><div class="v num">14<small>K</small></div></div>
+        </div>
+
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>5 talents · 2 stories each</b> · same-day publish</div></div>
+        </div>
+
+        <div class="pnp">
+          <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+          <div class="req"><b>Story template</b> + <b>swipe-up URL</b> + <b>2 sticker variants</b></div>
+        </div>
+
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="from">From</div>
+            <div class="pv"><span class="ccy">SAR</span><span class="num">62,000</span></div>
+            <div class="alt">≈ $16,530</div>
+          </div>
+          <button class="know-more">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<!-- ─── METHODOLOGY block ─── -->
+<section class="method">
+  <div>
+    <div class="eb">How we project ROI</div>
+    <h3>Conservative <em>by design</em>.</h3>
+    <p class="lede">
+      Every projection on this page is built from real platform data —
+      historical view rates, audience-market splits, last-90-day
+      engagement. No vanity numbers. We'd rather under-promise and
+      give your CMO a clean win than inflate.
+    </p>
+  </div>
+  <div class="method-grid">
+    <div class="method-stat">
+      <div class="l">Reach</div>
+      <div class="v num">∑ followers</div>
+      <div class="d">Sum of follower counts across all selected talents and platforms. Verified within 14 days.</div>
+    </div>
+    <div class="method-stat">
+      <div class="l">Impressions</div>
+      <div class="v num">reach × view-rate</div>
+      <div class="d">Industry average view rates: Reels 12-18%, TikTok 8-12%, Twitch concurrents.</div>
+    </div>
+    <div class="method-stat">
+      <div class="l">Audience match</div>
+      <div class="v num">market %</div>
+      <div class="d">Platform audience-market data: KSA, MENA, Global. Reported per-talent in our roster.</div>
+    </div>
+    <div class="method-stat">
+      <div class="l">Watch time</div>
+      <div class="v num">avg × duration</div>
+      <div class="d">Avg concurrent viewers × stream length × ad-position multiplier. Pre-roll = 1.0×, mid = 0.7×.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="inner">
+    <div style="display:flex;align-items:center;gap:12px;color:#fff">
+      <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(180deg,#F2C94C,#D4A514);display:grid;place-items:center;color:#0B2340;font-weight:800;font-size:14px">F</div>
+      <span>Team Falcons · Talent Division</span>
+    </div>
+    <div style="display:flex;gap:32px">
+      <a href="#" style="opacity:.7">Roster</a>
+      <a href="#" style="opacity:.7">Methodology</a>
+      <a href="#" style="opacity:.7">Press</a>
+      <a href="#" style="opacity:.7">Contact</a>
+    </div>
+  </div>
+  <div class="legal">
+    All projected ROI is indicative · Final scoping calibrated against Falcons Pricing OS v1 · SAR canonical, 1 USD = 3.75 SAR · © 2026 Team Falcons.
+  </div>
+</footer>
+
+</body>
+</html>

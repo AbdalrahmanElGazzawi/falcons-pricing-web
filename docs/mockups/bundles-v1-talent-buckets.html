@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Falcons · Talent Packages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #0B2340;
+    --navy-2: #06182A;
+    --navy-3: #112E4F;
+    --navy-veil: rgba(11,35,64,.9);
+    --gold: #D4A514;
+    --gold-soft: #E5C66E;
+    --gold-pale: #F4E5B3;
+    --green: #2ED06E;
+    --green-d: #22A35A;
+    --cream: #F8F4ED;
+    --cream-2: #EFE8DA;
+    --cream-3: #E8DFCC;
+    --ink: #0E1A2F;
+    --ink-2: #324159;
+    --label: #5A6678;
+    --mute: #94A3B8;
+    --line: #E6EAF0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{
+    background:var(--navy-2);color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    font-feature-settings:"cv11","ss01"
+  }
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+  .serif{font-family:'Cormorant Garamond',serif;font-weight:400;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}
+
+  /* ── Top nav ──────────────────────────────────────── */
+  nav.top{
+    position:fixed;top:0;left:0;right:0;z-index:50;
+    height:72px;display:flex;align-items:center;
+    padding:0 56px;gap:48px;
+    background:rgba(6,24,42,.85);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  nav.top .mark{display:flex;align-items:center;gap:14px;color:#fff}
+  nav.top .mark .lzg{
+    width:34px;height:34px;border-radius:9px;
+    background:linear-gradient(180deg,#F2C94C 0%,#D4A514 100%);
+    display:grid;place-items:center;color:#0B2340;font-weight:800;font-size:16px
+  }
+  nav.top .mark span{font-weight:600;letter-spacing:1.4px;font-size:13px;text-transform:uppercase}
+  nav.top .mark span em{font-style:normal;color:var(--gold-soft);font-weight:400;margin-left:4px}
+  nav.top .links{display:flex;gap:36px;font-size:13.5px;color:rgba(255,255,255,.7);font-weight:500}
+  nav.top .links a:hover{color:#fff}
+  nav.top .links a.active{color:#fff}
+  nav.top .cta-wrap{margin-left:auto;display:flex;align-items:center;gap:18px}
+  nav.top .cta{
+    padding:10px 22px;border-radius:999px;
+    background:transparent;color:#fff;
+    border:1px solid rgba(255,255,255,.25);
+    font-size:13px;font-weight:500;letter-spacing:.3px;cursor:pointer;
+    transition:.18s ease
+  }
+  nav.top .cta:hover{background:#fff;color:var(--navy);border-color:#fff}
+  nav.top .cta-gold{
+    background:var(--gold);color:var(--navy);border-color:var(--gold);font-weight:600
+  }
+  nav.top .cta-gold:hover{background:var(--gold-soft);color:var(--navy);border-color:var(--gold-soft)}
+
+  /* ── Hero ─────────────────────────────────────────── */
+  .hero{
+    position:relative;
+    min-height:88vh;
+    background:
+      radial-gradient(circle at 20% 30%,rgba(212,165,20,.08),transparent 50%),
+      radial-gradient(circle at 80% 70%,rgba(46,208,110,.06),transparent 50%),
+      linear-gradient(180deg,var(--navy-2) 0%,var(--navy) 100%);
+    color:#fff;
+    padding:200px 56px 120px;
+    overflow:hidden
+  }
+  .hero::after{
+    content:"";position:absolute;inset:0;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cdefs%3E%3Cpattern id='g' width='40' height='40' patternUnits='userSpaceOnUse'%3E%3Cpath d='M0 .5H40' stroke='%23ffffff' stroke-opacity='.025'/%3E%3Cpath d='M.5 0V40' stroke='%23ffffff' stroke-opacity='.025'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='200' height='200' fill='url(%23g)'/%3E%3C/svg%3E");
+    pointer-events:none
+  }
+  .hero-inner{position:relative;max-width:1280px;margin:0 auto;z-index:1}
+  .eyebrow{
+    font-size:11px;letter-spacing:3.6px;text-transform:uppercase;
+    color:var(--gold-soft);font-weight:500;
+    display:flex;align-items:center;gap:14px;margin-bottom:32px
+  }
+  .eyebrow::before{
+    content:"";width:32px;height:1px;background:var(--gold)
+  }
+  .hero h1{
+    font-family:'Cormorant Garamond',serif;
+    font-weight:300;
+    font-size:clamp(60px,9vw,128px);
+    line-height:.95;letter-spacing:-.03em;
+    margin-bottom:36px;
+    max-width:1100px
+  }
+  .hero h1 em{font-style:italic;color:var(--gold);font-weight:400}
+  .hero .lede{
+    max-width:640px;font-size:17px;line-height:1.7;color:rgba(255,255,255,.78);
+    font-weight:400;margin-bottom:48px
+  }
+  .hero .meta{
+    display:flex;gap:48px;flex-wrap:wrap;
+    padding-top:36px;border-top:1px solid rgba(255,255,255,.1)
+  }
+  .hero .meta .m{display:flex;flex-direction:column;gap:6px}
+  .hero .meta .l{font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:rgba(255,255,255,.55);font-weight:600}
+  .hero .meta .v{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:400;color:var(--gold-soft);letter-spacing:-.01em}
+  .hero .meta .v small{font-family:Inter,sans-serif;font-size:13px;color:rgba(255,255,255,.6);font-weight:500;margin-left:6px;letter-spacing:0}
+
+  /* ── Catalogue eyebrow ────────────────────────────── */
+  .catalogue-intro{
+    background:var(--cream);
+    padding:120px 56px 80px;
+    border-top:1px solid rgba(0,0,0,.05)
+  }
+  .catalogue-intro .inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 1.2fr;gap:120px;align-items:end}
+  .catalogue-intro h2{
+    font-family:'Cormorant Garamond',serif;font-weight:400;
+    font-size:54px;line-height:1;letter-spacing:-.02em;color:var(--navy)
+  }
+  .catalogue-intro h2 em{font-style:italic;color:var(--gold);font-weight:500}
+  .catalogue-intro p{font-size:16px;line-height:1.75;color:var(--ink-2);max-width:560px;font-weight:400}
+  .catalogue-intro .index{
+    margin-top:64px;
+    display:grid;grid-template-columns:repeat(6,1fr);gap:0;
+    border-top:1px solid rgba(11,35,64,.15);
+    grid-column:1 / -1
+  }
+  .catalogue-intro .index .ix{
+    padding:24px 16px 0 0;
+    border-right:1px solid rgba(11,35,64,.08)
+  }
+  .catalogue-intro .index .ix:last-child{border-right:none}
+  .catalogue-intro .index .ix .n{
+    font:600 11px/1 'JetBrains Mono',monospace;color:var(--gold);letter-spacing:1px;margin-bottom:10px
+  }
+  .catalogue-intro .index .ix .t{font-size:13.5px;font-weight:500;color:var(--navy);line-height:1.4}
+
+  /* ── Bundle section base ──────────────────────────── */
+  .bundle{
+    padding:120px 56px;
+    position:relative;overflow:hidden
+  }
+  .bundle.dark{background:var(--navy-2);color:#fff}
+  .bundle.cream{background:var(--cream);color:var(--ink)}
+  .bundle.ivory{background:var(--cream-2);color:var(--ink)}
+  .bundle .inner{max-width:1280px;margin:0 auto;display:grid;gap:80px;align-items:center}
+  .bundle.layout-A .inner{grid-template-columns:1fr 1fr}
+  .bundle.layout-B .inner{grid-template-columns:1fr 1fr}
+  .bundle.layout-B .text{order:1}
+  .bundle.layout-B .visual{order:2}
+
+  .bundle .num-badge{
+    font:600 12px/1 'JetBrains Mono',monospace;letter-spacing:2px;
+    color:var(--gold);margin-bottom:24px;display:flex;align-items:center;gap:14px
+  }
+  .bundle .num-badge::after{content:"";flex:1;height:1px;background:currentColor;opacity:.3;max-width:120px}
+  .bundle.cream .num-badge,.bundle.ivory .num-badge{color:var(--gold)}
+
+  .bundle h3{
+    font-family:'Cormorant Garamond',serif;font-weight:300;
+    font-size:60px;line-height:1.02;letter-spacing:-.02em;
+    margin-bottom:18px
+  }
+  .bundle h3 em{font-style:italic;color:var(--gold)}
+  .bundle.dark h3{color:#fff}
+  .bundle.dark h3 em{color:var(--gold-soft)}
+
+  .bundle .tagline{
+    font-size:16px;line-height:1.7;
+    color:rgba(255,255,255,.72);max-width:520px;margin-bottom:36px;font-weight:400
+  }
+  .bundle.cream .tagline,.bundle.ivory .tagline{color:var(--ink-2)}
+
+  .bundle .pricing{
+    display:flex;align-items:flex-end;gap:14px;margin-bottom:36px;
+    padding-bottom:28px;border-bottom:1px solid rgba(255,255,255,.12)
+  }
+  .bundle.cream .pricing,.bundle.ivory .pricing{border-bottom-color:rgba(11,35,64,.12)}
+  .bundle .pricing .from{
+    font-size:11px;letter-spacing:2.4px;text-transform:uppercase;
+    font-weight:600;color:rgba(255,255,255,.55);padding-bottom:14px
+  }
+  .bundle.cream .pricing .from,.bundle.ivory .pricing .from{color:var(--label)}
+  .bundle .pricing .v{
+    font-family:'Cormorant Garamond',serif;font-weight:400;
+    font-size:64px;line-height:.9;color:var(--gold);letter-spacing:-.03em
+  }
+  .bundle .pricing .ccy{
+    font:500 13px/1 Inter,sans-serif;letter-spacing:1.5px;
+    color:var(--gold-soft);padding-bottom:16px;text-transform:uppercase
+  }
+  .bundle.cream .pricing .ccy,.bundle.ivory .pricing .ccy{color:var(--gold)}
+  .bundle .pricing .alt{
+    font:500 12px/1 'JetBrains Mono',monospace;color:rgba(255,255,255,.55);
+    padding-bottom:16px;letter-spacing:.5px
+  }
+  .bundle.cream .pricing .alt,.bundle.ivory .pricing .alt{color:var(--mute)}
+
+  .incl{display:flex;flex-direction:column;gap:14px;margin-bottom:40px}
+  .incl .row{
+    display:grid;grid-template-columns:24px 1fr;gap:14px;align-items:flex-start;
+    font-size:14px;line-height:1.55;color:rgba(255,255,255,.85);font-weight:400
+  }
+  .bundle.cream .incl .row,.bundle.ivory .incl .row{color:var(--ink-2)}
+  .incl .row svg{width:14px;height:14px;color:var(--gold);margin-top:5px}
+  .incl .row b{font-weight:600;color:#fff}
+  .bundle.cream .incl .row b,.bundle.ivory .incl .row b{color:var(--navy)}
+
+  .ctas{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .b-cta{
+    padding:16px 32px;border-radius:999px;
+    background:var(--gold);color:var(--navy);
+    font-size:13.5px;font-weight:600;letter-spacing:.5px;cursor:pointer;
+    transition:.2s ease;border:none;
+    display:inline-flex;align-items:center;gap:10px
+  }
+  .b-cta:hover{background:#fff;color:var(--navy)}
+  .b-cta .arrow{font-size:18px;line-height:1}
+  .b-cta-ghost{
+    padding:16px 28px;background:transparent;
+    border:1px solid rgba(255,255,255,.3);color:#fff;
+    border-radius:999px;font-size:13.5px;font-weight:500;cursor:pointer;
+    transition:.2s
+  }
+  .bundle.cream .b-cta-ghost,.bundle.ivory .b-cta-ghost{
+    border-color:rgba(11,35,64,.2);color:var(--ink-2)
+  }
+  .b-cta-ghost:hover{border-color:#fff;color:#fff}
+  .bundle.cream .b-cta-ghost:hover,.bundle.ivory .b-cta-ghost:hover{border-color:var(--navy);color:var(--navy)}
+
+  /* ── Visual / talent constellation ────────────────── */
+  .visual{
+    aspect-ratio:1;position:relative;min-height:520px;
+    border-radius:24px;overflow:hidden
+  }
+  .visual.dark{
+    background:
+      radial-gradient(circle at 30% 30%,rgba(212,165,20,.18),transparent 55%),
+      radial-gradient(circle at 70% 80%,rgba(46,208,110,.1),transparent 55%),
+      linear-gradient(135deg,#0E1F35 0%,#06182A 100%);
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.6)
+  }
+  .visual.warm{
+    background:
+      radial-gradient(circle at 30% 25%,rgba(212,165,20,.22),transparent 55%),
+      radial-gradient(circle at 75% 75%,rgba(11,35,64,.12),transparent 55%),
+      linear-gradient(135deg,#F4E5B3 0%,#E8DFCC 100%);
+    box-shadow:0 30px 80px -30px rgba(212,165,20,.3)
+  }
+  .visual.cool{
+    background:
+      radial-gradient(circle at 25% 75%,rgba(46,208,110,.18),transparent 55%),
+      radial-gradient(circle at 75% 25%,rgba(212,165,20,.14),transparent 55%),
+      linear-gradient(135deg,#0E1F35 0%,#102842 100%);
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.6)
+  }
+  .visual::after{
+    content:"";position:absolute;inset:0;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='none'/%3E%3Ccircle cx='1' cy='1' r='.4' fill='%23ffffff' fill-opacity='.06'/%3E%3C/svg%3E");
+    pointer-events:none
+  }
+  .visual .grain{position:absolute;inset:0;mix-blend-mode:overlay;opacity:.4;pointer-events:none}
+
+  /* talent orbs */
+  .orbs{position:absolute;inset:0}
+  .orb{
+    position:absolute;border-radius:50%;
+    display:grid;place-items:center;
+    background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+    border:1px solid rgba(255,255,255,.18);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    transition:transform .4s cubic-bezier(.2,.6,.2,1)
+  }
+  .visual.warm .orb{
+    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.2));
+    border-color:rgba(11,35,64,.15)
+  }
+  .orb .mono-l{
+    font-family:'Cormorant Garamond',serif;font-weight:300;
+    color:rgba(255,255,255,.92);
+    line-height:1
+  }
+  .visual.warm .orb .mono-l{color:var(--navy)}
+
+  .orb.lead{
+    width:200px;height:200px;
+    box-shadow:0 0 0 2px var(--gold) inset, 0 24px 60px -10px rgba(212,165,20,.4)
+  }
+  .orb.lead .mono-l{font-size:88px;color:var(--gold-soft)}
+  .visual.warm .orb.lead .mono-l{color:var(--navy)}
+  .orb.lead .badge{
+    position:absolute;top:14px;right:14px;
+    font:700 9px/1 Inter,sans-serif;letter-spacing:.8px;text-transform:uppercase;
+    padding:5px 9px;border-radius:4px;background:var(--gold);color:var(--navy)
+  }
+
+  .orb.t1{
+    width:140px;height:140px;
+    box-shadow:0 0 0 2px rgba(46,208,110,.7) inset
+  }
+  .orb.t1 .mono-l{font-size:60px}
+  .orb.t1 .badge{
+    position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+    font:600 8.5px/1 Inter,sans-serif;letter-spacing:.6px;text-transform:uppercase;
+    padding:3px 7px;border-radius:3px;background:rgba(46,208,110,.18);color:#A7E5C0;
+    border:1px solid rgba(46,208,110,.4)
+  }
+  .visual.warm .orb.t1 .badge{background:rgba(46,208,110,.18);color:var(--green-d);border-color:rgba(46,208,110,.4)}
+
+  .orb.t2{
+    width:108px;height:108px;
+    box-shadow:0 0 0 2px rgba(247,181,0,.55) inset
+  }
+  .orb.t2 .mono-l{font-size:46px}
+  .orb.t2 .badge{
+    position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
+    font:600 8px/1 Inter,sans-serif;letter-spacing:.6px;text-transform:uppercase;
+    padding:2.5px 6px;border-radius:3px;background:rgba(247,181,0,.18);color:#F1C552
+  }
+  .visual.warm .orb.t2 .badge{color:#A07700;background:rgba(247,181,0,.22)}
+
+  /* Compositions per bundle */
+  .c-1 .orb.lead{top:14%;left:18%}
+  .c-1 .orb.t1.a{top:40%;right:12%}
+  .c-1 .orb.t1.b{bottom:14%;left:34%}
+  .c-1 .orb.t2.a{top:18%;right:22%}
+
+  .c-2 .orb.lead{top:18%;left:50%;transform:translateX(-50%);width:220px;height:220px}
+  .c-2 .orb.lead .mono-l{font-size:94px}
+  .c-2 .orb.t1.a{bottom:18%;left:12%}
+  .c-2 .orb.t1.b{bottom:18%;right:12%}
+  .c-2 .orb.t2.a{top:14%;right:14%}
+
+  .c-3 .orb.lead{bottom:14%;left:22%}
+  .c-3 .orb.t1.a{top:14%;left:30%}
+  .c-3 .orb.t1.b{top:42%;right:14%}
+  .c-3 .orb.t2.a{bottom:24%;right:16%}
+
+  .c-4 .orb.lead{top:50%;left:50%;transform:translate(-50%,-50%);width:280px;height:280px}
+  .c-4 .orb.lead .mono-l{font-size:124px}
+
+  .c-5 .orb.lead{top:14%;left:14%}
+  .c-5 .orb.t1.a{top:46%;left:46%}
+  .c-5 .orb.t1.b{bottom:14%;right:14%}
+  .c-5 .orb.t2.a{top:14%;right:14%}
+
+  /* numeric label inside visual */
+  .visual .deliv-stat{
+    position:absolute;left:32px;bottom:32px;
+    display:flex;gap:32px;align-items:flex-end
+  }
+  .visual .deliv-stat .s{display:flex;flex-direction:column;gap:4px}
+  .visual .deliv-stat .s .l{font:600 9px/1 Inter,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+  .visual.warm .deliv-stat .s .l{color:rgba(11,35,64,.55)}
+  .visual .deliv-stat .s .v{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:400;color:#fff;line-height:.9}
+  .visual.warm .deliv-stat .s .v{color:var(--navy)}
+
+  /* ── Trust strip ──────────────────────────────────── */
+  .trust{
+    background:var(--navy-2);color:#fff;padding:80px 56px;
+    border-top:1px solid rgba(255,255,255,.06);
+    border-bottom:1px solid rgba(255,255,255,.06)
+  }
+  .trust .inner{max-width:1280px;margin:0 auto;text-align:center}
+  .trust .eb{font-size:11px;letter-spacing:3.6px;text-transform:uppercase;color:var(--gold-soft);font-weight:500;margin-bottom:24px}
+  .trust h4{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:36px;line-height:1.2;letter-spacing:-.01em;color:#fff;max-width:760px;margin:0 auto 60px}
+  .trust h4 em{font-style:italic;color:var(--gold-soft)}
+  .trust .brands{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:0;
+    border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08)
+  }
+  .trust .brand{
+    padding:36px 0;
+    border-right:1px solid rgba(255,255,255,.08);
+    font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;
+    color:rgba(255,255,255,.7);
+    transition:.2s
+  }
+  .trust .brand:last-child{border-right:none}
+  .trust .brand:hover{color:#fff;background:rgba(255,255,255,.02)}
+
+  /* ── Bespoke section ──────────────────────────────── */
+  .bespoke{
+    background:var(--cream);padding:140px 56px;color:var(--ink);
+    text-align:center
+  }
+  .bespoke .inner{max-width:760px;margin:0 auto}
+  .bespoke .eb{font-size:11px;letter-spacing:3.6px;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:24px}
+  .bespoke h2{
+    font-family:'Cormorant Garamond',serif;font-weight:300;
+    font-size:64px;line-height:1.05;letter-spacing:-.02em;color:var(--navy);margin-bottom:24px
+  }
+  .bespoke h2 em{font-style:italic;color:var(--gold);font-weight:400}
+  .bespoke p{font-size:17px;line-height:1.7;color:var(--ink-2);margin-bottom:48px;max-width:560px;margin-left:auto;margin-right:auto}
+  .bespoke .partner{
+    margin:60px auto 0;display:inline-flex;align-items:center;gap:18px;
+    padding:14px 22px 14px 14px;background:#fff;border-radius:999px;
+    border:1px solid rgba(11,35,64,.1);
+    box-shadow:0 8px 30px -10px rgba(11,35,64,.1)
+  }
+  .bespoke .partner .av{
+    width:42px;height:42px;border-radius:50%;
+    background:linear-gradient(180deg,#F2C94C,#D4A514);
+    display:grid;place-items:center;color:var(--navy);font-weight:700;font-size:14px
+  }
+  .bespoke .partner .info{text-align:left}
+  .bespoke .partner .info .nm{font-weight:600;font-size:13.5px;color:var(--navy)}
+  .bespoke .partner .info .ti{font-size:11.5px;color:var(--label);margin-top:2px}
+  .bespoke .partner .b-cta{margin-left:8px;padding:11px 20px;font-size:12.5px}
+
+  /* ── Footer ───────────────────────────────────────── */
+  footer{
+    background:var(--navy-2);color:rgba(255,255,255,.55);
+    padding:64px 56px 48px;
+    font-size:12px;font-weight:400
+  }
+  footer .inner{max-width:1280px;margin:0 auto;display:flex;justify-content:space-between;gap:48px;flex-wrap:wrap}
+  footer .mark{display:flex;align-items:center;gap:12px;color:#fff}
+  footer .mark .lzg{
+    width:30px;height:30px;border-radius:8px;
+    background:linear-gradient(180deg,#F2C94C,#D4A514);
+    display:grid;place-items:center;color:#0B2340;font-weight:800;font-size:14px
+  }
+  footer .links{display:flex;gap:36px}
+  footer .links a:hover{color:#fff}
+  footer .legal{margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,.08);text-align:center;font-size:11px;letter-spacing:.4px}
+
+  /* ── responsive ──────────────────────────────────── */
+  @media(max-width:1100px){
+    .hero{padding:160px 32px 80px}
+    .bundle{padding:80px 32px}
+    .bundle .inner{grid-template-columns:1fr;gap:48px}
+    .bundle.layout-B .text{order:2}
+    .bundle.layout-B .visual{order:1}
+    .visual{min-height:400px;aspect-ratio:1.2}
+    .catalogue-intro{padding:80px 32px 48px}
+    .catalogue-intro .inner{grid-template-columns:1fr;gap:48px}
+    .catalogue-intro .index{grid-template-columns:repeat(3,1fr)}
+    .trust .brands{grid-template-columns:repeat(3,1fr)}
+    .trust .brand:nth-child(3){border-right:none}
+    .trust .brand:nth-child(4),.trust .brand:nth-child(5),.trust .brand:nth-child(6){border-top:1px solid rgba(255,255,255,.08)}
+    nav.top{padding:0 24px;gap:20px}
+    nav.top .links{display:none}
+    footer{padding:48px 24px 32px}
+    footer .inner{flex-direction:column}
+  }
+  @media(max-width:600px){
+    .hero h1{font-size:54px}
+    .bundle h3{font-size:42px}
+    .bundle .pricing .v{font-size:46px}
+    .bespoke h2{font-size:42px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ────────────────────────────────────────────── -->
+<nav class="top">
+  <div class="mark">
+    <div class="lzg">F</div>
+    <span>Falcons<em>· talent</em></span>
+  </div>
+  <div class="links">
+    <a href="#">Roster</a>
+    <a href="#" class="active">Packages</a>
+    <a href="#">Methodology</a>
+    <a href="#">Case studies</a>
+  </div>
+  <div class="cta-wrap">
+    <button class="cta">Sign in</button>
+    <button class="cta cta-gold">Speak to a partner</button>
+  </div>
+</nav>
+
+<!-- ── HERO ───────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Curated talent · Spring 2026</div>
+    <h1>Packages,<br>not <em>pitches</em>.</h1>
+    <p class="lede">
+      Five end-to-end activation packages, composed by our commercial team
+      from the Falcons roster of esports stars and Saudi creators. Each one
+      is a complete answer to a specific brand brief — a Ramadan reach play,
+      a tournament-week moment, a regional product launch — pre-validated,
+      pre-negotiated, ready to deploy.
+    </p>
+    <div class="meta">
+      <div class="m">
+        <div class="l">Active roster</div>
+        <div class="v">200<small>talents</small></div>
+      </div>
+      <div class="m">
+        <div class="l">Markets covered</div>
+        <div class="v">KSA · GCC<small>+ global</small></div>
+      </div>
+      <div class="m">
+        <div class="l">Currency</div>
+        <div class="v">SAR<small>USD on request</small></div>
+      </div>
+      <div class="m">
+        <div class="l">Lead time</div>
+        <div class="v">14<small>days typical</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CATALOGUE INTRO ────────────────────────────────── -->
+<section class="catalogue-intro">
+  <div class="inner">
+    <h2>The <em>catalogue</em>.</h2>
+    <p>
+      Each package below pairs a headline talent with a curated supporting
+      cast, a defined deliverable mix, and the rights term most brands
+      actually need. Pricing is the floor — final quotes adjust for
+      seasonality, exclusivity, and any custom production. Tap any package
+      to start a conversation; we'll come back inside 48 hours with a
+      tailored proposal.
+    </p>
+    <div class="index">
+      <div class="ix"><div class="n">№ 01</div><div class="t">Ramadan KSA<br>Mass Reach</div></div>
+      <div class="ix"><div class="n">№ 02</div><div class="t">EWC<br>Headline</div></div>
+      <div class="ix"><div class="n">№ 03</div><div class="t">GCC Product<br>Launch</div></div>
+      <div class="ix"><div class="n">№ 04</div><div class="t">Brand<br>Authority</div></div>
+      <div class="ix"><div class="n">№ 05</div><div class="t">Endemic<br>Saturation</div></div>
+      <div class="ix"><div class="n">№ 06</div><div class="t">Bespoke<br>Curation</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BUNDLE 01 — Ramadan KSA Mass Reach (dark, A) ──── -->
+<section class="bundle dark layout-A">
+  <div class="inner">
+    <div class="text">
+      <div class="num-badge">№ 01 · Seasonal</div>
+      <h3>Ramadan<br><em>Mass Reach</em></h3>
+      <p class="tagline">
+        The seasonal pack. Built for brands who need to live in the
+        Saudi feed for the whole holy month — iftar, suhoor, the Eid
+        weekend. Three creators carry the conversation; one esports
+        headliner anchors credibility.
+      </p>
+      <div class="pricing">
+        <span class="from">From</span>
+        <span class="ccy">SAR</span>
+        <span class="v num">285,000</span>
+        <span class="alt">≈ $76,000</span>
+      </div>
+      <div class="incl">
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>4 talents</b> — 1 Tier-S esports player + 3 Tier-1 KSA creators</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>7 deliverables</b> — Reels, TikToks, Stories, plus an iftar IG Live moment</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>30-day digital usage rights</b> — included, no add-on fee</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>Ramadan seasonality</b> baked in — no surprise uplift at quote time</div>
+        </div>
+      </div>
+      <div class="ctas">
+        <button class="b-cta">Request this package <span class="arrow">→</span></button>
+        <button class="b-cta-ghost">View deliverables</button>
+      </div>
+    </div>
+    <div class="visual cool c-1">
+      <div class="orbs">
+        <div class="orb lead"><span class="mono-l">N</span><span class="badge">Tier S</span></div>
+        <div class="orb t1 a"><span class="mono-l">D</span><span class="badge">Tier 1</span></div>
+        <div class="orb t1 b"><span class="mono-l">O</span><span class="badge">Tier 1</span></div>
+        <div class="orb t2 a"><span class="mono-l">A</span><span class="badge">Tier 2</span></div>
+      </div>
+      <div class="deliv-stat">
+        <div class="s"><div class="l">Talents</div><div class="v">04</div></div>
+        <div class="s"><div class="l">Deliverables</div><div class="v">07</div></div>
+        <div class="s"><div class="l">Rights</div><div class="v">30d</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BUNDLE 02 — EWC Headline (cream, B) ───────────── -->
+<section class="bundle cream layout-B">
+  <div class="inner">
+    <div class="text">
+      <div class="num-badge">№ 02 · Tournament moment</div>
+      <h3>EWC<br><em>Headline</em>.</h3>
+      <p class="tagline">
+        The Esports World Cup fortnight is the highest-attention window
+        in MENA gaming. This pack puts your brand on two global esports
+        stars and two regional creators, live during the moment that
+        matters. Lead time: book by Q1.
+      </p>
+      <div class="pricing">
+        <span class="from">From</span>
+        <span class="ccy">SAR</span>
+        <span class="v num">720,000</span>
+        <span class="alt">≈ $192,000</span>
+      </div>
+      <div class="incl">
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>4 talents</b> — 2 Tier-S global esports stars + 2 Tier-1 KSA creators</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>6 deliverables</b> — Reels, behind-the-scenes content, an arena IRL moment</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>14-day usage rights</b> — calibrated to the tournament window</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>Tournament seasonality</b> 1.40× already priced in</div>
+        </div>
+      </div>
+      <div class="ctas">
+        <button class="b-cta">Request this package <span class="arrow">→</span></button>
+        <button class="b-cta-ghost">View deliverables</button>
+      </div>
+    </div>
+    <div class="visual warm c-2">
+      <div class="orbs">
+        <div class="orb lead"><span class="mono-l">N</span><span class="badge">Tier S</span></div>
+        <div class="orb t1 a"><span class="mono-l">M</span><span class="badge">Tier S</span></div>
+        <div class="orb t1 b"><span class="mono-l">D</span><span class="badge">Tier 1</span></div>
+        <div class="orb t2 a"><span class="mono-l">O</span><span class="badge">Tier 1</span></div>
+      </div>
+      <div class="deliv-stat">
+        <div class="s"><div class="l">Talents</div><div class="v">04</div></div>
+        <div class="s"><div class="l">Deliverables</div><div class="v">06</div></div>
+        <div class="s"><div class="l">Rights</div><div class="v">14d</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BUNDLE 03 — GCC Product Launch (dark, A) ──────── -->
+<section class="bundle dark layout-A">
+  <div class="inner">
+    <div class="text">
+      <div class="num-badge">№ 03 · Product launch</div>
+      <h3>GCC Product<br><em>Launch</em>.</h3>
+      <p class="tagline">
+        For brands going to market across Saudi, the UAE, Kuwait and
+        Qatar in a single window. Anchored on a regional creator
+        with cross-market credibility, supported by lower-cost
+        Tier-2 reach, plus an esports cameo for cultural weight.
+      </p>
+      <div class="pricing">
+        <span class="from">From</span>
+        <span class="ccy">SAR</span>
+        <span class="v num">245,000</span>
+        <span class="alt">≈ $65,300</span>
+      </div>
+      <div class="incl">
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>4 talents</b> — 1 Tier-S regional creator + 2 Tier-2 supporting + 1 esports cameo</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>8 deliverables</b> — bilingual (EN/AR) format-spread across IG, TikTok, YouTube Shorts</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>90-day rights + whitelisting</b> — your media buys can run the talent's organic post</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>GCC distribution</b> — assets approved for KSA, UAE, KWT, QAT, BHR</div>
+        </div>
+      </div>
+      <div class="ctas">
+        <button class="b-cta">Request this package <span class="arrow">→</span></button>
+        <button class="b-cta-ghost">View deliverables</button>
+      </div>
+    </div>
+    <div class="visual cool c-3">
+      <div class="orbs">
+        <div class="orb lead"><span class="mono-l">B</span><span class="badge">Tier S</span></div>
+        <div class="orb t1 a"><span class="mono-l">A</span><span class="badge">Tier 1</span></div>
+        <div class="orb t1 b"><span class="mono-l">K</span><span class="badge">Tier 2</span></div>
+        <div class="orb t2 a"><span class="mono-l">M</span><span class="badge">Cameo</span></div>
+      </div>
+      <div class="deliv-stat">
+        <div class="s"><div class="l">Talents</div><div class="v">04</div></div>
+        <div class="s"><div class="l">Deliverables</div><div class="v">08</div></div>
+        <div class="s"><div class="l">Rights</div><div class="v">90d</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BUNDLE 04 — Brand Authority (cream, B, single hero) ── -->
+<section class="bundle ivory layout-B">
+  <div class="inner">
+    <div class="text">
+      <div class="num-badge">№ 04 · Credibility play</div>
+      <h3>Brand<br><em>Authority</em>.</h3>
+      <p class="tagline">
+        For institutional brands — fintech, luxury, automotive — where
+        credibility is the entire pitch. One Tier-S champion, three
+        deliverables, an in-person appearance. Concentrated,
+        unambiguous, expensive. Sold to the C-suite, not the brand
+        manager.
+      </p>
+      <div class="pricing">
+        <span class="from">From</span>
+        <span class="ccy">SAR</span>
+        <span class="v num">425,000</span>
+        <span class="alt">≈ $113,300</span>
+      </div>
+      <div class="incl">
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>1 Tier-S champion</b> — global esports name, world-final credentials</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>3 deliverables</b> — anchor IG Reel, YouTube long-form, IRL appearance with brand</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>Authority objective</b> 1.0× weighting — credibility is the campaign</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>Category exclusivity</b> — included for 6 months in your vertical</div>
+        </div>
+      </div>
+      <div class="ctas">
+        <button class="b-cta">Request this package <span class="arrow">→</span></button>
+        <button class="b-cta-ghost">View deliverables</button>
+      </div>
+    </div>
+    <div class="visual warm c-4">
+      <div class="orbs">
+        <div class="orb lead"><span class="mono-l">N</span><span class="badge">Tier S · Champion</span></div>
+      </div>
+      <div class="deliv-stat">
+        <div class="s"><div class="l">Talent</div><div class="v">01</div></div>
+        <div class="s"><div class="l">Deliverables</div><div class="v">03</div></div>
+        <div class="s"><div class="l">Exclusivity</div><div class="v">6mo</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BUNDLE 05 — Endemic Saturation (dark, A) ──────── -->
+<section class="bundle dark layout-A">
+  <div class="inner">
+    <div class="text">
+      <div class="num-badge">№ 05 · Endemic</div>
+      <h3>Endemic<br><em>Saturation</em>.</h3>
+      <p class="tagline">
+        For gaming hardware, peripherals, and platforms. Four esports
+        talents inside a single discipline so your message saturates
+        the audience that matters. The CS2 pack is shown — ask for
+        Valorant, EAFC, Dota, or LoL composition.
+      </p>
+      <div class="pricing">
+        <span class="from">From</span>
+        <span class="ccy">SAR</span>
+        <span class="v num">380,000</span>
+        <span class="alt">≈ $101,300</span>
+      </div>
+      <div class="incl">
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>4 esports talents</b> — 2 Tier-S players + 2 Tier-1 esports creators in one game</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>8 deliverables</b> — Twitch streams, YouTube content, IG Reels, tournament-week tie-ins</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>60-day rights + paid boost</b> — your media spend amplifies the organic posts</div>
+        </div>
+        <div class="row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div><b>Co-branded content kit</b> — produced by Falcons studio, brand-approved</div>
+        </div>
+      </div>
+      <div class="ctas">
+        <button class="b-cta">Request this package <span class="arrow">→</span></button>
+        <button class="b-cta-ghost">View deliverables</button>
+      </div>
+    </div>
+    <div class="visual cool c-5">
+      <div class="orbs">
+        <div class="orb lead"><span class="mono-l">N</span><span class="badge">Tier S</span></div>
+        <div class="orb t1 a"><span class="mono-l">M</span><span class="badge">Tier S</span></div>
+        <div class="orb t1 b"><span class="mono-l">F</span><span class="badge">Tier 1</span></div>
+        <div class="orb t2 a"><span class="mono-l">K</span><span class="badge">Tier 1</span></div>
+      </div>
+      <div class="deliv-stat">
+        <div class="s"><div class="l">Talents</div><div class="v">04</div></div>
+        <div class="s"><div class="l">Deliverables</div><div class="v">08</div></div>
+        <div class="s"><div class="l">Rights</div><div class="v">60d</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TRUST STRIP ────────────────────────────────────── -->
+<section class="trust">
+  <div class="inner">
+    <div class="eb">Trusted activation partner</div>
+    <h4>Brands who've activated through Falcons in the last <em>twelve months</em>.</h4>
+    <div class="brands">
+      <div class="brand">Red Bull</div>
+      <div class="brand">stc</div>
+      <div class="brand">Saudi Tourism</div>
+      <div class="brand">Riyadh Season</div>
+      <div class="brand">PIF</div>
+      <div class="brand">Qiddiya</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BESPOKE / № 06 ─────────────────────────────────── -->
+<section class="bespoke">
+  <div class="inner">
+    <div class="eb">№ 06 · Bespoke</div>
+    <h2>Tell us the brief.<br>We'll <em>compose the package</em>.</h2>
+    <p>
+      Every brand is different. If none of the five fit, send us your
+      brief — audience, market, season, KPI — and we'll come back inside
+      48 hours with a custom composition from the full Falcons roster,
+      priced against the same methodology that anchors every package above.
+    </p>
+    <div class="ctas" style="justify-content:center">
+      <button class="b-cta">Start a brief <span class="arrow">→</span></button>
+    </div>
+    <div class="partner">
+      <div class="av">K</div>
+      <div class="info">
+        <div class="nm">Abdalrahman ElGazzawi</div>
+        <div class="ti">Commercial Partner · Team Falcons</div>
+      </div>
+      <button class="b-cta">Direct line</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────── -->
+<footer>
+  <div class="inner">
+    <div class="mark">
+      <div class="lzg">F</div>
+      <span>Team Falcons · Talent Division</span>
+    </div>
+    <div class="links">
+      <a href="#">Roster</a>
+      <a href="#">Methodology</a>
+      <a href="#">Privacy</a>
+      <a href="#">Press</a>
+      <a href="#">Contact</a>
+    </div>
+  </div>
+  <div class="legal">
+    All package pricing is indicative · final quotes calibrated against
+    Falcons Pricing OS v1 · SAR canonical, 1 USD = 3.75 SAR (Saudi peg)
+    · © 2026 Team Falcons. All rights reserved.
+  </div>
+</footer>
+
+</body>
+</html>

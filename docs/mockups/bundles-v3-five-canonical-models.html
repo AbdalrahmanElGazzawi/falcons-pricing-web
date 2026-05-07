@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Falcons · Five Activation Models</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B2340; --navy-2:#06182A; --navy-3:#112E4F; --navy-4:#1A3556;
+    --gold:#D4A514; --gold-soft:#E5C66E; --gold-pale:#F4E5B3; --gold-deep:#9C7800;
+    --green:#2ED06E; --green-d:#22A35A; --green-soft:#A7E5C0;
+    --cream:#F8F4ED; --cream-2:#EFE8DA; --cream-3:#E8DFCC;
+    --ink:#0E1A2F; --ink-2:#324159;
+    --label:#5A6678; --mute:#94A3B8;
+    --line:#E6EAF0; --line-2:#CFD6E1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--cream);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01"}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .serif{font-family:'Cormorant Garamond',serif;font-weight:400;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+
+  /* ─── nav ─── */
+  nav.top{
+    position:sticky;top:0;z-index:50;height:68px;
+    display:flex;align-items:center;padding:0 56px;gap:48px;
+    background:rgba(248,244,237,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid rgba(11,35,64,.08)
+  }
+  nav.top.dark{background:rgba(6,24,42,.88);border-bottom-color:rgba(255,255,255,.08)}
+  nav.top.dark .mark,nav.top.dark .links a{color:#fff}
+  nav.top .mark{display:flex;align-items:center;gap:12px;color:var(--navy)}
+  nav.top .mark .lzg{width:32px;height:32px;border-radius:9px;background:linear-gradient(180deg,#F2C94C,#D4A514);display:grid;place-items:center;color:var(--navy);font-weight:800;font-size:15px}
+  nav.top .mark span{font-weight:600;letter-spacing:1.4px;font-size:13px;text-transform:uppercase}
+  nav.top .mark span em{font-style:normal;color:var(--gold);font-weight:400;margin-left:4px}
+  nav.top .links{display:flex;gap:28px;font-size:13.5px;color:var(--ink-2);font-weight:500}
+  nav.top .links a:hover,nav.top .links a.active{color:var(--navy)}
+  nav.top.dark .links a{color:rgba(255,255,255,.7)}
+  nav.top.dark .links a.active{color:#fff}
+  nav.top .links a.active{position:relative}
+  nav.top .links a.active::after{content:"";position:absolute;left:0;right:0;bottom:-22px;height:2px;background:var(--gold)}
+  nav.top .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+  nav.top .admin-pill{
+    font:600 10.5px/1 Inter,sans-serif;letter-spacing:1px;text-transform:uppercase;
+    padding:6px 11px;border-radius:6px;background:rgba(212,165,20,.16);color:var(--gold-deep);
+    border:1px solid rgba(212,165,20,.4);
+    display:inline-flex;align-items:center;gap:6px
+  }
+  nav.top.dark .admin-pill{color:var(--gold-soft);background:rgba(212,165,20,.18);border-color:rgba(212,165,20,.5)}
+  nav.top .admin-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  nav.top .cta{padding:9px 18px;border-radius:999px;background:var(--navy);color:#fff;font-size:13px;font-weight:600;letter-spacing:.3px;transition:.2s}
+  nav.top .cta:hover{background:var(--navy-3)}
+  nav.top.dark .cta{background:var(--gold);color:var(--navy)}
+  nav.top.dark .cta:hover{background:var(--gold-soft)}
+
+  /* ─── hero ─── */
+  .hero{
+    position:relative;padding:140px 56px 100px;
+    background:
+      radial-gradient(circle at 20% 30%,rgba(212,165,20,.12),transparent 50%),
+      radial-gradient(circle at 80% 75%,rgba(46,208,110,.06),transparent 55%),
+      linear-gradient(180deg,var(--navy-2) 0%,var(--navy) 100%);
+    color:#fff;overflow:hidden
+  }
+  .hero::after{
+    content:"";position:absolute;inset:0;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cdefs%3E%3Cpattern id='g' width='40' height='40' patternUnits='userSpaceOnUse'%3E%3Cpath d='M0 .5H40' stroke='%23ffffff' stroke-opacity='.025'/%3E%3Cpath d='M.5 0V40' stroke='%23ffffff' stroke-opacity='.025'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='200' height='200' fill='url(%23g)'/%3E%3C/svg%3E");
+    pointer-events:none
+  }
+  .hero .inner{position:relative;max-width:1280px;margin:0 auto;z-index:1}
+  .hero .eb{font-size:11px;letter-spacing:3.6px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;margin-bottom:24px;display:flex;align-items:center;gap:14px}
+  .hero .eb::before{content:"";width:32px;height:1px;background:var(--gold)}
+  .hero h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(56px,8vw,118px);line-height:.96;letter-spacing:-.025em;margin-bottom:32px;max-width:1100px}
+  .hero h1 em{font-style:italic;color:var(--gold);font-weight:400}
+  .hero .lede{max-width:680px;font-size:17px;line-height:1.7;color:rgba(255,255,255,.78);font-weight:400;margin-bottom:60px}
+
+  .hero-five{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-top:1px solid rgba(255,255,255,.12);padding-top:32px}
+  .hero-five .h5{padding-right:24px;border-right:1px solid rgba(255,255,255,.08)}
+  .hero-five .h5:last-child{border-right:none}
+  .hero-five .h5 .n{font:600 11px/1 'JetBrains Mono',monospace;color:var(--gold);letter-spacing:1.5px;margin-bottom:14px}
+  .hero-five .h5 .t{font:500 14.5px/1.35 Inter,sans-serif;color:#fff;margin-bottom:8px;font-weight:600}
+  .hero-five .h5 .p{font:500 11.5px/1.5 Inter,sans-serif;color:rgba(255,255,255,.6)}
+
+  /* ─── bundle section ─── */
+  .bundle{padding:120px 56px;position:relative;overflow:hidden}
+  .bundle.dark{background:var(--navy-2);color:#fff}
+  .bundle.cream{background:var(--cream);color:var(--ink)}
+  .bundle.ivory{background:var(--cream-2);color:var(--ink)}
+  .bundle .inner{max-width:1280px;margin:0 auto}
+
+  .bnd-h{display:grid;grid-template-columns:1.4fr 1fr;gap:96px;align-items:start;margin-bottom:64px}
+  .bnd-num{font:600 12px/1 'JetBrains Mono',monospace;letter-spacing:2.4px;color:var(--gold);margin-bottom:24px;display:flex;align-items:center;gap:14px}
+  .bnd-num::after{content:"";flex:1;height:1px;background:currentColor;opacity:.3;max-width:80px}
+  .bundle h2{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(48px,5.5vw,84px);line-height:1;letter-spacing:-.025em;margin-bottom:24px}
+  .bundle.dark h2{color:#fff}
+  .bundle h2 em{font-style:italic;color:var(--gold);font-weight:400}
+  .bundle.dark h2 em{color:var(--gold-soft)}
+  .bundle .pos{font-size:18px;line-height:1.55;color:var(--ink-2);max-width:540px;font-weight:400;margin-bottom:14px}
+  .bundle.dark .pos{color:rgba(255,255,255,.85)}
+  .bundle .target{font-size:13.5px;color:var(--label);font-weight:500;display:flex;align-items:center;gap:10px}
+  .bundle.dark .target{color:var(--gold-soft)}
+  .bundle .target b{color:var(--navy);font-weight:600}
+  .bundle.dark .target b{color:#fff}
+  .bundle .target .lbl{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);font-weight:600}
+
+  /* effort + pricing block on right side of header */
+  .bnd-meta{display:flex;flex-direction:column;gap:24px}
+  .effort-block{
+    padding:22px 24px;border-radius:14px;
+    background:rgba(212,165,20,.08);border:1px solid rgba(212,165,20,.25)
+  }
+  .bundle.dark .effort-block{background:rgba(212,165,20,.1);border-color:rgba(212,165,20,.3)}
+  .effort-block .l{font:600 10px/1 Inter,sans-serif;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+  .effort-line{display:grid;grid-template-columns:90px 1fr auto;align-items:center;gap:12px;padding:8px 0;font-size:13px}
+  .effort-line + .effort-line{border-top:1px dashed rgba(212,165,20,.2)}
+  .effort-line .who{color:var(--label);font-weight:500}
+  .bundle.dark .effort-line .who{color:rgba(255,255,255,.7)}
+  .effort-line .meter{display:flex;gap:4px}
+  .effort-line .dot{width:8px;height:8px;border-radius:50%;background:rgba(11,35,64,.15)}
+  .bundle.dark .effort-line .dot{background:rgba(255,255,255,.2)}
+  .effort-line .dot.on{background:var(--gold)}
+  .effort-line .lbl{font:600 11px/1 Inter,sans-serif;color:var(--gold-deep);letter-spacing:.3px}
+  .bundle.dark .effort-line .lbl{color:var(--gold-soft)}
+
+  .price-wrap{
+    padding:24px 26px;border-radius:14px;
+    background:#fff;border:1px solid var(--line);
+    display:flex;flex-direction:column;gap:6px
+  }
+  .bundle.dark .price-wrap{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12)}
+  .price-wrap .l{font:600 10px/1 Inter,sans-serif;letter-spacing:1.6px;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+  .bundle.dark .price-wrap .l{color:rgba(255,255,255,.55)}
+  .price-wrap .range{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:32px;color:var(--gold);line-height:1;letter-spacing:-.02em;display:flex;align-items:baseline;gap:6px}
+  .price-wrap .range small{font:500 11px/1 Inter,sans-serif;color:var(--gold-deep);letter-spacing:1.4px;text-transform:uppercase}
+  .bundle.dark .price-wrap .range small{color:var(--gold-soft)}
+  .price-wrap .alt{font:500 12px/1 'JetBrains Mono',monospace;color:var(--label);margin-top:4px}
+  .bundle.dark .price-wrap .alt{color:rgba(255,255,255,.55)}
+  .price-wrap .term{font:500 11.5px/1.4 Inter,sans-serif;color:var(--ink-2);margin-top:8px;padding-top:10px;border-top:1px dashed var(--line)}
+  .bundle.dark .price-wrap .term{color:rgba(255,255,255,.6);border-top-color:rgba(255,255,255,.1)}
+
+  /* body grid */
+  .bnd-body{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:48px;padding-top:48px;border-top:1px solid rgba(11,35,64,.1)}
+  .bundle.dark .bnd-body{border-top-color:rgba(255,255,255,.1)}
+  .col-h{font:600 10px/1 Inter,sans-serif;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+  .col-h svg{width:13px;height:13px}
+
+  .deliv{display:flex;flex-direction:column;gap:14px}
+  .deliv .row{display:grid;grid-template-columns:18px 1fr;gap:14px;align-items:flex-start;font-size:14px;line-height:1.5;color:var(--ink-2);font-weight:400}
+  .bundle.dark .deliv .row{color:rgba(255,255,255,.85)}
+  .deliv .row svg{width:14px;height:14px;color:var(--green-d);margin-top:4px}
+  .bundle.dark .deliv .row svg{color:var(--green-soft)}
+  .deliv .row b{font-weight:600;color:var(--navy)}
+  .bundle.dark .deliv .row b{color:#fff}
+
+  .roi-grid{display:grid;grid-template-columns:1fr;gap:10px}
+  .roi-stat{
+    padding:18px 20px;border-radius:12px;
+    background:#fff;border:1px solid var(--line);
+    display:flex;flex-direction:column;gap:4px
+  }
+  .bundle.dark .roi-stat{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)}
+  .roi-stat .l{font:600 10px/1 Inter,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
+  .bundle.dark .roi-stat .l{color:rgba(255,255,255,.55)}
+  .roi-stat .v{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:28px;color:var(--navy);line-height:1;letter-spacing:-.01em;display:flex;align-items:baseline;gap:5px}
+  .bundle.dark .roi-stat .v{color:#fff}
+  .roi-stat .v small{font:500 11px/1 'JetBrains Mono',monospace;color:var(--label);letter-spacing:.3px}
+  .bundle.dark .roi-stat .v small{color:rgba(255,255,255,.55)}
+  .roi-stat .d{font-size:11.5px;line-height:1.4;color:var(--label);margin-top:4px;font-weight:400}
+  .bundle.dark .roi-stat .d{color:rgba(255,255,255,.55)}
+
+  /* plug-and-play column */
+  .pnp-list{display:flex;flex-direction:column;gap:10px}
+  .pnp-asset{
+    padding:13px 15px;border-radius:10px;
+    background:rgba(212,165,20,.06);border:1px solid rgba(212,165,20,.2);
+    border-left:3px solid var(--gold);
+    border-radius:0 10px 10px 0;
+    display:flex;flex-direction:column;gap:3px
+  }
+  .bundle.dark .pnp-asset{background:rgba(212,165,20,.06)}
+  .pnp-asset .nm{font:600 12.5px/1.3 Inter,sans-serif;color:var(--navy);display:flex;align-items:center;gap:8px}
+  .bundle.dark .pnp-asset .nm{color:#fff}
+  .pnp-asset .nm svg{width:13px;height:13px;color:var(--gold)}
+  .pnp-asset .sp{font:400 11.5px/1.4 Inter,sans-serif;color:var(--label)}
+  .bundle.dark .pnp-asset .sp{color:rgba(255,255,255,.65)}
+  .pnp-foot{margin-top:14px;padding-top:14px;border-top:1px dashed rgba(212,165,20,.3);font-size:12px;color:var(--label);line-height:1.5;font-weight:500}
+  .bundle.dark .pnp-foot{color:rgba(255,255,255,.6)}
+  .pnp-foot b{color:var(--gold);font-weight:600}
+
+  /* CTA bar */
+  .bnd-cta{
+    margin-top:56px;padding-top:36px;border-top:1px solid rgba(11,35,64,.1);
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between
+  }
+  .bundle.dark .bnd-cta{border-top-color:rgba(255,255,255,.1)}
+  .bnd-cta .ctas{display:flex;gap:10px;flex-wrap:wrap}
+  .b-cta{padding:14px 28px;border-radius:999px;background:var(--gold);color:var(--navy);font-size:13.5px;font-weight:600;letter-spacing:.3px;display:inline-flex;align-items:center;gap:10px;transition:.2s}
+  .b-cta:hover{background:var(--gold-soft)}
+  .b-cta-ghost{padding:14px 24px;border-radius:999px;background:transparent;color:var(--ink-2);border:1px solid var(--line-2);font-size:13.5px;font-weight:500;display:inline-flex;align-items:center;gap:10px;transition:.2s}
+  .bundle.dark .b-cta-ghost{color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.25)}
+  .b-cta-ghost:hover{border-color:var(--ink);color:var(--ink)}
+  .bundle.dark .b-cta-ghost:hover{border-color:#fff;color:#fff}
+  .b-admin{
+    padding:13px 18px;border-radius:999px;background:rgba(212,165,20,.12);
+    color:var(--gold-deep);border:1px solid rgba(212,165,20,.3);
+    font:600 12px/1 Inter,sans-serif;letter-spacing:.3px;
+    display:inline-flex;align-items:center;gap:8px;transition:.2s
+  }
+  .bundle.dark .b-admin{color:var(--gold-soft)}
+  .b-admin svg{width:13px;height:13px}
+  .b-admin:hover{background:rgba(212,165,20,.2)}
+
+  /* sub-activations strip */
+  .sub-strip{margin-top:64px;padding-top:48px;border-top:1px dashed rgba(11,35,64,.15)}
+  .bundle.dark .sub-strip{border-top-color:rgba(255,255,255,.15)}
+  .sub-strip .col-h{margin-bottom:20px}
+  .sub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .sub-card{
+    padding:18px 20px;border-radius:12px;
+    background:rgba(255,255,255,.6);border:1px solid var(--line);
+    display:flex;flex-direction:column;gap:8px;transition:.2s
+  }
+  .bundle.dark .sub-card{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)}
+  .sub-card:hover{border-color:var(--ink-2);transform:translateY(-1px)}
+  .bundle.dark .sub-card:hover{border-color:rgba(255,255,255,.25)}
+  .sub-card .nm{font:600 14px/1.3 Inter,sans-serif;color:var(--navy);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .bundle.dark .sub-card .nm{color:#fff}
+  .sub-card .ds{font-size:12px;line-height:1.5;color:var(--label);font-weight:400}
+  .bundle.dark .sub-card .ds{color:rgba(255,255,255,.65)}
+  .sub-card .pr{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--gold);font-weight:500;letter-spacing:-.01em}
+  .sub-card .pr small{font:500 10px/1 Inter,sans-serif;color:var(--mute);letter-spacing:1px;text-transform:uppercase;margin-right:3px}
+
+  /* archetype tag */
+  .archetype{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:7px 13px;border-radius:999px;
+    background:rgba(11,35,64,.06);color:var(--ink-2);
+    font:500 12px/1 Inter,sans-serif;letter-spacing:.2px
+  }
+  .bundle.dark .archetype{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+  .archetype .pip{width:7px;height:7px;border-radius:50%;background:var(--gold)}
+
+  /* methodology footer */
+  .method{
+    margin:0;padding:96px 56px;
+    background:var(--navy-2);color:#fff;
+    border-top:1px solid rgba(255,255,255,.06)
+  }
+  .method .inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 1.4fr;gap:96px;align-items:center}
+  .method .eb{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;margin-bottom:18px;display:flex;align-items:center;gap:14px}
+  .method .eb::before{content:"";width:32px;height:1px;background:var(--gold)}
+  .method h3{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:48px;line-height:1.05;letter-spacing:-.02em;margin-bottom:20px}
+  .method h3 em{font-style:italic;color:var(--gold)}
+  .method .lede{font-size:15px;line-height:1.7;color:rgba(255,255,255,.75)}
+  .method-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .method-stat{padding:22px 24px;background:rgba(255,255,255,.04);border-radius:14px;border:1px solid rgba(255,255,255,.08)}
+  .method-stat .l{font:600 10px/1 Inter,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:10px}
+  .method-stat .v{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:30px;color:#fff;line-height:1;margin-bottom:8px}
+  .method-stat .d{font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.65)}
+
+  /* footer */
+  footer{background:var(--navy-2);color:rgba(255,255,255,.55);padding:48px 56px;font-size:12px;border-top:1px solid rgba(255,255,255,.08)}
+  footer .inner{max-width:1280px;margin:0 auto;display:flex;justify-content:space-between;gap:32px;flex-wrap:wrap}
+  footer .legal{margin-top:28px;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);text-align:center;font-size:11px}
+
+  @media(max-width:1100px){
+    .hero,.bundle,.method{padding-left:32px;padding-right:32px}
+    .bnd-h,.bnd-body,.method .inner{grid-template-columns:1fr;gap:32px}
+    .bnd-body{padding-top:32px}
+    .hero-five{grid-template-columns:repeat(2,1fr);gap:24px}
+    .hero-five .h5{border-right:none;border-bottom:1px solid rgba(255,255,255,.08);padding:0 0 18px}
+    .sub-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav class="top dark">
+  <div class="mark"><div class="lzg">F</div><span>Falcons<em>· talent</em></span></div>
+  <div class="links">
+    <a href="#">Roster</a>
+    <a href="#" class="active">Activations</a>
+    <a href="#">Methodology</a>
+    <a href="#">Case studies</a>
+  </div>
+  <div class="right">
+    <span class="admin-pill"><span class="dot"></span>Admin · prices unlocked</span>
+    <button class="cta">Speak to a partner</button>
+  </div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section class="hero">
+  <div class="inner">
+    <div class="eb">Five activation models · Spring 2026</div>
+    <h1>Operational <em>leverage</em>,<br>productized.</h1>
+    <p class="lede">
+      Five canonical activation models, designed around the principle that
+      lower operational effort scales higher margin. Brands plug in once;
+      the activation runs on infrastructure we already operate — broadcast
+      hours, content workflows, social channels we own. This is how Red
+      Bull and Monster have always operated, applied to the Falcons asset
+      base.
+    </p>
+    <div class="hero-five">
+      <div class="h5"><div class="n">№ 01</div><div class="t">Always-On Jersey<br>+ Broadcast</div><div class="p">Logo on jersey + lower-third for a full season. Player effort: zero.</div></div>
+      <div class="h5"><div class="n">№ 02</div><div class="t">Mobile<br>Amplification</div><div class="p">MLBB + creators across MENA + SEA + PH. Regional launch grade.</div></div>
+      <div class="h5"><div class="n">№ 03</div><div class="t">Performance<br>PC Bundle</div><div class="p">Twitch-active teams. Highlight-reel automation. ExitLag-class fit.</div></div>
+      <div class="h5"><div class="n">№ 04</div><div class="t">Day-in-the-Life<br>Engine</div><div class="p">12-month embedded. Brand becomes B-roll. Highest margin.</div></div>
+      <div class="h5"><div class="n">№ 05</div><div class="t">Tournament<br>Activation Pack</div><div class="p">EWC, IEM, Worlds. Brands buy slots, not players.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ № 01 — ALWAYS-ON JERSEY + BROADCAST ════ -->
+<section class="bundle cream">
+  <div class="inner">
+    <div class="bnd-h">
+      <div>
+        <div class="bnd-num">№ 01 · Always-on</div>
+        <h2>Jersey<br>+ <em>Broadcast</em>.</h2>
+        <p class="pos">
+          Brand logo on the jersey + persistent broadcast lower-third for
+          one game vertical, one full season. Brand gets 100% of competitive
+          broadcast hours plus all post-match social. Sets up once, runs
+          unattended.
+        </p>
+        <div class="target"><span class="lbl">Built for</span><b>Insurance · Telecom · Fintech · Auto · Energy</b></div>
+        <div class="archetype" style="margin-top:14px"><span class="pip"></span>The "no excuses, sign here" SKU</div>
+      </div>
+      <div class="bnd-meta">
+        <div class="effort-block">
+          <div class="l">Operational effort</div>
+          <div class="effort-line"><div class="who">Player</div><div class="meter"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><div class="lbl">None</div></div>
+          <div class="effort-line"><div class="who">Falcons</div><div class="meter"><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><div class="lbl">Setup once</div></div>
+        </div>
+        <div class="price-wrap">
+          <div class="l">Price floor · per game vertical · per season</div>
+          <div class="range"><small>SAR</small>940K — 2.25M</div>
+          <div class="alt">≈ $250,000 — $600,000 USD</div>
+          <div class="term">Tier scales with title viewership: CS2/CoD top of band · MLBB/EAFC mid · Apex/Fortnite entry.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bnd-body">
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>What's included</div>
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Jersey patch</b> — front-of-jersey, sleeve, or chest position by tier. All competitive matches.</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Broadcast lower-third</b> — official tournament + watch-along streams. Persistent.</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Post-match social</b> — every win/loss recap on Falcons channels carries the lockup.</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Press releases</b> co-branded for the season — partnership announcements, tournament results.</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Projected ROI</div>
+        <div class="roi-grid">
+          <div class="roi-stat"><div class="l">Competitive broadcast hours</div><div class="v num">820<small> hrs / season</small></div><div class="d">Across all matches in the chosen vertical, including playoffs</div></div>
+          <div class="roi-stat"><div class="l">Cumulative live viewers</div><div class="v num">42<small>M+ unique</small></div><div class="d">Cross-platform — Twitch, YouTube, official tournament feeds</div></div>
+          <div class="roi-stat"><div class="l">Implied CPM</div><div class="v num">$1<small>.40 — $3.20</small></div><div class="d">Calibrated against Tier-S sponsorship benchmarks · MENA mid-band</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+        <div class="pnp-list">
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Logo lockup</div>
+            <div class="sp">SVG · CMYK + RGB · jersey-position-ready</div>
+          </div>
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Lower-third artwork</div>
+            <div class="sp">PNG · 1920×140 with transparency · 24-hour bug variant</div>
+          </div>
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Comms boilerplate</div>
+            <div class="sp">200-word brand statement for press releases</div>
+          </div>
+          <div class="pnp-foot">
+            Lead time: <b>14 days</b> from asset receipt. <b>Three review cycles</b> on the lockup. After that, it's automatic.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bnd-cta">
+      <div class="ctas">
+        <button class="b-cta">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="width:14px;height:14px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        <button class="b-cta-ghost">Download spec sheet</button>
+      </div>
+      <button class="b-admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82M4.6 9a1.65 1.65 0 0 1-.33-1.82"/></svg>
+        Adjust pricing · admin only
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ════ № 02 — MOBILE AMPLIFICATION ════ -->
+<section class="bundle dark">
+  <div class="inner">
+    <div class="bnd-h">
+      <div>
+        <div class="bnd-num">№ 02 · Regional launch</div>
+        <h2>Mobile<br><em>Amplification</em>.</h2>
+        <p class="pos">
+          The Falcons MLBB rosters across PH + ID + MENA, paired with
+          mobile-first creators. Built for Cenomi-style mall partners,
+          Huawei AppGallery, and any brand whose audience footprint is
+          mobile, regional, and Twitch-agnostic.
+        </p>
+        <div class="target"><span class="lbl">Built for</span><b>App platforms · QSR · Retail · CPG · Mobile finance</b></div>
+        <div class="archetype" style="margin-top:14px"><span class="pip"></span>The "regional product launch" SKU</div>
+      </div>
+      <div class="bnd-meta">
+        <div class="effort-block">
+          <div class="l">Operational effort</div>
+          <div class="effort-line"><div class="who">Player</div><div class="meter"><div class="dot on"></div><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><div class="lbl">Per-piece</div></div>
+          <div class="effort-line"><div class="who">Falcons</div><div class="meter"><div class="dot on"></div><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><div class="lbl">Coordinated</div></div>
+        </div>
+        <div class="price-wrap">
+          <div class="l">Price floor · 4–6 week campaign</div>
+          <div class="range"><small>SAR</small>560K — 1.13M</div>
+          <div class="alt">≈ $150,000 — $300,000 USD</div>
+          <div class="term">Top of band: includes on-site Cenomi-grade event activation. Bottom of band: digital-only spread.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bnd-body">
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>What's included</div>
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>25 MLBB players</b> · 1 IG Reel + 1 TikTok each = <b>50 social pieces</b></div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>1 group "team challenge" video</b> — full squad, brand-led concept, single hero asset</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>2 esports-influencer activations</b> — Tier-1 KSA creators amplifying the moment</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>On-site event appearance</b> — squad members at brand event (Cenomi mall, retail flagship)</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Geo-targeted creative variants</b> — same concept, localized for KSA / SEA / PH</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Projected ROI</div>
+        <div class="roi-grid">
+          <div class="roi-stat"><div class="l">Combined reach</div><div class="v num">38<small>M followers</small></div><div class="d">25 players + 4 influencers across IG, TikTok, YouTube</div></div>
+          <div class="roi-stat"><div class="l">Projected impressions</div><div class="v num">22<small>M — 28M</small></div><div class="d">Avg view rates: Reels 14% · TikTok 11% · stories 8%</div></div>
+          <div class="roi-stat"><div class="l">Geo footprint</div><div class="v num">PH · ID · MENA</div><div class="d">Direct overlap with Huawei AppGallery + Cenomi MENA footprint</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+        <div class="pnp-list">
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Brand brief</div>
+            <div class="sp">2-page concept · what to show, what to say, what to avoid</div>
+          </div>
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Brand asset pack</div>
+            <div class="sp">Logo, product imagery, packshots, music license (if applicable)</div>
+          </div>
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2 2"/></svg>Event date + venue</div>
+            <div class="sp">For the on-site appearance — 4 weeks lead time on attendance</div>
+          </div>
+          <div class="pnp-foot">
+            Falcons handles all <b>creative direction, scripts, talent comms, and posting cadence</b>. Brand reviews per round, doesn't manage the production.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bnd-cta">
+      <div class="ctas">
+        <button class="b-cta">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="width:14px;height:14px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        <button class="b-cta-ghost">Download spec sheet</button>
+      </div>
+      <button class="b-admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+        Adjust pricing · admin only
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ════ № 03 — PERFORMANCE / PC BUNDLE ════ -->
+<section class="bundle cream">
+  <div class="inner">
+    <div class="bnd-h">
+      <div>
+        <div class="bnd-num">№ 03 · Twitch-native</div>
+        <h2>Performance<br><em>PC Bundle</em>.</h2>
+        <p class="pos">
+          Restricted to the 100% Twitch-active rosters — Fortnite, Apex,
+          FaZe Falcons, Riyadh Falcons, CS2, Valorant. The unlock is the
+          Performance Moment of the Week: a highlight reel pulled from
+          existing VODs by the Falcons media team. Players don't do anything extra.
+          This is the bundle ExitLag should be paying for, not per-player streaming deals.
+        </p>
+        <div class="target"><span class="lbl">Built for</span><b>ExitLag · peripherals · energy drinks · gaming hardware · PC components</b></div>
+        <div class="archetype" style="margin-top:14px"><span class="pip"></span>The "low player effort, high content cadence" SKU</div>
+      </div>
+      <div class="bnd-meta">
+        <div class="effort-block">
+          <div class="l">Operational effort</div>
+          <div class="effort-line"><div class="who">Player</div><div class="meter"><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><div class="lbl">Quarterly only</div></div>
+          <div class="effort-line"><div class="who">Falcons</div><div class="meter"><div class="dot on"></div><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><div class="lbl">Editor-driven</div></div>
+        </div>
+        <div class="price-wrap">
+          <div class="l">Price floor · per quarter</div>
+          <div class="range"><small>SAR</small>750K — 1.88M</div>
+          <div class="alt">≈ $200,000 — $500,000 USD</div>
+          <div class="term">Scales with team count: 2 teams entry, 4 teams mid, 6+ teams top of band.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bnd-body">
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>What's included</div>
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Persistent Twitch overlay</b> + chat command across all Twitch-active rosters · all streams</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Performance Moment of the Week</b> — 1 highlight reel per team per month, pulled from existing VODs by Falcons editors</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>1 player-led long-form YouTube</b> per quarter — gear talk, performance review, brand-anchored</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Jersey patch</b> on all participating teams for the quarter</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Quarterly reporting</b> — concurrents, watch-time, click-through, code redemption</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Projected ROI</div>
+        <div class="roi-grid">
+          <div class="roi-stat"><div class="l">Branded stream hours</div><div class="v num">2,100<small>+/qtr</small></div><div class="d">All Twitch-active rosters · all sessions · overlay continuous</div></div>
+          <div class="roi-stat"><div class="l">Highlight reel reach</div><div class="v num">12<small>M/qtr</small></div><div class="d">Cross-posted IG + TikTok + YouTube Shorts + Twitter</div></div>
+          <div class="roi-stat"><div class="l">Long-form views</div><div class="v num">340<small>K — 580K</small></div><div class="d">YouTube — gear-content audience converts at higher rates</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+        <div class="pnp-list">
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>Stream overlay artwork</div>
+            <div class="sp">PNG · 1920×140 lower-third + 320×900 sidebar variants</div>
+          </div>
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>Chat command + promo code</div>
+            <div class="sp">!brandcommand response text + active promo code</div>
+          </div>
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 8 16 12 22 16 22 8"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>Highlight reel template</div>
+            <div class="sp">Lower-third lockup + outro card (5s)</div>
+          </div>
+          <div class="pnp-foot">
+            <b>You provide nothing for the YouTube long-form</b> — Falcons writes, shoots, edits, posts. You review the cut. That's it.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bnd-cta">
+      <div class="ctas">
+        <button class="b-cta">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="width:14px;height:14px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        <button class="b-cta-ghost">Download spec sheet</button>
+      </div>
+      <button class="b-admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+        Adjust pricing · admin only
+      </button>
+    </div>
+
+    <!-- sub-activations under PC Bundle -->
+    <div class="sub-strip">
+      <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Smaller SKUs that nest under № 03</div>
+      <div class="sub-grid">
+        <div class="sub-card">
+          <div class="nm">Single-team trial<button style="font-size:11px;color:var(--gold);font-weight:600">Add →</button></div>
+          <div class="ds">One Twitch-active team for one month. Overlay only. Designed for first-time partners.</div>
+          <div class="pr"><small>From SAR</small>95K</div>
+        </div>
+        <div class="sub-card">
+          <div class="nm">Quarterly long-form add-on<button style="font-size:11px;color:var(--gold);font-weight:600">Add →</button></div>
+          <div class="ds">+1 extra YouTube long-form per quarter beyond what's included.</div>
+          <div class="pr"><small>From SAR</small>62K</div>
+        </div>
+        <div class="sub-card">
+          <div class="nm">Game-launch tryout extension<button style="font-size:11px;color:var(--gold);font-weight:600">Add →</button></div>
+          <div class="ds">Squad live-tests an unreleased title. Requires NDA + 3 weeks lead.</div>
+          <div class="pr"><small>From SAR</small>165K</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ № 04 — DAY-IN-THE-LIFE ENGINE ════ -->
+<section class="bundle ivory">
+  <div class="inner">
+    <div class="bnd-h">
+      <div>
+        <div class="bnd-num">№ 04 · 12-month embedded</div>
+        <h2>Day-in-the-Life<br><em>Content Engine</em>.</h2>
+        <p class="pos">
+          Six to eight charismatic talents — esports influencers plus a handful of player faces — sell the brand a 12-month embedded
+          presence. The brand becomes a recurring fixture in monthly behind-the-scenes
+          content, bootcamp footage, travel vlogs. Falcons produces centrally;
+          players just live their lives. The marginal cost of a 14th brand
+          showing up in B-roll is effectively zero.
+        </p>
+        <div class="target"><span class="lbl">Built for</span><b>Red Bull / Monster / Prime · Lifestyle · Apparel · Watches · Travel · Hospitality</b></div>
+        <div class="archetype" style="margin-top:14px"><span class="pip"></span>The "highest-margin product on the menu" SKU</div>
+      </div>
+      <div class="bnd-meta">
+        <div class="effort-block">
+          <div class="l">Operational effort</div>
+          <div class="effort-line"><div class="who">Player</div><div class="meter"><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><div class="lbl">Just live</div></div>
+          <div class="effort-line"><div class="who">Falcons</div><div class="meter"><div class="dot on"></div><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><div class="lbl">Studio-led</div></div>
+        </div>
+        <div class="price-wrap">
+          <div class="l">Price floor · per brand · per year</div>
+          <div class="range"><small>SAR</small>1.5M — 4.5M</div>
+          <div class="alt">≈ $400,000 — $1,200,000 USD</div>
+          <div class="term">Top of band: <b>category exclusivity</b> — only one fintech, one energy drink, one apparel brand at a time.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bnd-body">
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>What's included</div>
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>6-8 embedded talents</b> — Falcons selects the right faces for the brand archetype</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>1 monthly long-form BTS</b> piece — bootcamp, training day, travel, content shoot</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Brand integration in ambient B-roll</b> — branded fridge, branded beverage, branded gear, branded travel</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Quarterly hero piece</b> — high-production-value brand spot featuring the embedded talents</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-with="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Category exclusivity</b> — top tier locks the brand as the only one in its vertical for 12 months</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>1-year usage rights</b> on all content for brand's owned channels</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Projected ROI</div>
+        <div class="roi-grid">
+          <div class="roi-stat"><div class="l">Annual content volume</div><div class="v num">12<small>+ hero, 50+ ambient</small></div><div class="d">Monthly BTS + quarterly hero + ambient brand presence in ~50 pieces of content</div></div>
+          <div class="roi-stat"><div class="l">Combined annual reach</div><div class="v num">180<small>M</small></div><div class="d">Across 6-8 embedded talents · IG + TikTok + YouTube + Twitch</div></div>
+          <div class="roi-stat"><div class="l">Earned media multiplier</div><div class="v num">3.4×<small> spend</small></div><div class="d">Industry benchmark for embedded-talent annual deals (Red Bull/Monster precedent)</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+        <div class="pnp-list">
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9M14 17H5"/></svg>Brand archetype brief</div>
+            <div class="sp">"What the brand is" — values, tone, where it lives in talent's life</div>
+          </div>
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Product / asset deployment</div>
+            <div class="sp">Physical product placed in environments where talents already live (training facility, travel kit, content set)</div>
+          </div>
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>Quarterly review cadence</div>
+            <div class="sp">One 60-minute brand call per quarter — content review + next-quarter creative direction</div>
+          </div>
+          <div class="pnp-foot">
+            <b>The brand provides product and direction; Falcons provides everything else.</b> No daily approvals. No micromanagement of player schedules. Brand reviews the quarterly hero, signs off, content lives.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bnd-cta">
+      <div class="ctas">
+        <button class="b-cta">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="width:14px;height:14px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        <button class="b-cta-ghost">Download spec sheet</button>
+      </div>
+      <button class="b-admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+        Adjust pricing · admin only
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ════ № 05 — TOURNAMENT ACTIVATION PACK ════ -->
+<section class="bundle dark">
+  <div class="inner">
+    <div class="bnd-h">
+      <div>
+        <div class="bnd-num">№ 05 · Per major</div>
+        <h2>Tournament<br><em>Activation Pack</em>.</h2>
+        <p class="pos">
+          Tied to specific majors — Esports World Cup, IEM, Worlds, Riyadh Masters.
+          Pre-tournament hype reels, on-site interviews, post-result reaction
+          content from the Influencer group, watch-along streams from any 3
+          streaming-active players. Brands buy slots, not players.
+        </p>
+        <div class="target"><span class="lbl">Built for</span><b>Tournament sponsors · Beverage · Mobile carriers · Gaming-adjacent retail</b></div>
+        <div class="archetype" style="margin-top:14px"><span class="pip"></span>The "moment-driven, slot-based" SKU</div>
+      </div>
+      <div class="bnd-meta">
+        <div class="effort-block">
+          <div class="l">Operational effort</div>
+          <div class="effort-line"><div class="who">Player</div><div class="meter"><div class="dot on"></div><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><div class="lbl">Event-only</div></div>
+          <div class="effort-line"><div class="who">Falcons</div><div class="meter"><div class="dot on"></div><div class="dot on"></div><div class="dot on"></div><div class="dot"></div><div class="dot"></div></div><div class="lbl">Producer-led</div></div>
+        </div>
+        <div class="price-wrap">
+          <div class="l">Price floor · per event</div>
+          <div class="range"><small>SAR</small>280K — 750K</div>
+          <div class="alt">≈ $75,000 — $200,000 USD</div>
+          <div class="term">Tier scales with event: EWC top of band · IEM/Worlds mid · regional / Riyadh Masters entry.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bnd-body">
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>What's included</div>
+        <div class="deliv">
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Pre-tournament hype reel</b> — 1 group cinematic + 3 individual talent posts in the lead-up week</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>On-site interviews</b> — Falcons crew captures branded post-match interviews</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>Post-result reaction content</b> — 4 esports-influencer reaction posts within 24h of finals</div></div>
+          <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div><b>3 watch-along streams</b> — any 3 streaming-active players doing co-stream coverage</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Projected ROI</div>
+        <div class="roi-grid">
+          <div class="roi-stat"><div class="l">Event-window reach</div><div class="v num">14<small>M</small></div><div class="d">Hype + reaction + watch-along combined audience over a 7-10 day window</div></div>
+          <div class="roi-stat"><div class="l">Watch-along hours</div><div class="v num">240<small> hrs total</small></div><div class="d">3 streamers × avg 6h × event days · branded throughout</div></div>
+          <div class="roi-stat"><div class="l">Tournament seasonality</div><div class="v num">1.40×</div><div class="d">Already priced in — brand pays the premium for the moment, not retroactively</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>What you provide</div>
+        <div class="pnp-list">
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>Event commitment</div>
+            <div class="sp">Confirmed slot per major — book 8 weeks before tournament</div>
+          </div>
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Brand asset pack</div>
+            <div class="sp">Logo, hype-reel intro card, talent-read script (60 words)</div>
+          </div>
+          <div class="pnp-asset">
+            <div class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>On-site brand presence</div>
+            <div class="sp">Optional: physical event activation Falcons coordinates with venue</div>
+          </div>
+          <div class="pnp-foot">
+            Falcons handles all <b>scheduling, talent comms, on-site capture, and editing</b>. Brand approves the cut, not the process.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bnd-cta">
+      <div class="ctas">
+        <button class="b-cta">Know more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="width:14px;height:14px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        <button class="b-cta-ghost">Download spec sheet</button>
+      </div>
+      <button class="b-admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+        Adjust pricing · admin only
+      </button>
+    </div>
+
+    <!-- sub-activations under Tournament Pack -->
+    <div class="sub-strip">
+      <div class="col-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/></svg>Smaller SKUs that nest under № 05</div>
+      <div class="sub-grid">
+        <div class="sub-card">
+          <div class="nm">Saudi Esports Marathon<button style="font-size:11px;color:var(--gold);font-weight:600">Add →</button></div>
+          <div class="ds">Abo Najd's signature 14-hour broadcast covering all Falcons tournaments. Standalone or as a bolt-on.</div>
+          <div class="pr"><small>From SAR</small>385K</div>
+        </div>
+        <div class="sub-card">
+          <div class="nm">Tournament Victory Mention<button style="font-size:11px;color:var(--gold);font-weight:600">Add →</button></div>
+          <div class="ds">Win-or-no-fee structure. Brand named in celebration moment if Falcons wins.</div>
+          <div class="pr"><small>From SAR</small>95K</div>
+        </div>
+        <div class="sub-card">
+          <div class="nm">Tournament-Week Saturation<button style="font-size:11px;color:var(--gold);font-weight:600">Add →</button></div>
+          <div class="ds">6 talents covering one major from 6 angles for the whole event week.</div>
+          <div class="pr"><small>From SAR</small>520K</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── METHODOLOGY ─── -->
+<section class="method">
+  <div class="inner">
+    <div>
+      <div class="eb">How operational leverage compounds</div>
+      <h3>The lower the lift,<br>the higher the <em>margin</em>.</h3>
+      <p class="lede">
+        These five aren't ranked by price — they're ranked by how much the
+        activation runs without us. № 04 is the highest-margin product on
+        the menu because once the embedded relationship is set up, every
+        additional brand showing up in B-roll costs us almost nothing to
+        deliver. № 01 is closer behind it. Brands who understand this
+        scale spend with us. Brands who don't, churn.
+      </p>
+    </div>
+    <div class="method-grid">
+      <div class="method-stat">
+        <div class="l">№ 01 · Jersey + Broadcast</div>
+        <div class="v num">Set up once</div>
+        <div class="d">Graphics + comms locked in 14 days. Runs for the season. Player effort: zero.</div>
+      </div>
+      <div class="method-stat">
+        <div class="l">№ 02 · Mobile Amp</div>
+        <div class="v num">Coordinated</div>
+        <div class="d">Per-player content production. Falcons writes, scripts, shoots. Players post.</div>
+      </div>
+      <div class="method-stat">
+        <div class="l">№ 03 · Performance/PC</div>
+        <div class="v num">Editor-driven</div>
+        <div class="d">Highlight reels pulled from existing VODs. Long-form quarterly. Players: minimal.</div>
+      </div>
+      <div class="method-stat">
+        <div class="l">№ 04 · Day-in-the-Life</div>
+        <div class="v num">Studio-led</div>
+        <div class="d">Brand becomes ambient. Marginal cost of an additional brand: near zero.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="inner">
+    <div style="display:flex;align-items:center;gap:12px;color:#fff">
+      <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(180deg,#F2C94C,#D4A514);display:grid;place-items:center;color:#0B2340;font-weight:800;font-size:14px">F</div>
+      <span>Team Falcons · Talent Division</span>
+    </div>
+    <div style="display:flex;gap:32px">
+      <a href="#" style="opacity:.7">Roster</a>
+      <a href="#" style="opacity:.7">Methodology</a>
+      <a href="#" style="opacity:.7">Press</a>
+      <a href="#" style="opacity:.7">Contact</a>
+    </div>
+  </div>
+  <div class="legal">
+    All projected ROI is indicative · Final scoping calibrated against Falcons Pricing OS v1 · SAR canonical, 1 USD = 3.75 SAR (Saudi peg) · © 2026 Team Falcons.
+  </div>
+</footer>
+
+</body>
+</html>
