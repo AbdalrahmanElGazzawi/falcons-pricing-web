@@ -10,6 +10,21 @@ import {
   PILLAR_LABEL, COHORT_LABEL, COMPLEXITY_LABEL, FALCONS_IPS, fmtSar,
 } from '@/lib/activations';
 
+// Tier-S talent strip — Drive image-proxy URLs (cleared headshots).
+// If a photo fails to load (auth / share-permission), the monogram tile
+// fades in as a fallback (handled inline via onError).
+const TIER_S_TALENT = [
+  { mono: 'CL', nick: 'Cellium',   game: 'CoD',     flag: '🇺🇸', driveId: '1KgjrbvOyttSImVQks9LAY6rxHs2A6aB_' },
+  { mono: 'M0', nick: 'm0NESY',    game: 'CS2',     flag: '🇷🇺', driveId: '1udrGwLIXS4LW6eYwFcMxAy0UKRHuyjKn' },
+  { mono: 'NK', nick: 'NiKo',      game: 'CS2',     flag: '🇧🇦', driveId: '1gdhkqyxEcng9HikVe-Y6fxGkBZQNwm6S' },
+  { mono: 'MS', nick: 'msdossary', game: 'EAFC',    flag: '🇸🇦', driveId: '1QhOHEr6ZAwre7bGvI-gpZP4oPCeZA3tR' },
+  { mono: 'VJ', nick: 'Vejrgang',  game: 'EAFC',    flag: '🇩🇰', driveId: '1Prjt9TogcCik9lxwZsLzgf5Z0NCKfach' },
+  { mono: 'AN', nick: 'Abo Najd',  game: 'Influencer', flag: '🇸🇦', driveId: '1DTnhT549EW0XjgDDpIMfyMPO5v2POz1V' },
+  { mono: 'PB', nick: 'Peterbot',  game: 'Fortnite',flag: '🇺🇸', driveId: '15_Jou6hb6_MmZ8x0wOn4AeOjroiIH6eD' },
+];
+
+const driveImg = (id: string, w = 320) => `https://lh3.googleusercontent.com/d/${id}=w${w}`;
+
 const PILLAR_ICON: Record<ActivationPillar, typeof Sparkles> = {
   broadcast: Tv, stream: Mic, content: Layers, digital: Globe,
   facility: Building, event: Trophy, talent: Users, hospitality: Hotel,
@@ -114,6 +129,44 @@ export function PublicActivationsContent({ activations }: { activations: Activat
             <HeroStat value={String(activations.length)} label="activations" accent="green" />
             <HeroStat value="11"  label="Falcons IPs" accent="gold" />
             <HeroStat value="4×"  label="complexity tiers" />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Tier-S Talent strip ───────────────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-6 sm:px-8 -mt-4 sm:-mt-6 relative z-10">
+        <div className="rounded-2xl bg-navyDark text-white p-5 sm:p-6 relative overflow-hidden shadow-lift">
+          <div aria-hidden className="absolute -top-20 -right-20 w-72 h-72 rounded-full opacity-20 blur-3xl"
+            style={{ background: 'radial-gradient(circle, #D4A514 0%, transparent 70%)' }} />
+          <div className="relative flex items-center justify-between mb-4">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold">The roster behind the catalogue</div>
+              <h3 className="text-lg sm:text-xl font-extrabold mt-1">Tier-S talent · cleared headshots</h3>
+            </div>
+            <div className="text-[11px] text-white/60">183 active · 12 Tier-S · 30+ rosters</div>
+          </div>
+          <div className="relative grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+            {TIER_S_TALENT.map(t => (
+              <div key={t.nick} className="rounded-xl overflow-hidden border border-gold/30 bg-gold/5 group">
+                <div className="aspect-square relative bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center">
+                  {/* fallback monogram (sits behind, revealed if img fails) */}
+                  <span className="text-3xl font-extrabold text-gold/60 tracking-wide select-none">{t.mono}</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={driveImg(t.driveId, 320)}
+                    alt={t.nick}
+                    referrerPolicy="no-referrer"
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                  />
+                  <span className="absolute top-1.5 right-1.5 text-[8.5px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-gold text-navy">Tier S</span>
+                </div>
+                <div className="p-2.5">
+                  <div className="text-[12.5px] font-bold leading-tight truncate">{t.nick}</div>
+                  <div className="text-[10.5px] text-white/55 mt-0.5">{t.game} · {t.flag}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
