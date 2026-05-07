@@ -1,7 +1,7 @@
 import { requireStaff } from '@/lib/auth';
 import { Shell, PageHeader } from '@/components/Shell';
 import { AccessDenied } from '@/components/AccessDenied';
-import { fetchAllActivations } from '@/lib/activations';
+import { fetchAllActivations } from '@/lib/activations-server';
 import { AdminActivationsContent } from './AdminActivationsContent';
 
 export const dynamic = 'force-dynamic';

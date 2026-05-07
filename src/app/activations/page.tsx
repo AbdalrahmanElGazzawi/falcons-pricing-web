@@ -1,4 +1,4 @@
-import { fetchActiveActivations } from '@/lib/activations';
+import { fetchActiveActivations } from '@/lib/activations-server';
 import { PublicActivationsContent } from './PublicActivationsContent';
 
 export const dynamic = 'force-dynamic';
