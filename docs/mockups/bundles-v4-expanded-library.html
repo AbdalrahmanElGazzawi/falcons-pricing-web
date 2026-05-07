@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Falcons · Activations Catalogue (v4)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B2340; --navy-2:#06182A; --navy-3:#112E4F; --navy-4:#1A3556;
+    --gold:#D4A514; --gold-soft:#E5C66E; --gold-pale:#F4E5B3; --gold-deep:#9C7800;
+    --green:#2ED06E; --green-d:#22A35A; --green-soft:#A7E5C0;
+    --cream:#F8F4ED; --cream-2:#EFE8DA; --cream-3:#E8DFCC;
+    --ink:#0E1A2F; --ink-2:#324159;
+    --label:#5A6678; --mute:#94A3B8;
+    --line:#E6EAF0; --line-2:#CFD6E1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--cream);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01"}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .serif{font-family:'Cormorant Garamond',serif;font-weight:400;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+  /* ─── nav ─── */
+  nav.top{
+    position:sticky;top:0;z-index:60;height:68px;
+    display:flex;align-items:center;padding:0 56px;gap:48px;
+    background:rgba(6,24,42,.92);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid rgba(255,255,255,.08);color:#fff
+  }
+  nav.top .mark{display:flex;align-items:center;gap:12px;color:#fff}
+  nav.top .mark .lzg{width:32px;height:32px;border-radius:9px;background:linear-gradient(180deg,#F2C94C,#D4A514);display:grid;place-items:center;color:var(--navy);font-weight:800;font-size:15px}
+  nav.top .mark span{font-weight:600;letter-spacing:1.4px;font-size:13px;text-transform:uppercase}
+  nav.top .mark span em{font-style:normal;color:var(--gold);font-weight:400;margin-left:4px}
+  nav.top .links{display:flex;gap:28px;font-size:13.5px;color:rgba(255,255,255,.7);font-weight:500}
+  nav.top .links a:hover,nav.top .links a.active{color:#fff}
+  nav.top .links a.active{position:relative}
+  nav.top .links a.active::after{content:"";position:absolute;left:0;right:0;bottom:-22px;height:2px;background:var(--gold)}
+  nav.top .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+  nav.top .admin-pill{
+    font:600 10.5px/1 Inter,sans-serif;letter-spacing:1px;text-transform:uppercase;
+    padding:6px 11px;border-radius:6px;background:rgba(212,165,20,.18);color:var(--gold-soft);
+    border:1px solid rgba(212,165,20,.5);
+    display:inline-flex;align-items:center;gap:6px
+  }
+  nav.top .admin-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  nav.top .cta{padding:9px 18px;border-radius:999px;background:var(--gold);color:var(--navy);font-size:13px;font-weight:600;letter-spacing:.3px;transition:.2s}
+  nav.top .cta:hover{background:var(--gold-soft)}
+
+  /* ─── hero ─── */
+  .hero{
+    position:relative;padding:120px 56px 80px;
+    background:
+      radial-gradient(circle at 18% 28%,rgba(212,165,20,.14),transparent 50%),
+      radial-gradient(circle at 82% 78%,rgba(46,208,110,.07),transparent 55%),
+      linear-gradient(180deg,var(--navy-2) 0%,var(--navy) 100%);
+    color:#fff;overflow:hidden
+  }
+  .hero::after{
+    content:"";position:absolute;inset:0;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cdefs%3E%3Cpattern id='g' width='40' height='40' patternUnits='userSpaceOnUse'%3E%3Cpath d='M0 .5H40' stroke='%23ffffff' stroke-opacity='.025'/%3E%3Cpath d='M.5 0V40' stroke='%23ffffff' stroke-opacity='.025'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='200' height='200' fill='url(%23g)'/%3E%3C/svg%3E");
+    pointer-events:none
+  }
+  .hero .inner{position:relative;max-width:1280px;margin:0 auto;z-index:1}
+  .hero .eb{font-size:11px;letter-spacing:3.6px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;margin-bottom:24px;display:flex;align-items:center;gap:14px}
+  .hero .eb::before{content:"";width:32px;height:1px;background:var(--gold)}
+  .hero h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(56px,8vw,118px);line-height:.94;letter-spacing:-.025em;margin-bottom:32px;max-width:1100px}
+  .hero h1 em{font-style:italic;color:var(--gold);font-weight:400}
+  .hero .lede{max-width:680px;font-size:17px;line-height:1.7;color:rgba(255,255,255,.78);font-weight:400;margin-bottom:64px}
+
+  .hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid rgba(255,255,255,.12);padding-top:32px}
+  .hero-grid .h4{padding-right:24px;border-right:1px solid rgba(255,255,255,.08)}
+  .hero-grid .h4:last-child{border-right:none}
+  .hero-grid .h4 .v{font:500 36px/1 'Cormorant Garamond',serif;color:var(--gold);letter-spacing:-.02em;margin-bottom:8px}
+  .hero-grid .h4 .l{font:500 11.5px/1.4 Inter,sans-serif;color:rgba(255,255,255,.7);letter-spacing:.4px}
+  .hero-grid .h4 .l b{color:#fff;font-weight:600}
+
+  /* ─── filter rail ─── */
+  .filter-rail{
+    position:sticky;top:68px;z-index:50;
+    background:rgba(248,244,237,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid rgba(11,35,64,.08);
+    padding:18px 56px;
+  }
+  .filter-rail .inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .filter-rail .grp{display:flex;align-items:center;gap:8px}
+  .filter-rail .glabel{font:600 10.5px/1 Inter,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-deep);margin-right:4px}
+  .chip{
+    padding:7px 13px;border-radius:999px;
+    background:#fff;border:1px solid var(--line-2);
+    font:500 12px/1 Inter,sans-serif;color:var(--ink-2);
+    cursor:pointer;transition:.15s;letter-spacing:.1px;
+    display:inline-flex;align-items:center;gap:7px
+  }
+  .chip:hover{border-color:var(--ink);color:var(--ink)}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .chip.gold.on{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+  .chip .ct{font:600 10.5px/1 'JetBrains Mono',monospace;color:var(--mute);margin-left:2px}
+  .chip.on .ct{color:rgba(255,255,255,.65)}
+  .chip.gold.on .ct{color:rgba(11,35,64,.65)}
+  .filter-rail .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+  .filter-rail .live-count{font:600 12px/1 'JetBrains Mono',monospace;color:var(--ink-2);letter-spacing:.5px;padding:8px 12px;background:rgba(11,35,64,.05);border-radius:8px}
+  .filter-rail .live-count .v{color:var(--gold-deep);font-weight:700}
+  .filter-rail .reset{font:600 11.5px/1 Inter,sans-serif;letter-spacing:.3px;color:var(--label);cursor:pointer;padding:8px 12px;border-radius:8px;border:1px solid transparent}
+  .filter-rail .reset:hover{border-color:var(--line-2);color:var(--ink)}
+
+  /* ─── section base ─── */
+  section.s{padding:120px 56px;position:relative}
+  section.s.dark{background:var(--navy-2);color:#fff}
+  section.s.cream{background:var(--cream);color:var(--ink)}
+  section.s.ivory{background:var(--cream-2);color:var(--ink)}
+  section.s .inner{max-width:1280px;margin:0 auto}
+  section.s .eb{font-size:11px;letter-spacing:3.6px;text-transform:uppercase;color:var(--gold-deep);font-weight:600;margin-bottom:24px;display:flex;align-items:center;gap:14px}
+  section.s.dark .eb{color:var(--gold-soft)}
+  section.s .eb::before{content:"";width:32px;height:1px;background:currentColor;opacity:.5}
+  section.s h2{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(48px,5.2vw,80px);line-height:1;letter-spacing:-.025em;margin-bottom:24px;max-width:1000px}
+  section.s h2 em{font-style:italic;color:var(--gold);font-weight:400}
+  section.s.dark h2 em{color:var(--gold-soft)}
+  section.s .lede{max-width:720px;font-size:17px;line-height:1.65;color:var(--ink-2);font-weight:400;margin-bottom:56px}
+  section.s.dark .lede{color:rgba(255,255,255,.8)}
+
+  /* ─── canonical strip — 5 marquee ─── */
+  .canonical-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .can-card{
+    padding:28px 22px;border-radius:18px;
+    background:#fff;border:1px solid var(--line);
+    display:flex;flex-direction:column;gap:14px;
+    min-height:380px;cursor:pointer;transition:.2s;position:relative;overflow:hidden
+  }
+  .can-card:hover{border-color:var(--navy);transform:translateY(-4px);box-shadow:0 20px 40px -20px rgba(11,35,64,.15)}
+  .can-card .num{font:600 11px/1 'JetBrains Mono',monospace;letter-spacing:2.4px;color:var(--gold-deep)}
+  .can-card .nm{font:300 30px/1 'Cormorant Garamond',serif;letter-spacing:-.02em;color:var(--navy);margin-top:6px}
+  .can-card .nm em{font-style:italic;color:var(--gold);font-weight:400}
+  .can-card .arch{font:500 11.5px/1.4 Inter,sans-serif;color:var(--label);margin-top:4px;flex:1}
+  .can-card .pr{padding-top:14px;border-top:1px dashed var(--line);font:500 14px/1 'Cormorant Garamond',serif;color:var(--gold-deep);margin-top:auto}
+  .can-card .pr small{font:600 10px/1 Inter,sans-serif;color:var(--mute);letter-spacing:1.2px;text-transform:uppercase;margin-right:4px}
+  .can-card .effort{display:flex;gap:6px;margin-top:6px;font:500 10.5px/1 Inter,sans-serif;color:var(--label);letter-spacing:.3px}
+  .can-card .effort .dot{display:inline-flex;width:5px;height:5px;border-radius:50%;background:rgba(11,35,64,.18);align-self:center;margin:0 1px}
+  .can-card .effort .dot.on{background:var(--gold)}
+  .can-card .more{font:600 11.5px/1 Inter,sans-serif;color:var(--navy);display:inline-flex;align-items:center;gap:6px;margin-top:8px}
+  .can-card .more::after{content:"→";color:var(--gold);transition:.2s}
+  .can-card:hover .more::after{transform:translateX(3px)}
+
+  /* ─── find your fit ─── */
+  .fyf-wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:64px;align-items:start}
+  .fyf-questions{display:flex;flex-direction:column;gap:28px}
+  .fyf-q{
+    padding:24px 28px;border-radius:16px;
+    background:#fff;border:1px solid var(--line);
+    transition:.2s
+  }
+  section.s.dark .fyf-q{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1)}
+  .fyf-q .qn{font:600 10.5px/1 Inter,sans-serif;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold-deep);margin-bottom:6px}
+  section.s.dark .fyf-q .qn{color:var(--gold-soft)}
+  .fyf-q .qt{font:300 24px/1.15 'Cormorant Garamond',serif;letter-spacing:-.01em;color:var(--navy);margin-bottom:14px}
+  section.s.dark .fyf-q .qt{color:#fff}
+  .fyf-q .opts{display:flex;flex-wrap:wrap;gap:8px}
+  .fyf-out{
+    padding:32px 28px;border-radius:16px;
+    background:linear-gradient(180deg,rgba(212,165,20,.06),rgba(212,165,20,.02));
+    border:1px solid rgba(212,165,20,.3);min-height:380px;
+    display:flex;flex-direction:column
+  }
+  section.s.dark .fyf-out{background:linear-gradient(180deg,rgba(212,165,20,.1),rgba(212,165,20,.04));border-color:rgba(212,165,20,.4)}
+  .fyf-out .l{font:600 10.5px/1 Inter,sans-serif;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold-deep);margin-bottom:8px}
+  section.s.dark .fyf-out .l{color:var(--gold-soft)}
+  .fyf-out .ht{font:300 28px/1.1 'Cormorant Garamond',serif;letter-spacing:-.01em;color:var(--navy);margin-bottom:24px}
+  section.s.dark .fyf-out .ht{color:#fff}
+  .fyf-match-list{display:flex;flex-direction:column;gap:10px;flex:1}
+  .fyf-match{
+    padding:14px 16px;border-radius:11px;background:#fff;border:1px solid var(--line);
+    display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center
+  }
+  section.s.dark .fyf-match{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08)}
+  .fyf-match .nm{font:600 13.5px/1.3 Inter,sans-serif;color:var(--navy)}
+  section.s.dark .fyf-match .nm{color:#fff}
+  .fyf-match .meta{font:500 11px/1.4 Inter,sans-serif;color:var(--label);margin-top:3px}
+  section.s.dark .fyf-match .meta{color:rgba(255,255,255,.65)}
+  .fyf-match .pr{font:500 16px/1 'Cormorant Garamond',serif;color:var(--gold-deep)}
+  .fyf-match .pr small{font:600 9.5px/1 Inter,sans-serif;color:var(--mute);letter-spacing:1.2px;text-transform:uppercase;margin-right:3px}
+  .fyf-empty{font:400 14px/1.5 Inter,sans-serif;color:var(--label);font-style:italic;padding:60px 0;text-align:center}
+
+  /* ─── calendar ─── */
+  .cal-wrap{display:flex;flex-direction:column;gap:36px;margin-top:24px}
+  .cal-track{
+    position:relative;display:grid;grid-template-columns:repeat(12,1fr);gap:0;
+    padding:42px 0 24px;background:rgba(255,255,255,.04);border-radius:14px;
+    border:1px solid rgba(255,255,255,.1);overflow:hidden
+  }
+  section.s.cream .cal-track{background:#fff;border-color:var(--line)}
+  .cal-month{
+    padding:14px 8px 14px;border-right:1px solid rgba(255,255,255,.06);
+    text-align:center;position:relative;min-height:140px
+  }
+  section.s.cream .cal-month{border-right-color:var(--line)}
+  .cal-month:last-child{border-right:none}
+  .cal-month .mlbl{font:600 10.5px/1 'JetBrains Mono',monospace;color:rgba(255,255,255,.55);letter-spacing:1.5px;margin-bottom:6px}
+  section.s.cream .cal-month .mlbl{color:var(--mute)}
+  .cal-anchor{
+    margin-top:8px;padding:7px 9px;border-radius:8px;
+    font:600 10.5px/1.25 Inter,sans-serif;
+    background:rgba(212,165,20,.18);color:var(--gold-soft);
+    border-left:2.5px solid var(--gold);text-align:left;
+    cursor:pointer;transition:.15s
+  }
+  section.s.cream .cal-anchor{background:rgba(212,165,20,.1);color:var(--gold-deep)}
+  .cal-anchor:hover{background:rgba(212,165,20,.32)}
+  section.s.cream .cal-anchor:hover{background:rgba(212,165,20,.2)}
+  .cal-anchor .nm{font-weight:600}
+  .cal-anchor .ct{font-weight:500;opacity:.7;margin-top:2px;font-size:9.5px;letter-spacing:.3px}
+
+  /* ─── falcons IPs ─── */
+  .ip-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .ip-card{
+    padding:24px 22px;border-radius:16px;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+    display:flex;flex-direction:column;gap:10px;
+    min-height:240px;cursor:pointer;transition:.2s;position:relative
+  }
+  section.s.cream .ip-card{background:#fff;border-color:var(--line)}
+  section.s.ivory .ip-card{background:#fff;border-color:var(--line)}
+  .ip-card:hover{border-color:var(--gold);transform:translateY(-3px)}
+  .ip-card .ip-mono{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(135deg,var(--gold) 0%,var(--gold-deep) 100%);
+    display:grid;place-items:center;color:var(--navy);font:700 14px/1 'JetBrains Mono',monospace;letter-spacing:.5px
+  }
+  .ip-card .ip-nm{font:300 22px/1.1 'Cormorant Garamond',serif;letter-spacing:-.015em;color:#fff;margin-top:4px}
+  section.s.cream .ip-card .ip-nm{color:var(--navy)}
+  section.s.ivory .ip-card .ip-nm{color:var(--navy)}
+  .ip-card .ip-fmt{font:500 11.5px/1.4 Inter,sans-serif;color:rgba(255,255,255,.65);flex:1}
+  section.s.cream .ip-card .ip-fmt{color:var(--label)}
+  section.s.ivory .ip-card .ip-fmt{color:var(--label)}
+  .ip-card .ip-stat{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px dashed rgba(255,255,255,.1)}
+  section.s.cream .ip-card .ip-stat{border-top-color:var(--line)}
+  section.s.ivory .ip-card .ip-stat{border-top-color:var(--line)}
+  .ip-card .ip-stat .n{font:500 10px/1 Inter,sans-serif;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+  section.s.cream .ip-card .ip-stat .n{color:var(--mute)}
+  section.s.ivory .ip-card .ip-stat .n{color:var(--mute)}
+  .ip-card .ip-stat .v{font:600 13px/1 'JetBrains Mono',monospace;color:var(--gold)}
+
+  /* ─── library grid ─── */
+  .lib-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .sku-card{
+    padding:22px 22px 20px;border-radius:14px;
+    background:#fff;border:1px solid var(--line);
+    display:flex;flex-direction:column;gap:10px;
+    cursor:pointer;transition:.18s;position:relative;min-height:280px
+  }
+  section.s.dark .sku-card{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1)}
+  .sku-card:hover{border-color:var(--ink-2);transform:translateY(-2px)}
+  section.s.dark .sku-card:hover{border-color:rgba(255,255,255,.3)}
+  .sku-card .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .sku-pill{
+    font:600 9.5px/1 Inter,sans-serif;letter-spacing:1px;text-transform:uppercase;
+    padding:5px 9px;border-radius:5px
+  }
+  .sku-pill.pillar{background:rgba(11,35,64,.07);color:var(--ink-2)}
+  section.s.dark .sku-pill.pillar{background:rgba(255,255,255,.08);color:rgba(255,255,255,.85)}
+  .sku-pill.cohort{background:rgba(46,208,110,.12);color:var(--green-d)}
+  section.s.dark .sku-pill.cohort{color:var(--green-soft)}
+  .sku-pill.complexity{background:rgba(212,165,20,.12);color:var(--gold-deep)}
+  section.s.dark .sku-pill.complexity{color:var(--gold-soft)}
+  .sku-pill.ip{background:linear-gradient(90deg,rgba(212,165,20,.18) 0%,rgba(212,165,20,.06) 100%);color:var(--gold-deep);border-left:2px solid var(--gold)}
+  section.s.dark .sku-pill.ip{color:var(--gold-soft);background:linear-gradient(90deg,rgba(212,165,20,.22) 0%,rgba(212,165,20,.06) 100%)}
+  .sku-card .nm{font:600 16px/1.25 Inter,sans-serif;color:var(--navy);letter-spacing:-.005em;margin-top:2px}
+  section.s.dark .sku-card .nm{color:#fff}
+  .sku-card .desc{font:400 12.5px/1.5 Inter,sans-serif;color:var(--label);flex:1}
+  section.s.dark .sku-card .desc{color:rgba(255,255,255,.65)}
+  .sku-card .row-bot{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding-top:14px;border-top:1px dashed var(--line);margin-top:auto}
+  section.s.dark .sku-card .row-bot{border-top-color:rgba(255,255,255,.1)}
+  .sku-card .pr{font:500 22px/1 'Cormorant Garamond',serif;color:var(--gold-deep);letter-spacing:-.015em}
+  section.s.dark .sku-card .pr{color:var(--gold)}
+  .sku-card .pr small{font:600 10px/1 Inter,sans-serif;color:var(--mute);letter-spacing:1.2px;text-transform:uppercase;margin-right:3px}
+  section.s.dark .sku-card .pr small{color:rgba(255,255,255,.5)}
+  .sku-card .term{font:400 10.5px/1.3 Inter,sans-serif;color:var(--mute);margin-top:3px}
+  .sku-card .add{font:600 11.5px/1 Inter,sans-serif;color:var(--navy);display:inline-flex;align-items:center;gap:5px;padding:9px 13px;border-radius:8px;background:rgba(11,35,64,.06);transition:.15s;border:1px solid transparent}
+  section.s.dark .sku-card .add{color:#fff;background:rgba(255,255,255,.08)}
+  .sku-card .add:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+  section.s.dark .sku-card .add:hover{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+  .sku-card .gear{
+    position:absolute;top:14px;right:14px;
+    width:26px;height:26px;border-radius:50%;
+    background:rgba(212,165,20,.14);color:var(--gold-deep);
+    display:grid;place-items:center;cursor:pointer;
+    border:1px solid rgba(212,165,20,.3);transition:.15s
+  }
+  section.s.dark .sku-card .gear{color:var(--gold-soft)}
+  .sku-card .gear:hover{background:rgba(212,165,20,.28)}
+  .sku-card .gear svg{width:12px;height:12px}
+  .sku-empty{
+    grid-column:1/-1;padding:80px 24px;text-align:center;
+    border:1px dashed var(--line-2);border-radius:14px;
+    color:var(--label);font:400 15px/1.5 Inter,sans-serif;font-style:italic
+  }
+  section.s.dark .sku-empty{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.55)}
+
+  /* ─── methodology footer ─── */
+  .method{
+    padding:104px 56px;background:var(--navy);color:#fff;
+    background:radial-gradient(circle at 80% 20%,rgba(212,165,20,.1),transparent 50%),var(--navy)
+  }
+  .method .inner{max-width:1280px;margin:0 auto}
+  .method .eb{font-size:11px;letter-spacing:3.6px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;margin-bottom:24px;display:flex;align-items:center;gap:14px}
+  .method .eb::before{content:"";width:32px;height:1px;background:var(--gold)}
+  .method h3{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(40px,5vw,72px);line-height:1;letter-spacing:-.025em;margin-bottom:32px}
+  .method h3 em{font-style:italic;color:var(--gold);font-weight:400}
+  .method .lede{max-width:760px;font-size:17px;line-height:1.7;color:rgba(255,255,255,.78);margin-bottom:60px}
+  .method-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .method-stat{padding:24px 22px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}
+  .method-stat .l{font:600 10px/1 Inter,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:14px}
+  .method-stat .v{font:300 38px/1 'Cormorant Garamond',serif;color:var(--gold);letter-spacing:-.02em;margin-bottom:8px}
+  .method-stat .d{font:400 12px/1.5 Inter,sans-serif;color:rgba(255,255,255,.7)}
+
+  /* ─── final CTA ─── */
+  .final-cta{padding:120px 56px;background:var(--cream-2);text-align:center}
+  .final-cta .inner{max-width:880px;margin:0 auto}
+  .final-cta .eb{font-size:11px;letter-spacing:3.6px;text-transform:uppercase;color:var(--gold-deep);font-weight:600;margin-bottom:24px}
+  .final-cta h3{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(44px,5vw,72px);line-height:1.05;letter-spacing:-.025em;margin-bottom:32px}
+  .final-cta h3 em{font-style:italic;color:var(--gold);font-weight:400}
+  .final-cta .ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  .b-cta{padding:16px 32px;border-radius:999px;background:var(--navy);color:#fff;font-size:14px;font-weight:600;letter-spacing:.3px;display:inline-flex;align-items:center;gap:10px;transition:.2s;border:none;cursor:pointer}
+  .b-cta:hover{background:var(--navy-3)}
+  .b-cta-gold{background:var(--gold);color:var(--navy)}
+  .b-cta-gold:hover{background:var(--gold-soft)}
+  .b-cta-ghost{padding:16px 28px;border-radius:999px;background:transparent;color:var(--ink-2);border:1px solid var(--line-2);font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:10px;transition:.2s;cursor:pointer}
+  .b-cta-ghost:hover{border-color:var(--ink);color:var(--ink)}
+
+  footer.fp{padding:56px 56px;background:var(--navy-2);color:rgba(255,255,255,.55);font:400 12px/1.6 Inter,sans-serif}
+  footer.fp .inner{max-width:1280px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:32px;flex-wrap:wrap}
+  footer.fp .mark{display:flex;align-items:center;gap:10px;color:#fff}
+  footer.fp .mark .lzg{width:24px;height:24px;border-radius:6px;background:linear-gradient(180deg,#F2C94C,#D4A514);display:grid;place-items:center;color:var(--navy);font-weight:800;font-size:11px}
+
+  @media (max-width:1100px){
+    .hero-grid{grid-template-columns:repeat(2,1fr);gap:14px 0}
+    .canonical-strip{grid-template-columns:repeat(2,1fr)}
+    .ip-grid{grid-template-columns:repeat(2,1fr)}
+    .lib-grid{grid-template-columns:repeat(2,1fr)}
+    .method-grid{grid-template-columns:repeat(2,1fr)}
+    .fyf-wrap{grid-template-columns:1fr}
+    .cal-track{grid-template-columns:repeat(6,1fr)}
+  }
+  @media (max-width:640px){
+    nav.top,.filter-rail,section.s,.method,.final-cta,footer.fp{padding-left:24px;padding-right:24px}
+    .canonical-strip,.ip-grid,.lib-grid,.method-grid{grid-template-columns:1fr}
+    .cal-track{grid-template-columns:repeat(3,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav class="top">
+  <div class="mark">
+    <div class="lzg">F</div>
+    <span>Falcons<em>Activations</em></span>
+  </div>
+  <div class="links">
+    <a href="#hero">Catalogue</a>
+    <a href="#fyf" class="active">Find your fit</a>
+    <a href="#calendar">Calendar</a>
+    <a href="#ips">Falcons IPs</a>
+    <a href="#library">Library</a>
+    <a href="#method">Methodology</a>
+  </div>
+  <div class="right">
+    <span class="admin-pill"><span class="dot"></span>Admin · prices unlocked</span>
+    <a class="cta" href="#cta">Submit a brief →</a>
+  </div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section class="hero" id="hero">
+  <div class="inner">
+    <div class="eb">v4 · the full catalogue</div>
+    <h1>Nine pillars.<br>Sixty-five activations.<br><em>One catalogue.</em></h1>
+    <p class="lede">
+      Brand brings the brief. Falcons brings the operational machinery — the talent, the studio,
+      the broadcast inventory, the calendar slot. Filter by who you want to reach, how hands-on
+      you want to be, and which moment you're buying. The activation that fits is two clicks away.
+    </p>
+    <div class="hero-grid">
+      <div class="h4"><div class="v">9</div><div class="l"><b>Pillars</b> — Broadcast · Stream · Content · Digital · Facility · Event · Talent · Hospitality · Publisher</div></div>
+      <div class="h4"><div class="v">65</div><div class="l"><b>Activations</b> across 5 canonical models + 60-SKU filterable library</div></div>
+      <div class="h4"><div class="v">11</div><div class="l"><b>Falcons-owned IPs</b> — Podcast · Academy · Vega · Force · Invitational · Nest · Marathon · Luxury vs Budget · and more</div></div>
+      <div class="h4"><div class="v">4×</div><div class="l"><b>Complexity tiers</b> — Plug & Play · Managed Series · Hero Moment · Embedded Partnership</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FILTER RAIL ─── -->
+<div class="filter-rail" id="filterRail">
+  <div class="inner">
+    <div class="grp" data-grp="cohort">
+      <span class="glabel">Cohort</span>
+      <button class="chip" data-cohort="players">Players</button>
+      <button class="chip" data-cohort="influencers">Influencers</button>
+      <button class="chip" data-cohort="creators">Creators</button>
+      <button class="chip" data-cohort="mixed">Mixed</button>
+    </div>
+    <div class="grp" data-grp="complexity">
+      <span class="glabel">Lift</span>
+      <button class="chip gold" data-complexity="plug_and_play">Plug &amp; Play</button>
+      <button class="chip gold" data-complexity="managed_series">Managed</button>
+      <button class="chip gold" data-complexity="hero_moment">Hero</button>
+      <button class="chip gold" data-complexity="embedded_partnership">Embedded</button>
+    </div>
+    <div class="grp" data-grp="pillar">
+      <span class="glabel">Pillar</span>
+      <button class="chip" data-pillar="broadcast">Broadcast</button>
+      <button class="chip" data-pillar="stream">Stream</button>
+      <button class="chip" data-pillar="content">Content</button>
+      <button class="chip" data-pillar="digital">Digital</button>
+      <button class="chip" data-pillar="facility">Facility</button>
+      <button class="chip" data-pillar="event">Event</button>
+      <button class="chip" data-pillar="talent">Talent</button>
+      <button class="chip" data-pillar="hospitality">Hospitality</button>
+      <button class="chip" data-pillar="publisher">Publisher</button>
+    </div>
+    <div class="right">
+      <div class="live-count">Showing <span class="v" id="liveCount">65</span> / 65</div>
+      <button class="reset" id="resetBtn">Reset filters</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CANONICAL FIVE — MARQUEE STRIP ─── -->
+<section class="s cream">
+  <div class="inner">
+    <div class="eb">The five canonical models</div>
+    <h2>Editorial centerpieces. <em>Marquee weight.</em></h2>
+    <p class="lede">
+      Five fully-built activation models that anchor the catalogue. Each is the headline answer
+      for a specific brand archetype. The full library beneath nests under these five — sales
+      can recommend up or down based on budget without leaving the parent's context.
+    </p>
+    <div class="canonical-strip" id="canonicalStrip"></div>
+  </div>
+</section>
+
+<!-- ─── FIND YOUR FIT ─── -->
+<section class="s ivory" id="fyf">
+  <div class="inner">
+    <div class="eb">Find your fit</div>
+    <h2>Three questions.<br><em>One menu match.</em></h2>
+    <p class="lede">
+      Tell us who you're trying to reach, how hands-on you want to be, and what you're spending.
+      We surface three activations that fit. No call required.
+    </p>
+    <div class="fyf-wrap">
+      <div class="fyf-questions">
+        <div class="fyf-q">
+          <div class="qn">Question 01</div>
+          <div class="qt">Who's your audience?</div>
+          <div class="opts">
+            <button class="chip" data-fyf="cohort" data-val="players">Esports players</button>
+            <button class="chip" data-fyf="cohort" data-val="creators">Content creators</button>
+            <button class="chip" data-fyf="cohort" data-val="influencers">Influencers</button>
+            <button class="chip" data-fyf="cohort" data-val="mixed">Mixed / no preference</button>
+          </div>
+        </div>
+        <div class="fyf-q">
+          <div class="qn">Question 02</div>
+          <div class="qt">How hands-on?</div>
+          <div class="opts">
+            <button class="chip gold" data-fyf="complexity" data-val="plug_and_play">Plug &amp; Play</button>
+            <button class="chip gold" data-fyf="complexity" data-val="managed_series">Managed Series</button>
+            <button class="chip gold" data-fyf="complexity" data-val="hero_moment">Hero Moment</button>
+            <button class="chip gold" data-fyf="complexity" data-val="embedded_partnership">Embedded Partnership</button>
+          </div>
+        </div>
+        <div class="fyf-q">
+          <div class="qn">Question 03</div>
+          <div class="qt">What's the spend?</div>
+          <div class="opts">
+            <button class="chip" data-fyf="band" data-val="under_100k">Under SAR 100K</button>
+            <button class="chip" data-fyf="band" data-val="100k_500k">100K — 500K</button>
+            <button class="chip" data-fyf="band" data-val="500k_1m">500K — 1M</button>
+            <button class="chip" data-fyf="band" data-val="1m_plus">SAR 1M+</button>
+          </div>
+        </div>
+      </div>
+      <div class="fyf-out">
+        <div class="l">Your shortlist</div>
+        <div class="ht" id="fyfTitle">Answer the three questions →</div>
+        <div class="fyf-match-list" id="fyfMatches">
+          <div class="fyf-empty">Pick a cohort, a lift, and a budget. We surface the closest three.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CALENDAR ─── -->
+<section class="s dark" id="calendar">
+  <div class="inner">
+    <div class="eb">On the calendar</div>
+    <h2>When the catalogue<br>meets the <em>year.</em></h2>
+    <p class="lede">
+      Tournament moments, cultural anchors, and Falcons-owned events plotted across the next
+      twelve months. Click any anchor to see SKUs tied to it. Brands buy slots, not abstractions.
+    </p>
+    <div class="cal-wrap">
+      <div class="cal-track" id="calTrack"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FALCONS IPs ─── -->
+<section class="s cream" id="ips">
+  <div class="inner">
+    <div class="eb">Sponsor a Falcons IP</div>
+    <h2>Ten ownable properties.<br><em>Multi-year defensible.</em></h2>
+    <p class="lede">
+      The brand isn't sponsoring talent rights — it's sponsoring a Falcons-owned property.
+      A podcast with 600K views per episode. A development pathway feeding the next generation
+      of Saudi pros. A women's esports roster that wins MENA majors. Recurring annual deals,
+      category-exclusive, defensible at renewal.
+    </p>
+    <div class="ip-grid" id="ipGrid"></div>
+  </div>
+</section>
+
+<!-- ─── FULL LIBRARY ─── -->
+<section class="s ivory" id="library">
+  <div class="inner">
+    <div class="eb">The full library</div>
+    <h2>Sixty-five activations.<br>Filter to <em>your fit.</em></h2>
+    <p class="lede">
+      Every individual activation Falcons offers — sponsorship rights surfaced from the master
+      inventory, talent-fronted activations from the roster, event-anchored campaigns, publisher
+      deals, and Falcons-IP slots. Use the filter rail above to slice by cohort, complexity,
+      or pillar.
+    </p>
+    <div class="lib-grid" id="libGrid"></div>
+  </div>
+</section>
+
+<!-- ─── METHODOLOGY ─── -->
+<section class="method" id="method">
+  <div class="inner">
+    <div class="eb">How operational leverage compounds</div>
+    <h3>The lower the lift,<br>the higher the <em>margin.</em></h3>
+    <p class="lede">
+      The catalogue is ranked not by price but by how much each activation runs without us.
+      Embedded Partnerships and IP slots are the highest margin because once setup ships,
+      the marginal cost of a 14th brand showing up in B-roll or a podcast read is effectively zero.
+      Plug &amp; Play SKUs are the entry door — high frequency, low friction, predictable.
+      Brands who understand this scale spend with us next year.
+    </p>
+    <div class="method-grid">
+      <div class="method-stat"><div class="l">Marquee × Library</div><div class="v num">5 + 60</div><div class="d">Five canonical models + sixty filterable library SKUs nesting beneath</div></div>
+      <div class="method-stat"><div class="l">Falcons-owned IPs</div><div class="v num">10</div><div class="d">From the Podcast (600K views/ep) to Vega women's esports — every IP is a defensible annual slot</div></div>
+      <div class="method-stat"><div class="l">Cohort-tagged</div><div class="v num">100%</div><div class="d">Every SKU carries cohort, complexity, pillar, event-anchor, IP, and price-band tags</div></div>
+      <div class="method-stat"><div class="l">Re-priceable</div><div class="v num">Live</div><div class="d">Every price editable via /admin/activations — no code redeploy. Audit trail in price_history.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FINAL CTA ─── -->
+<section class="final-cta" id="cta">
+  <div class="inner">
+    <div class="eb">Get on the calendar</div>
+    <h3>Tell us the brief.<br>We'll send back the <em>shortlist.</em></h3>
+    <p class="lede" style="margin-bottom:36px;color:var(--ink-2)">Brand category, geography, budget band, and timing. We come back within 48 hours with three matched activations and a deck.</p>
+    <div class="ctas">
+      <a class="b-cta b-cta-gold" href="#">Submit a brief →</a>
+      <a class="b-cta-ghost" href="#">Download the deck</a>
+      <a class="b-cta-ghost" href="#">Book a 30-min walkthrough</a>
+    </div>
+  </div>
+</section>
+
+<footer class="fp">
+  <div class="inner">
+    <div class="mark">
+      <div class="lzg">F</div>
+      <span style="font-weight:600;letter-spacing:1.4px;font-size:12px;text-transform:uppercase">Team Falcons · Activations Catalogue · v4</span>
+    </div>
+    <div>Confidential · for review with Koge · not yet customer-facing · numbers re-derive from DB at session start</div>
+  </div>
+</footer>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   FALCONS IPs
+   ════════════════════════════════════════════════════════════════ */
+const FALCONS_IPS = [
+  {id:'falcons_podcast',mono:'PD',name:'Falcons Podcast',format:'Arabic-language multi-host show, ~70-min episodes, monthly',audience:'~600K views/episode (peaks 614K)',skus:2},
+  {id:'falcons_academy',mono:'AC',name:'Falcons Academy',format:'Player development pathway — CoD BO7 Academy White + Green',audience:'Next-gen Saudi pros pipeline',skus:2},
+  {id:'falcons_vega',mono:'VG',name:'Falcons Vega',format:'Women\'s esports — MLBB · VALORANT · Overwatch · across MENA / SEA / ID',audience:'MENA women\'s competitive audience',skus:2},
+  {id:'falcons_force',mono:'FC',name:'Falcons Force',format:'CS2 junior team — players age 14-19, Eastern European pipeline',audience:'CS2 development viewership',skus:1},
+  {id:'falcons_invitational',mono:'IN',name:'Falcons Invitational',format:'Annual Falcons-owned tournament, full broadcast',audience:'Tier-1 esports event audience',skus:1},
+  {id:'falcons_community_cup',mono:'CC',name:'Community Cup',format:'Smaller community-tier branded tournament',audience:'Community + grassroots',skus:1},
+  {id:'falcons_nest',mono:'FN',name:'Falcons Nest',format:'Year-round public-facing gaming zone, Boulevard Riyadh',audience:'Walk-in MENA fan audience',skus:1},
+  {id:'command_center',mono:'CM',name:'Command Center',format:'Branded streaming room build-out at Falcons HQ',audience:'Visible across all production output',skus:1},
+  {id:'beat_the_pro',mono:'BP',name:'Beat the Pro',format:'Recurring fan-vs-pro fan activation event',audience:'Direct fan engagement, on-site + streamed',skus:1},
+  {id:'saudi_esports_marathon',mono:'SM',name:'Saudi Esports Marathon',format:'Abo Najd 14-hour marathon broadcast covering all Falcons tournaments',audience:'Premium Arabic broadcast moment',skus:1},
+  {id:'luxury_vs_budget',mono:'LB',name:'Luxury vs Budget',format:'Falcons\' most popular YouTube series — gear comparisons, hardware reviews',audience:'~50M+ views per season',skus:1},
+];
+
+/* ════════════════════════════════════════════════════════════════
+   CALENDAR ANCHORS
+   ════════════════════════════════════════════════════════════════ */
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const CAL_ANCHORS = [
+  {month:0, name:'Riyadh Season', sub:'Continues from Oct', color:'var(--gold)'},
+  {month:1, name:'Riyadh Season', sub:'Through March', color:'var(--gold)'},
+  {month:2, name:'Ramadan', sub:'30-day window', color:'var(--gold)'},
+  {month:2, name:'Riyadh Season', sub:'Final month', color:'var(--gold)'},
+  {month:3, name:'Eid al-Fitr', sub:'Cultural moment', color:'var(--gold)'},
+  {month:5, name:'Steam Summer Sale', sub:'Wishlist drives', color:'var(--gold)'},
+  {month:6, name:'EWC', sub:'Esports World Cup', color:'var(--gold)'},
+  {month:7, name:'EWC', sub:'Continues', color:'var(--gold)'},
+  {month:7, name:'GamesCom', sub:'Publisher window', color:'var(--gold)'},
+  {month:7, name:'Back-to-School', sub:'Mobile / hardware', color:'var(--gold)'},
+  {month:8, name:'Saudi National Day', sub:'Sep 23 + week', color:'var(--gold)'},
+  {month:9, name:'Riyadh Season', sub:'Begins', color:'var(--gold)'},
+  {month:9, name:'Worlds (League)', sub:'Tournament window', color:'var(--gold)'},
+  {month:10, name:'Black Friday KSA', sub:'Hardware / CPG', color:'var(--gold)'},
+  {month:10, name:'IEM', sub:'CS2 major', color:'var(--gold)'},
+  {month:11, name:'Steam Winter Sale', sub:'Wishlist push', color:'var(--gold)'},
+  {month:11, name:'Riyadh Masters', sub:'Annual KSA-anchored major', color:'var(--gold)'},
+];
+
+/* ════════════════════════════════════════════════════════════════
+   THE 65 SKUs
+   complexity: plug_and_play | managed_series | hero_moment | embedded_partnership
+   pillar: broadcast | stream | content | digital | facility | event | talent | hospitality | publisher
+   cohorts: players | influencers | creators | mixed
+   ════════════════════════════════════════════════════════════════ */
+const SKUS = [
+  // ─── 5 CANONICAL ───
+  {id:1,kind:'canonical',num:'01',pillar:'broadcast',name:'Always-On Jersey + Broadcast',archetype:'The "no excuses, sign here" SKU',cohorts:['mixed'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:940000,priceHigh:2250000,priceTerm:'per game vertical · per season',desc:'Logo on jersey + persistent broadcast lower-third for one game vertical, one full season. Sets up once, runs unattended.',effortPlayer:0,effortFalcons:1},
+  {id:2,kind:'canonical',num:'02',pillar:'content',name:'Mobile Amplification',archetype:'The "regional product launch" SKU',cohorts:['players','influencers'],complexity:'managed_series',anchors:['Evergreen'],ip:null,priceLow:560000,priceHigh:1130000,priceTerm:'per 4–6 week campaign',desc:'25 MLBB players across PH + ID + MENA paired with mobile-first creators. 50 social pieces + group challenge + on-site activation + geo-targeted variants.',effortPlayer:2,effortFalcons:2},
+  {id:3,kind:'canonical',num:'03',pillar:'stream',name:'Performance / PC Bundle',archetype:'The "low player effort, high content cadence" SKU',cohorts:['players'],complexity:'managed_series',anchors:['Evergreen'],ip:null,priceLow:750000,priceHigh:1880000,priceTerm:'per quarter',desc:'100% Twitch-active rosters. Persistent overlay + chat command + Performance Moment of the Week + quarterly long-form YouTube + jersey patch.',effortPlayer:1,effortFalcons:2},
+  {id:4,kind:'canonical',num:'04',pillar:'talent',name:'Day-in-the-Life Content Engine',archetype:'The "highest-margin product on the menu" SKU',cohorts:['players','creators'],complexity:'embedded_partnership',anchors:['Evergreen'],ip:null,priceLow:1500000,priceHigh:4500000,priceTerm:'per brand · per year',desc:'12-month embedded brand presence. 6-8 charismatic talents. Brand becomes a recurring fixture in monthly BTS, bootcamp footage, travel vlogs. Falcons produces centrally.',effortPlayer:1,effortFalcons:2},
+  {id:5,kind:'canonical',num:'05',pillar:'event',name:'Tournament Activation Pack',archetype:'The "moment-driven, slot-based" SKU',cohorts:['mixed'],complexity:'hero_moment',anchors:['EWC','IEM','Worlds','Riyadh_Masters'],ip:null,priceLow:280000,priceHigh:750000,priceTerm:'per event',desc:'Tied to specific majors. Pre-tournament hype reels + on-site interviews + post-result reaction content + watch-along streams. Brands buy slots, not players.',effortPlayer:2,effortFalcons:3},
+
+  // ─── BROADCAST LIBRARY (5) ───
+  {id:6,kind:'library',pillar:'broadcast',name:'Persistent Stream Logo Pack',cohorts:['mixed'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:350000,priceTerm:'per season',desc:'Stream overlay persistent logo + lower-third rotation + Twitch panel + YouTube channel banner. All five Falcons broadcast surfaces.',parent:1},
+  {id:7,kind:'library',pillar:'broadcast',name:'Pre-Roll Sponsor Mention Pack',cohorts:['mixed'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:180000,priceTerm:'per season',desc:'15-second branded opening at every broadcast. Caster reads the line. Min. 2x per broadcast day.',parent:1},
+  {id:8,kind:'library',pillar:'broadcast',name:'Caster CTA Pack (ENG + Arabic)',cohorts:['mixed'],complexity:'managed_series',anchors:['Evergreen'],ip:null,priceLow:240000,priceTerm:'per season',desc:'20-second caster call-to-action including brand quote + key message. Both language tracks. Min. 1x per broadcast day.',parent:1},
+  {id:9,kind:'library',pillar:'broadcast',name:'In-Game Overlay Pack',cohorts:['players'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:220000,priceTerm:'per season',desc:'Logo on team composition screen + map loading screen + post-match results + MVP highlight reel. Visible across all match flow.',parent:1},
+  {id:10,kind:'library',pillar:'broadcast',name:'Arabic Caster Desk Branding',cohorts:['mixed'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:280000,priceTerm:'per season',desc:'Static brand on caster desk backdrop + front screen rotation. Arabic broadcasts only — premium MENA visibility.',parent:1},
+
+  // ─── STREAM LIBRARY (4) ───
+  {id:11,kind:'library',pillar:'stream',name:'Persistent Twitch Overlay (Single Team)',cohorts:['players'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:95000,priceTerm:'per quarter',desc:'One Twitch-active team. Overlay only. Designed for first-time partners — lowest-friction entry into the catalogue.',parent:3},
+  {id:12,kind:'library',pillar:'stream',name:'Chatbot CTA + Channel Points Reward',cohorts:['players'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:65000,priceTerm:'per quarter',desc:'Automated !brand chatbot response + custom channel points reward featuring partner. Direct fan engagement loop.',parent:3},
+  {id:13,kind:'library',pillar:'stream',name:'Saudi Esports Marathon (Abo Najd 14h)',cohorts:['creators'],complexity:'hero_moment',anchors:['EWC','IEM','Worlds','Riyadh_Masters'],ip:'saudi_esports_marathon',priceLow:385000,priceTerm:'per marathon',desc:'Abo Najd\'s signature 14-hour broadcast covering all Falcons tournaments. Standalone or as a bolt-on.',parent:5},
+  {id:14,kind:'library',pillar:'stream',name:'Watch-Along Stream Pack',cohorts:['players'],complexity:'managed_series',anchors:['EWC','IEM','Worlds','Riyadh_Masters'],ip:null,priceLow:280000,priceTerm:'per event',desc:'3 streaming-active players doing branded co-stream coverage of any major. ~240 hours of branded watch-time across event window.',parent:5},
+
+  // ─── CONTENT LIBRARY (5) ───
+  {id:15,kind:'library',pillar:'content',name:'Single Branded Reel',cohorts:['mixed'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:18500,priceTerm:'one-off',desc:'One Reel on Falcons IG — concept brand-led, Falcons-produced. Entry-tier sampling SKU.',parent:2},
+  {id:16,kind:'library',pillar:'content',name:'Story Spread × 5',cohorts:['mixed'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:62000,priceTerm:'one-off',desc:'Five-story sequence on Falcons IG. 24h visibility. Concept brand-led.',parent:2},
+  {id:17,kind:'library',pillar:'content',name:'TikTok Brand Integration Pack',cohorts:['creators'],complexity:'managed_series',anchors:['Evergreen'],ip:null,priceLow:145000,priceTerm:'4-piece run',desc:'Four TikTok pieces with brand integration over 4 weeks. Native to creator voices, not adapted from elsewhere.',parent:2},
+  {id:18,kind:'library',pillar:'content',name:'YouTube Dedicated Episode',cohorts:['mixed'],complexity:'hero_moment',anchors:['Evergreen'],ip:null,priceLow:220000,priceTerm:'one-off',desc:'Full standalone episode on Falcons Esports YouTube channel dedicated to brand storytelling. Production by Falcons studio.',parent:4},
+  {id:19,kind:'library',pillar:'content',name:'"Luxury vs Budget" Series Sponsorship',cohorts:['creators'],complexity:'hero_moment',anchors:['Evergreen'],ip:'luxury_vs_budget',priceLow:480000,priceTerm:'per episode',desc:'Title sponsorship of Falcons\' most popular YouTube series — 50M+ views per season. Brand integrated into format.',parent:4},
+
+  // ─── DIGITAL LIBRARY (3) ───
+  {id:20,kind:'library',pillar:'digital',name:'falcons.sa Homepage Banner',cohorts:['mixed'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:75000,priceTerm:'per month',desc:'Premium rotating banner on falcons.sa homepage. Highest-traffic digital surface.',parent:null},
+  {id:21,kind:'library',pillar:'digital',name:'Custom Co-Branded Landing Page',cohorts:['mixed'],complexity:'managed_series',anchors:['Evergreen'],ip:null,priceLow:95000,priceTerm:'one-off',desc:'Dedicated campaign page on falcons.sa subdomain. Trackable, time-boxed, cleanable.',parent:null},
+  {id:22,kind:'library',pillar:'digital',name:'Newsletter Sponsor Section (3 issues)',cohorts:['mixed'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:48000,priceTerm:'3 issues',desc:'Branded section in 3 consecutive newsletters. 100K+ MENA subscribers. Bi-weekly cadence.',parent:null},
+
+  // ─── FACILITY LIBRARY (4) ───
+  {id:23,kind:'library',pillar:'facility',name:'Falcons Command Center "Powered by [Brand]"',cohorts:['players'],complexity:'embedded_partnership',anchors:['Evergreen'],ip:'command_center',priceLow:1200000,priceTerm:'per year',desc:'Branded streaming room build-out at Falcons HQ. Visible in every piece of production output that comes out of HQ. Naming rights included.',parent:4},
+  {id:24,kind:'library',pillar:'facility',name:'Player Desk / Setup Branding',cohorts:['players'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:120000,priceTerm:'per year',desc:'Brand product placement at player stations across the training facility. Visible in BTS, training, and stream backdrops.',parent:null},
+  {id:25,kind:'library',pillar:'facility',name:'Falcons Nest Gaming Zone',cohorts:['mixed'],complexity:'embedded_partnership',anchors:['Evergreen'],ip:'falcons_nest',priceLow:950000,priceTerm:'per year',desc:'Year-round branded Gaming Zone inside Falcons Nest, public-facing on Riyadh Boulevard. Walk-in fan audience.',parent:null},
+  {id:26,kind:'library',pillar:'facility',name:'Bootcamp Day Visit',cohorts:['mixed'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:42000,priceTerm:'one-off',desc:'Brand team visits Falcons HQ during bootcamp. Photos, BTS access, custom social cross-post. Sales-team-facing entry SKU.',parent:null},
+
+  // ─── EVENT LIBRARY (8) ───
+  {id:27,kind:'library',pillar:'event',name:'EWC Booth Space — Sales Zone',cohorts:['mixed'],complexity:'hero_moment',anchors:['EWC'],ip:null,priceLow:380000,priceTerm:'per event',desc:'3×4m sales booth at EWC. Product sales + sampling rights. Six-figure brand on-ground presence.',parent:5},
+  {id:28,kind:'library',pillar:'event',name:'Tournament Victory Mention',cohorts:['players'],complexity:'plug_and_play',anchors:['EWC','IEM','Worlds','Riyadh_Masters'],ip:null,priceLow:95000,priceTerm:'win-or-no-fee',desc:'Brand named in celebration moment if Falcons wins. Win-or-no-fee structure — risk-shared with the brand.',parent:5},
+  {id:29,kind:'library',pillar:'event',name:'Tournament-Week Saturation',cohorts:['mixed'],complexity:'hero_moment',anchors:['EWC','IEM','Worlds','Riyadh_Masters'],ip:null,priceLow:520000,priceTerm:'per event',desc:'6 talents covering one major from 6 angles for the whole event week. Maximum brand surface area in a single tournament window.',parent:5},
+  {id:30,kind:'library',pillar:'event',name:'Watch Party Sponsorship',cohorts:['mixed'],complexity:'managed_series',anchors:['EWC','IEM','Worlds','Riyadh_Masters'],ip:null,priceLow:140000,priceTerm:'per event',desc:'Branded fan watch party at Falcons Nest or external venue. Includes co-branded social, on-ground activation, fan giveaways.',parent:5},
+  {id:31,kind:'library',pillar:'event',name:'Falcons Invitational Title Sponsor',cohorts:['mixed'],complexity:'embedded_partnership',anchors:['Annual'],ip:'falcons_invitational',priceLow:1800000,priceTerm:'per year',desc:'"[Brand] Falcons Invitational" — annual Falcons-owned tournament. Full naming rights, broadcast lockup, prize-pool branding, on-site activation.',parent:null},
+  {id:32,kind:'library',pillar:'event',name:'Falcons Community Cup Title Sponsor',cohorts:['mixed'],complexity:'hero_moment',anchors:['Annual'],ip:'falcons_community_cup',priceLow:280000,priceTerm:'per cup',desc:'Smaller community-tier branded tournament. Broader grassroots reach, lower commitment than the Invitational.',parent:null},
+  {id:33,kind:'library',pillar:'event',name:'Saudi National Day Activation',cohorts:['mixed'],complexity:'hero_moment',anchors:['Saudi_National_Day'],ip:null,priceLow:280000,priceTerm:'per activation',desc:'KSA-themed content from KSA-region players + on-site presence at Riyadh Boulevard. Sovereign-themed brand moment.',parent:null},
+  {id:34,kind:'library',pillar:'event',name:'GameWeek Riyadh Activation',cohorts:['mixed'],complexity:'hero_moment',anchors:['GameWeek_Riyadh'],ip:null,priceLow:380000,priceTerm:'per event',desc:'Booth + panel slots + creator coverage during GameWeek Riyadh. B2B + consumer fusion event.',parent:null},
+
+  // ─── TALENT LIBRARY (12 + 2 IP × 4 = 21) ───
+  {id:35,kind:'library',pillar:'talent',name:'Player Ambassador (1 player, 1 year)',cohorts:['players'],complexity:'embedded_partnership',anchors:['Evergreen'],ip:null,priceLow:850000,priceTerm:'per year',desc:'12-month exclusive ambassador deal with one named player. Quarterly content cadence + appearance commitments + signature usage.',parent:null},
+  {id:36,kind:'library',pillar:'talent',name:'Influencer Network Activation',cohorts:['influencers'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:110000,priceTerm:'one-off',desc:'Tier-A influencer (>2M followers) IG Story activation via Falcons influencer network. Includes Bijw, Abo Najd, FMG, Ghala class talent.',parent:null},
+  {id:37,kind:'library',pillar:'talent',name:'Influencer YouTube Integration',cohorts:['influencers'],complexity:'managed_series',anchors:['Evergreen'],ip:null,priceLow:180000,priceTerm:'one-off',desc:'1-minute brand integration in a Tier-A influencer YouTube video. Native, not interruptive.',parent:null},
+  {id:38,kind:'library',pillar:'talent',name:'Custom Content Piece (Bespoke)',cohorts:['mixed'],complexity:'hero_moment',anchors:['Evergreen'],ip:null,priceLow:165000,priceTerm:'one-off',desc:'Branded content featuring players. Includes scripting + production + post. Hero-tier deliverable for premium brand moments.',parent:null},
+  {id:39,kind:'library',pillar:'talent',name:'Player Signature Streaming Setup',cohorts:['players'],complexity:'hero_moment',anchors:['Evergreen'],ip:null,priceLow:280000,priceTerm:'one-off',desc:'Sponsored setup reveal stream + 2 follow-up "what\'s on my desk" streams. Hardware brands that want a signature face.',parent:null},
+  {id:40,kind:'library',pillar:'talent',name:'Creator BTS Series',cohorts:['creators'],complexity:'managed_series',anchors:['Evergreen'],ip:null,priceLow:340000,priceTerm:'4-ep run',desc:'4-episode YouTube series following one creator\'s life — gym, gear, family, travel. Brand integrated as recurring fixture.',parent:null},
+  {id:41,kind:'library',pillar:'talent',name:'Single Creator "Day in the Life"',cohorts:['creators'],complexity:'embedded_partnership',anchors:['Evergreen'],ip:null,priceLow:950000,priceTerm:'per year',desc:'12-month single-creator embedded sponsorship — same architecture as Day-in-the-Life № 04 but at 1-creator scale. Lower entry, same engine.',parent:4},
+  {id:42,kind:'library',pillar:'talent',name:'Gear-Talk Quarterly Episode',cohorts:['players'],complexity:'managed_series',anchors:['Evergreen'],ip:null,priceLow:165000,priceTerm:'per quarter',desc:'Player-led product review episode. 1 per quarter. Hardware/peripheral brand reviews fronted by trusted player voice.',parent:null},
+  {id:43,kind:'library',pillar:'talent',name:'Beat the Pro Fan Activation',cohorts:['players'],complexity:'hero_moment',anchors:['Evergreen'],ip:'beat_the_pro',priceLow:240000,priceTerm:'per event',desc:'Interactive event where fans challenge Falcons pros using brand product. On-site + streamed. Direct product trial loop.',parent:null},
+  {id:44,kind:'library',pillar:'talent',name:'Ramadan Content Push',cohorts:['mixed'],complexity:'hero_moment',anchors:['Ramadan'],ip:null,priceLow:420000,priceTerm:'per Ramadan',desc:'8-piece series across Ramadan: 4 Reels + 2 Stories + 1 hero film + 1 community/charity moment. Iftar/Suhoor-themed.',parent:null},
+  {id:45,kind:'library',pillar:'talent',name:'Riyadh Season Coverage',cohorts:['creators'],complexity:'managed_series',anchors:['Riyadh_Season'],ip:null,priceLow:520000,priceTerm:'per season',desc:'Multi-month editorial spanning Riyadh Season events. Tourism + entertainment + Saudi lifestyle narrative.',parent:null},
+  {id:46,kind:'library',pillar:'talent',name:'Performance Moment of the Week',cohorts:['players'],complexity:'managed_series',anchors:['Evergreen'],ip:null,priceLow:95000,priceTerm:'per quarter',desc:'1 highlight reel per team per month, pulled from existing VODs by Falcons editors. Players don\'t do anything extra.',parent:3},
+
+  // ─── PODCAST IP (2) ───
+  {id:47,kind:'library',pillar:'content',name:'Falcons Podcast Title Sponsor',cohorts:['creators'],complexity:'embedded_partnership',anchors:['Evergreen'],ip:'falcons_podcast',priceLow:580000,priceTerm:'per season',desc:'Full-season title sponsor of the Falcons Podcast (~600K views per episode). Intro/outro reads, in-episode integration, co-branded clips on social.',parent:null},
+  {id:48,kind:'library',pillar:'content',name:'Falcons Podcast Episode Slot',cohorts:['creators'],complexity:'plug_and_play',anchors:['Evergreen'],ip:'falcons_podcast',priceLow:75000,priceTerm:'per episode',desc:'Single-episode slot — 60-second mid-roll + outro mention + 1 social cross-post. Entry-tier into podcast inventory.',parent:null},
+
+  // ─── ACADEMY IP (2) ───
+  {id:49,kind:'library',pillar:'talent',name:'Falcons Academy Title Sponsor',cohorts:['players'],complexity:'embedded_partnership',anchors:['Evergreen'],ip:'falcons_academy',priceLow:1400000,priceTerm:'per year',desc:'"[Brand] Falcons Academy" — annual title sponsor of the player development pathway. Brand becomes synonymous with next-gen Saudi pros.',parent:null},
+  {id:50,kind:'library',pillar:'talent',name:'Academy Year Cohort Story',cohorts:['players'],complexity:'hero_moment',anchors:['Evergreen'],ip:'falcons_academy',priceLow:380000,priceTerm:'per cohort',desc:'BTS series following one Academy class through a season — auditions, bootcamp, first match, first win. Brand as the consistent presence.',parent:null},
+
+  // ─── VEGA IP (2) ───
+  {id:51,kind:'library',pillar:'talent',name:'Falcons Vega Title Sponsor',cohorts:['players'],complexity:'embedded_partnership',anchors:['Evergreen'],ip:'falcons_vega',priceLow:1100000,priceTerm:'per year',desc:'"Vega Powered by [Brand]" — annual sponsor of the women\'s esports rosters. MLBB + VALORANT + Overwatch across MENA / SEA / ID.',parent:null},
+  {id:52,kind:'library',pillar:'talent',name:'Vega Tournament Coverage Pack',cohorts:['players'],complexity:'hero_moment',anchors:['EWC','IEM','Worlds','Riyadh_Masters'],ip:'falcons_vega',priceLow:280000,priceTerm:'per event',desc:'Women\'s competitive moments — on-stream brand integration during Vega tournament runs. MENA women\'s audience.',parent:null},
+
+  // ─── FORCE IP (1) ───
+  {id:53,kind:'library',pillar:'talent',name:'Falcons Force Junior Pipeline',cohorts:['players'],complexity:'embedded_partnership',anchors:['Evergreen'],ip:'falcons_force',priceLow:480000,priceTerm:'per year',desc:'CS2 junior team development sponsor. Players age 14-19 — Eastern European pipeline. Long-tail brand association with future tier-1 names.',parent:null},
+
+  // ─── HOSPITALITY (1) ───
+  {id:54,kind:'library',pillar:'hospitality',name:'EWC VIP Hospitality',cohorts:['mixed'],complexity:'plug_and_play',anchors:['EWC'],ip:null,priceLow:165000,priceTerm:'per event',desc:'8 VIP tickets + skybox at EWC. Backstage / player lounge access. Pure hospitality SKU for partner entertainment.',parent:null},
+
+  // ─── PUBLISHER (6) ───
+  {id:55,kind:'library',pillar:'publisher',name:'Steam Wishlist Drive',cohorts:['creators'],complexity:'managed_series',anchors:['Steam_Sales'],ip:null,priceLow:285000,priceTerm:'per launch',desc:'Creator-led 4-piece content arc + 1 hero TikTok in launch week. Drives Steam wishlists and front-page pressure.',parent:null},
+  {id:56,kind:'library',pillar:'publisher',name:'Battle Pass Launch Stream Pack',cohorts:['players'],complexity:'hero_moment',anchors:['Launch_Day'],ip:null,priceLow:380000,priceTerm:'per launch',desc:'3 streamers × launch day, coordinated 12h coverage. Pop-game battle pass launches that need concurrent-user push.',parent:null},
+  {id:57,kind:'library',pillar:'publisher',name:'Saudi Studio Local Support Push',cohorts:['mixed'],complexity:'hero_moment',anchors:['Launch_Day'],ip:null,priceLow:420000,priceTerm:'per launch',desc:'5 talents × launch window, MENA-anchored, full KSA regional creator network. Built for Saudi indie studios under Misk / Savvy initiatives.',parent:null},
+  {id:58,kind:'library',pillar:'publisher',name:'Closed Beta Playtest by Squad',cohorts:['players'],complexity:'plug_and_play',anchors:['Pre_Launch'],ip:null,priceLow:165000,priceTerm:'per playtest',desc:'NDA-bound, pre-launch. One squad provides feedback + post-launch reveal stream. Indie-dev validation + buzz combined.',parent:null},
+  {id:59,kind:'library',pillar:'publisher',name:'Game-Launch Tryout Extension',cohorts:['players'],complexity:'plug_and_play',anchors:['Launch_Day'],ip:null,priceLow:165000,priceTerm:'per launch',desc:'Squad live-tests an unreleased title. Requires NDA + 3 weeks lead. Sub-activation under № 03 Performance/PC.',parent:3},
+  {id:60,kind:'library',pillar:'publisher',name:'In-Game Branded Tournament',cohorts:['mixed'],complexity:'hero_moment',anchors:['Evergreen'],ip:null,priceLow:480000,priceTerm:'per tournament',desc:'Falcons hosts a custom tournament on the publisher\'s title. Leaderboard sponsorship + prize-pool branding + broadcast.',parent:null},
+
+  // ─── ROUNDOUT (5) ───
+  {id:61,kind:'library',pillar:'talent',name:'Player Appearance — In-Person',cohorts:['players'],complexity:'hero_moment',anchors:['Evergreen'],ip:null,priceLow:220000,priceTerm:'per appearance',desc:'Single named player at brand event. Travel separate. 4-week lead. Brand flagship + activation storefronts.',parent:null},
+  {id:62,kind:'library',pillar:'talent',name:'Player Appearance — Virtual Event',cohorts:['players'],complexity:'plug_and_play',anchors:['Evergreen'],ip:null,priceLow:75000,priceTerm:'per event',desc:'2-hour virtual commitment. AMA, panel, branded co-stream. Lower-friction than in-person, faster to book.',parent:null},
+  {id:63,kind:'library',pillar:'content',name:'Co-Branded Limited-Edition Product',cohorts:['mixed'],complexity:'embedded_partnership',anchors:['Evergreen'],ip:null,priceLow:1600000,priceTerm:'one-off',desc:'Co-developed limited-edition product (Samsung × Falcons monitor precedent). Reveal event + content campaign + retail.',parent:null},
+  {id:64,kind:'library',pillar:'stream',name:'Charity Stream Around Major',cohorts:['players'],complexity:'hero_moment',anchors:['EWC','IEM','Worlds','Riyadh_Masters'],ip:null,priceLow:320000,priceTerm:'per event',desc:'24-hour charity stream tied to a major. 1-3 talents. Brand fronts the cause + activation. CSR-grade narrative.',parent:null},
+  {id:65,kind:'library',pillar:'talent',name:'Creator Product Review',cohorts:['creators'],complexity:'managed_series',anchors:['Evergreen'],ip:null,priceLow:220000,priceTerm:'per piece',desc:'Creator-led product showcase — gaming monitor reviews, peripherals, hardware. Native creator voice, not adapted.',parent:null},
+];
+
+const COHORT_LBL = {players:'Players',influencers:'Influencers',creators:'Creators',mixed:'Mixed'};
+const COMP_LBL = {plug_and_play:'Plug & Play',managed_series:'Managed',hero_moment:'Hero',embedded_partnership:'Embedded'};
+const PILLAR_LBL = {broadcast:'Broadcast',stream:'Stream',content:'Content',digital:'Digital',facility:'Facility',event:'Event',talent:'Talent',hospitality:'Hospitality',publisher:'Publisher'};
+const IP_LBL = Object.fromEntries(FALCONS_IPS.map(ip=>[ip.id,ip.name]));
+
+/* ════════════════════════════════════════════════════════════════
+   STATE + FILTERS
+   ════════════════════════════════════════════════════════════════ */
+const state = {cohort:null, complexity:null, pillar:null};
+
+function fmtPrice(n){
+  if(n>=1000000) return (n/1000000).toFixed(n%1000000===0?0:1).replace(/\.0$/,'')+'M';
+  return Math.round(n/1000)+'K';
+}
+
+function matches(s){
+  if(state.cohort && !s.cohorts.includes(state.cohort)) return false;
+  if(state.complexity && s.complexity !== state.complexity) return false;
+  if(state.pillar && s.pillar !== state.pillar) return false;
+  return true;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RENDER: CANONICAL STRIP
+   ════════════════════════════════════════════════════════════════ */
+function renderCanonical(){
+  const c = SKUS.filter(s=>s.kind==='canonical');
+  document.getElementById('canonicalStrip').innerHTML = c.map(s=>`
+    <div class="can-card">
+      <div class="num">№ ${s.num}</div>
+      <div class="nm">${s.name.split(' ').slice(0,Math.ceil(s.name.split(' ').length/2)).join(' ')}<br><em>${s.name.split(' ').slice(Math.ceil(s.name.split(' ').length/2)).join(' ')}</em></div>
+      <div class="arch">${s.archetype}</div>
+      <div class="effort">Player ${[0,1,2,3,4].map(i=>`<span class="dot${i<s.effortPlayer?' on':''}"></span>`).join('')} · Falcons ${[0,1,2,3,4].map(i=>`<span class="dot${i<s.effortFalcons?' on':''}"></span>`).join('')}</div>
+      <div class="pr"><small>SAR</small>${fmtPrice(s.priceLow)} — ${fmtPrice(s.priceHigh)}</div>
+      <div class="more">View full bundle</div>
+    </div>
+  `).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RENDER: CALENDAR
+   ════════════════════════════════════════════════════════════════ */
+function renderCalendar(){
+  const tracks = MONTHS.map((m,mi)=>{
+    const anchors = CAL_ANCHORS.filter(a=>a.month===mi);
+    return `<div class="cal-month"><div class="mlbl">${m}</div>${anchors.map(a=>`
+      <div class="cal-anchor"><div class="nm">${a.name}</div><div class="ct">${a.sub}</div></div>
+    `).join('')}</div>`;
+  }).join('');
+  document.getElementById('calTrack').innerHTML = tracks;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RENDER: FALCONS IPs
+   ════════════════════════════════════════════════════════════════ */
+function renderIPs(){
+  document.getElementById('ipGrid').innerHTML = FALCONS_IPS.map(ip=>{
+    const skuCount = SKUS.filter(s=>s.ip===ip.id).length;
+    return `
+      <div class="ip-card" data-ip="${ip.id}">
+        <div class="ip-mono">${ip.mono}</div>
+        <div class="ip-nm">${ip.name}</div>
+        <div class="ip-fmt">${ip.format}</div>
+        <div class="ip-stat">
+          <span class="n">${ip.audience}</span>
+          <span class="v">${skuCount} SKU${skuCount===1?'':'s'}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RENDER: LIBRARY
+   ════════════════════════════════════════════════════════════════ */
+function renderLibrary(){
+  const lib = SKUS.filter(s=>s.kind==='library' && matches(s));
+  document.getElementById('liveCount').textContent = lib.length + (state.cohort||state.complexity||state.pillar ? '' : '');
+  // total live count = canonical(5) + library matches
+  const totalLive = lib.length + SKUS.filter(s=>s.kind==='canonical' && matches(s)).length;
+  document.getElementById('liveCount').textContent = totalLive;
+
+  if(lib.length === 0){
+    document.getElementById('libGrid').innerHTML = '<div class="sku-empty">No activations match those filters. Try removing one chip — or hit Reset.</div>';
+    return;
+  }
+  document.getElementById('libGrid').innerHTML = lib.map(s=>`
+    <div class="sku-card">
+      <div class="gear" title="Adjust pricing — admin only">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82M4.6 9a1.65 1.65 0 0 1-.33-1.82"/></svg>
+      </div>
+      <div class="row1">
+        <span class="sku-pill pillar">${PILLAR_LBL[s.pillar]}</span>
+        ${s.cohorts.map(c=>`<span class="sku-pill cohort">${COHORT_LBL[c]}</span>`).join('')}
+        <span class="sku-pill complexity">${COMP_LBL[s.complexity]}</span>
+        ${s.ip?`<span class="sku-pill ip">${IP_LBL[s.ip]}</span>`:''}
+      </div>
+      <div class="nm">${s.name}</div>
+      <div class="desc">${s.desc}</div>
+      <div class="row-bot">
+        <div>
+          <div class="pr"><small>SAR</small>${fmtPrice(s.priceLow)}${s.priceHigh?' — '+fmtPrice(s.priceHigh):''}</div>
+          <div class="term">${s.priceTerm}</div>
+        </div>
+        <button class="add">Add to brief →</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   FIND YOUR FIT
+   ════════════════════════════════════════════════════════════════ */
+const fyfState = {cohort:null, complexity:null, band:null};
+
+function fyfMatch(){
+  if(!fyfState.cohort || !fyfState.complexity || !fyfState.band) return null;
+  const bandMap = {
+    under_100k:[0,100000],
+    '100k_500k':[100000,500000],
+    '500k_1m':[500000,1000000],
+    '1m_plus':[1000000,Infinity],
+  };
+  const [lo,hi] = bandMap[fyfState.band];
+  return SKUS.filter(s=>
+    (fyfState.cohort==='mixed' || s.cohorts.includes(fyfState.cohort) || s.cohorts.includes('mixed')) &&
+    s.complexity === fyfState.complexity &&
+    s.priceLow >= lo && s.priceLow < hi
+  ).slice(0,3);
+}
+
+function renderFyf(){
+  const list = document.getElementById('fyfMatches');
+  const title = document.getElementById('fyfTitle');
+  const matches = fyfMatch();
+  if(matches === null){
+    title.textContent = 'Answer the three questions →';
+    list.innerHTML = '<div class="fyf-empty">Pick a cohort, a lift, and a budget. We surface the closest three.</div>';
+    return;
+  }
+  if(matches.length === 0){
+    title.textContent = 'No exact match.';
+    list.innerHTML = '<div class="fyf-empty">Nothing in that exact slot — drop one constraint, or scroll the library.</div>';
+    return;
+  }
+  title.textContent = `Your shortlist (${matches.length})`;
+  list.innerHTML = matches.map(s=>`
+    <div class="fyf-match">
+      <div>
+        <div class="nm">${s.name}</div>
+        <div class="meta">${PILLAR_LBL[s.pillar]} · ${COMP_LBL[s.complexity]} · ${s.cohorts.map(c=>COHORT_LBL[c]).join(', ')}</div>
+      </div>
+      <div class="pr"><small>SAR</small>${fmtPrice(s.priceLow)}</div>
+    </div>
+  `).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   EVENT BINDINGS
+   ════════════════════════════════════════════════════════════════ */
+document.querySelectorAll('.filter-rail .chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const grp = chip.closest('.grp').dataset.grp;
+    const val = chip.dataset[grp] || chip.dataset.cohort || chip.dataset.complexity || chip.dataset.pillar;
+    const wasOn = chip.classList.contains('on');
+    // clear siblings
+    chip.closest('.grp').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+    if(!wasOn){
+      chip.classList.add('on');
+      state[grp] = val;
+    }else{
+      state[grp] = null;
+    }
+    renderLibrary();
+  });
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  state.cohort = state.complexity = state.pillar = null;
+  document.querySelectorAll('.filter-rail .chip.on').forEach(c=>c.classList.remove('on'));
+  renderLibrary();
+});
+
+document.querySelectorAll('[data-fyf]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const dim = b.dataset.fyf;
+    const val = b.dataset.val;
+    // clear siblings in same question card
+    b.closest('.fyf-q').querySelectorAll('.chip').forEach(c=>c.classList.
