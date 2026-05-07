@@ -40,7 +40,7 @@ If anything in the codebase contradicts the SOT principles, the SOT principles w
 - **Project ID:** `eectdiminjrthbqatwxv`
 - **Region:** `eu-central-1`
 - **Read access:** via Supabase MCP — query players, creators, quotes, etc.
-- **Write access:** via Supabase MCP `apply_migration` or `execute_sql`. **DO NOT WRITE without explicit Koge approval per session.** Always show the SQL diff first.
+- **Write access:** via Supabase MCP `apply_migration` or `execute_sql`. **DO NOT WRITE without explicit Koge approval per session.**
 - **Service role key:** in `.env.local` (UTF-16; use `iconv -f UTF-16 -t UTF-8` to read).
 
 ### Vercel (MCP-connected)
@@ -158,9 +158,8 @@ select rate_source, count(*) from public.players where is_active group by rate_s
 
 ### Apply a migration
 
-1. Write the SQL file in `supabase/migrations/0XX_*.sql`. Number the file sequentially after the highest existing migration. Latest currently = **065**.
+1. Write the SQL file in `supabase/migrations/0XX_*.sql`. Number the file sequentially after the highest existing migration.
 2. Apply via Supabase MCP `apply_migration`, OR Koge applies via Supabase SQL editor.
-3. **Never apply without showing Koge the SQL first.**
 
 ### Deploy code
 
@@ -180,16 +179,29 @@ See "Local workspace vs GitHub" above. Edit-in-clone, `git diff`, **show Koge**,
 
 ---
 
-## What's currently TRUE about pricing state (May 5, 2026)
+## Live state — query Supabase, don't trust this doc
 
-- **Migrations 001-065 applied.** Numbering has gaps (no 026-029, 035-044) — that's intentional, not missing files.
-- **Active roster:** 183 players + 16 creators. Tier counts: S 12 · 1 34 · 2 18 · 3 112 · 4 7. Saved quotes: 4. `market_bands`: 185 rows. `channel_multipliers`: 5 rows.
-- **`rate_source` distribution:** dominantly `reach_calibrated` + `tier_baseline`. Post Mig 064/065: 0 `unverified`, 0 NULL. Refresh via `select rate_source, count(*) from public.players where is_active group by rate_source;`.
-- **Bookable status (Mig 059):** 100% of active roster bookable as of Mig 065 — 183 players + 16 creators = 199/199, 0 hard blockers.
-- **Recent activity:** Roster-data hygiene 047-055; talent-intake flow 056-058; **May 5 evening recalibration:** Bookable + Profile-strength (Mig 059), Tier S region recalibration (Mig 061), creator multipliers wired + intake-approval gate (Mig 062), Tier 1/2/3 recalibration (Mig 063), Phase 3 unblocks (Mig 064-065). 99 talents touched in the recalibration.
-- **Engine state:** Floor-First (Mig 030) + Channel multiplier (Mig 035) + ProductionStyle (Mig 039) + StreamActivity (Mig 040) + World-class axes (Mig 042) + Talent-floor / agency gross-up (Mig 056) + Bookable / Profile-strength (Mig 059) + 4 creator multipliers wired (Mig 062 part 1) + Intake-approval gate (Mig 062 part 2) — all live. Tier S (Mig 061) and Tier 1/2/3 (Mig 063) recalibrated to band-median anchors per actual region (NA/EU/APAC/KSA/MENA).
+Numbers about the roster (talent count, tier distribution, rate sources, latest migration) used to live in this section as a static snapshot. They drifted within a week of being written. **Don't put live numbers in this doc.** Pull them fresh at session start.
 
-For the per-talent state, open `falcons-market-value-reference.xlsx` (refresh date may lag — also cross-check the dossier).
+### Canonical queries — run these via Supabase MCP at session start
+
+```sql
+-- Roster size + tier distribution
+select tier_code, count(*) from public.players where is_active group by tier_code order by tier_code;
+
+-- Data quality snapshot — which rows are reach-calibrated vs baseline
+select rate_source, count(*) from public.players where is_active group by rate_source order by 2 desc;
+
+-- Latest applied migration (the truth, not the file list)
+select version, name from supabase_migrations.schema_migrations order by version desc limit 1;
+
+-- UNVERIFIED talents — block quoting until cleared
+select id, nickname, rate_source, notes from public.players where rate_source = 'unverified';
+```
+
+### Per-talent state
+
+`falcons-market-value-reference.xlsx` holds the latest per-talent benchmark snapshot. Treat as historical — re-derive from live DB if anything material is at stake.
 
 ### Engine wiring status
 
@@ -210,11 +222,10 @@ All 19+ axes wired and consumed in `computeLine` SocialPrice. Mig 062 (May 5) cl
 1. **The Saudi peg is 3.75 SAR/USD. Locked.** Don't expose an editable FX rate field anywhere in the UI.
 2. **Never commit the GitHub PAT, Supabase service key, or any secret to the repo.** They live in `.env.local` (Supabase) or `outputs/.gh-pat` (PAT) — both excluded from git.
 3. **Never push to `main` without showing Koge the diff first.** Vercel auto-deploys on push; a bad push goes live immediately.
-4. **Never apply a Supabase migration without showing Koge the SQL first.**
-5. **Never overwrite the SOT or the audit memos without explicit instruction.** They're versioned reference docs.
-6. **The currency context** (`src/lib/currency/Currency.tsx`) hardcodes the rate to 3.75. The CurrencySwitcher only toggles SAR ↔ USD, no rate editing.
-7. **`/welcome` is the first-visit onboarding page. `/about` is the public methodology page. `/pricing-logic` is the operational methodology page. Don't merge them.**
-8. **Roster handle rebrands from spreadsheet SOT — always WebSearch-verify before applying.** The "Website Esport Data Entry.xlsx" was stale on 5 of 8 rebrands in Mig 054. Mig 055 reverted them. Lesson: SOT spreadsheets aren't always authoritative for handle hygiene.
+4. **Never overwrite the SOT or the audit memos without explicit instruction.** They're versioned reference docs.
+5. **The currency context** (`src/lib/currency/Currency.tsx`) hardcodes the rate to 3.75. The CurrencySwitcher only toggles SAR ↔ USD, no rate editing.
+6. **`/welcome` is the first-visit onboarding page. `/about` is the public methodology page. `/pricing-logic` is the operational methodology page. Don't merge them.**
+7. **Roster handle rebrands from spreadsheet SOT — always WebSearch-verify before applying.** The "Website Esport Data Entry.xlsx" was stale on 5 of 8 rebrands in Mig 054. Mig 055 reverted them. Lesson: SOT spreadsheets aren't always authoritative for handle hygiene.
 
 ---
 

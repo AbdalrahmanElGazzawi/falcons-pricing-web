@@ -64,7 +64,6 @@ HARD RULES
   • Saudi peg is 3.75 SAR/USD. Locked. Never expose an editable FX field.
   • Never commit secrets (PAT, service key) to the repo.
   • Never push without showing me the diff first. Vercel auto-deploys.
-  • Never apply a Supabase migration without showing me the SQL first.
   • If unsure whether a change is safe — ask. Don't guess.
 
 NOW WHAT I WANT YOU TO DO:
@@ -101,6 +100,17 @@ Then proceed with the task above.
 Each session: paste a fresh GitHub PAT. After the session: rotate it on GitHub so the old one becomes inert. This keeps long-lived secrets out of past chat transcripts.
 
 If rotating every session feels heavy, alternative: use a single long-lived PAT scoped only to this repo (GitHub → Settings → Developer settings → Fine-grained tokens → "Only select repositories" → falcons-pricing-web). Lower-risk, you can keep it stashed.
+
+---
+
+## Common opening tasks (copy-paste into the `<DESCRIBE THE TASK HERE>` slot)
+
+- `Audit the live roster — flag any UNVERIFIED rate_source rows and any tier mismatches between system tier_code and follower-driven tier.`
+- `Show me the latest 10 quotes with their final totals and approval status.`
+- `Walk me through how a quote line is priced today, end-to-end, using NiKo CS2 IG Reel as the example. Show the actual math from base rate through final SAR.`
+- `Plan the activations catalogue: bundles + sub_activations tables + /admin/activations editor + public /activations page reading from DB. Show me the migration SQL diff first.`
+- `Migration <N>: <DESCRIPTION>. Apply via Supabase MCP, then push the .sql file to repo.`
+- `Redesign the quote builder UI per quote-builder-mockup.html — port to Next.js, diff first, push only on my approval.`
 
 ---
 
