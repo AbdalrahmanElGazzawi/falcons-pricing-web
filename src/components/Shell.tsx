@@ -33,6 +33,7 @@ const NAV = (role: UserRole, email: string) => [
   { href: '/pricing-logic',     key: 'nav.pricing_logic' as const, icon: Layers },
   ...(['admin','sales','finance'].includes(role) ? [
     { href: '/admin/sales-log', key: 'nav.sales_log'  as const, icon: ScrollText },
+    { href: '/admin/activations', key: 'nav.activations' as const, icon: Layers, highlight: true },
   ] : []),
   ...(role === 'admin' ? [
     { href: '/admin/esports-teams', key: 'nav.esports_teams' as const, icon: Trophy },
