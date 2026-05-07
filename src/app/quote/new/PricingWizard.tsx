@@ -237,11 +237,26 @@ export function PricingWizard({
       rightsPct: addonsUpliftPct,
       qty: draft.qty,
       isCompanion: !!draft.is_companion,
-      // Migration 035/039/040 — pass channel/production/streamActivity
-      // through if globals carries them. Defaults are neutral.
+      // Migration 035/039/040/042 — full engine parity with QuoteConfigurator
+      // and QuoteBuilder. Defaults are neutral when globals don't carry the
+      // axis. Ensures Wizard preview matches what the Builder will compute.
       channelMultiplier: (globals as any).channelMultiplier,
-      productionStyleMultiplier: (globals as any).productionStyleMultiplier,
-      streamActivity: (globals as any).streamActivity,
+      productionStyleMultiplier: (globals as any).productionStyleMultiplier ?? 1.0,
+      streamActivity: (globals as any).streamActivity ?? 1.0,
+      // Migration 042 world-class axes (campaign-level)
+      audCountryMix:    (globals as any).audCountryMix    ?? 1.0,
+      audAgeDemo:       (globals as any).audAgeDemo       ?? 1.0,
+      integrationDepth: (globals as any).integrationDepth ?? 1.0,
+      firstLook:        (globals as any).firstLook        ?? 1.0,
+      realTimeLive:     (globals as any).realTimeLive     ?? 1.0,
+      lifestyleContext: (globals as any).lifestyleContext ?? 1.0,
+      brandSafety:      (globals as any).brandSafety      ?? 1.0,
+      collabSize:       (globals as any).collabSize       ?? 1,
+      // Creator-specific multipliers (per-line override → globals → neutral)
+      brandLoyaltyPct:           (draft as any).o_brand_loyalty       ?? (selectedCreator as any)?.brand_loyalty_default_pct  ?? 0,
+      exclusivityPremiumPct:     (draft as any).o_exclusivity         ?? (selectedCreator as any)?.exclusivity_premium_pct    ?? 0,
+      crossVerticalMultiplier:   (draft as any).o_cross_vertical      ?? (selectedCreator as any)?.cross_vertical_multiplier  ?? 1.0,
+      engagementQualityModifier: (draft as any).o_engagement_quality  ?? (selectedCreator as any)?.engagement_quality_modifier ?? 1.0,
       // Migration 056 + 062 — talent floor + agency gross-up, gated on
       // intake_status='approved' (admin approval required).
       talentSubmittedFloor: ((selectedPlayer as any)?.intake_status === 'approved')

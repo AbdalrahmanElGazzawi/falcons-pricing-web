@@ -79,6 +79,7 @@ export function Calculator({
       const intakeAgencyFee = intakeApproved && (playerRec as any)?.agency_status === 'agency'
         ? Number((playerRec as any)?.agency_fee_pct ?? 0)
         : 0;
+      const playerRecCreator = (playerRec ?? {}) as any;
       const r = computeLine({
         baseFee: l.base_rate,
         irl: l.irl,
@@ -93,6 +94,24 @@ export function Calculator({
         rightsPct: addonsUpliftPct,
         qty: l.qty,
         channelMultiplier,
+        // Engine parity (Migrations 035 / 039 / 040 / 042) — neutral defaults
+        // when Calculator UI doesn't expose the axis. Same engine as
+        // QuoteConfigurator + QuoteBuilder, just no UI to flex these knobs.
+        // Stays at 1.0× / 0% / false; ensures Calculator never disagrees
+        // with the Configurator on the same talent + line.
+        productionStyleMultiplier: (playerRecCreator?.production_style_default === 'raw' ? 0.9
+                                   : playerRecCreator?.production_style_default === 'scripted' ? 1.20
+                                   : playerRecCreator?.production_style_default === 'full_studio' ? 1.40 : 1.0),
+        brandLoyaltyPct:           playerRecCreator?.brand_loyalty_default_pct  ?? 0,
+        exclusivityPremiumPct:     playerRecCreator?.exclusivity_premium_pct    ?? 0,
+        crossVerticalMultiplier:   playerRecCreator?.cross_vertical_multiplier  ?? 1.0,
+        engagementQualityModifier: playerRecCreator?.engagement_quality_modifier ?? 1.0,
+        streamActivity: 1.0,
+        // Migration 042 world-class axes — neutral until Calculator surfaces them
+        audCountryMix: 1.0, audAgeDemo: 1.0, integrationDepth: 1.0,
+        firstLook: 1.0, realTimeLive: 1.0, lifestyleContext: 1.0, brandSafety: 1.0,
+        collabSize: 1,
+        isCompanion: !!l.is_companion,
         talentSubmittedFloor: intakeFloor,
         agencyFeePct: intakeAgencyFee,
       });
