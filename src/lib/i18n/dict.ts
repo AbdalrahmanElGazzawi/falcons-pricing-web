@@ -22,6 +22,7 @@ export const dict = {
   'nav.roster':       { en: 'Roster',       ar: 'اللاعبون' },
   'nav.creators':     { en: 'Creators',     ar: 'صناع المحتوى' },
   'nav.roadmap':      { en: 'Roadmap',      ar: 'خارطة الطريق' },
+  'nav.admin_roadmap': { en: 'Roadmap (admin)', ar: 'خارطة الطريق (مسؤول)' },
   'nav.about':        { en: 'About',        ar: 'حول' },
   'nav.pricing_logic':{ en: 'Pricing Logic', ar: 'منطق التسعير' },
   'nav.users':        { en: 'Users',        ar: 'المستخدمون' },

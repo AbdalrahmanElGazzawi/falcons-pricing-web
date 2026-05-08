@@ -42,6 +42,7 @@ const NAV = (role: UserRole, email: string) => [
     { href: '/admin/market-bands',key: 'nav.market_bands'as const, icon: Database },
     { href: '/admin/addons',      key: 'nav.addons'      as const, icon: Settings },
     { href: '/admin/assumptions', key: 'nav.assumptions' as const, icon: BookOpen },
+    { href: '/admin/roadmap',     key: 'nav.admin_roadmap' as const, icon: Map },
   ] : []),
   ...(isSuperAdminEmail(email) ? [
     { href: '/admin/users',     key: 'nav.users'      as const, icon: UserCog },
