@@ -468,9 +468,23 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
   if (currency === 'USD') {
     doc.fillColor(LABEL).text('FX rate:', methX, y);
-    doc.fillColor(INK).text(`${usdRate.toFixed(2)} SAR per 1 USD`, methX + 75, y);
+    doc.fillColor(INK).text(`${usdRate.toFixed(2)} SAR per 1 USD (Saudi peg, locked)`, methX + 75, y);
     y += 10;
   }
+  if (quote.rights_territory) {
+    doc.fillColor(LABEL).text('Rights territory:', methX, y);
+    doc.fillColor(INK).text(String(quote.rights_territory), methX + 75, y);
+    y += 10;
+  }
+  if (Array.isArray(quote.competitor_blackout) && quote.competitor_blackout.length > 0) {
+    doc.fillColor(LABEL).text('Competitor blackout:', methX, y);
+    doc.fillColor(INK).text((quote.competitor_blackout as string[]).join(', '), methX + 75, y, { width: methW - 75 });
+    y += 12;
+  }
+  // Engine version stamp (Mig 075/078 — quote reproducibility)
+  doc.fillColor(MUTE).fontSize(7.5).text('Pricing engine v1.1-2026-05-09 · Authority Tier · Archetype × Profile · World-MENA calibration', methX, y, { width: methW });
+  y += 10;
+  doc.fillColor(INK).fontSize(8.5);
   y += 4;
 
   // Brand brief block (conditional — only render if anything captured)

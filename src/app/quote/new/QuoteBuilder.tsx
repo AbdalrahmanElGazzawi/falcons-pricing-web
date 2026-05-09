@@ -127,6 +127,24 @@ export function QuoteBuilder({
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
+        // Approval / save gates from /api/quote (S-10 + Mig 078):
+        // APPROVAL_REQUIRED_DISCOUNT, APPROVAL_REQUIRED_PERPETUAL_RIGHTS,
+        // FLOOR_OVERRIDE_REQUIRED, RIGHTS_TERRITORY_REQUIRED, COMPETITOR_BLACKOUT_REQUIRED
+        if (res.status === 403 && j.code) {
+          const codeLabels: Record<string, string> = {
+            APPROVAL_REQUIRED_DISCOUNT:        '🚫 Approval needed: Discount > 25%',
+            APPROVAL_REQUIRED_PERPETUAL_RIGHTS:'🚫 Approval needed: Perpetual rights',
+            FLOOR_OVERRIDE_REQUIRED:           '🚫 Floor override reason required',
+            RIGHTS_TERRITORY_REQUIRED:         '🚫 Set rights territory before saving',
+            COMPETITOR_BLACKOUT_REQUIRED:      '🚫 Name blocked competitors before saving',
+          };
+          const label = codeLabels[j.code] || '🚫 Approval required';
+          setError(`${label}
+
+${j.detail || j.error}`);
+          setSaving(false);
+          return;
+        }
         throw new Error(j.error || `Save failed (${res.status})`);
       }
     } catch (e: any) {
@@ -159,6 +177,8 @@ export function QuoteBuilder({
   const [genderSkew, setGenderSkew] = useState<'male' | 'female' | 'mixed'>('mixed');
   const [region, setRegion] = useState<string>('KSA');
   const [exclusivity, setExclusivity] = useState(false);
+  const [rightsTerritory, setRightsTerritory] = useState<string>('');
+  const [competitorBlackout, setCompetitorBlackout] = useState<string>('');
   const [exclusivityMonths, setExclusivityMonths] = useState(0);
   const [kpiFocus, setKpiFocus] = useState<string>('');
 
@@ -295,6 +315,8 @@ export function QuoteBuilder({
         if (d.genderSkew) setGenderSkew(d.genderSkew);
         if (d.region) setRegion(d.region);
         if (typeof d.exclusivity === 'boolean') setExclusivity(d.exclusivity);
+        if (typeof d.rightsTerritory === 'string') setRightsTerritory(d.rightsTerritory);
+        if (typeof d.competitorBlackout === 'string') setCompetitorBlackout(d.competitorBlackout);
         if (typeof d.exclusivityMonths === 'number') setExclusivityMonths(d.exclusivityMonths);
         if (d.kpiFocus) setKpiFocus(d.kpiFocus);
         if (d.preparedByEmail) setPreparedByEmail(d.preparedByEmail);
@@ -366,7 +388,7 @@ export function QuoteBuilder({
         preparedByName, preparedByTitle, preparedByEmail,
         clientAddress, clientVatNumber, clientCountry, expiresAt, paymentTerms,
         approverName, approverEmail,
-        demoTarget, genderSkew, region, exclusivity, exclusivityMonths, kpiFocus,
+        demoTarget, genderSkew, region, exclusivity, exclusivityMonths, rightsTerritory, competitorBlackout, kpiFocus,
         eng, aud, seas, ctype, lang, auth, obj, conf,
         addonMonths,
         lines,
@@ -532,6 +554,10 @@ export function QuoteBuilder({
             region: region,
             exclusivity: exclusivity,
             exclusivity_months: exclusivityMonths,
+            rights_territory: rightsTerritory.trim() || null,
+            competitor_blackout: competitorBlackout.trim()
+              ? competitorBlackout.split(',').map(s => s.trim()).filter(Boolean)
+              : null,
             kpi_focus: kpiFocus || null,
             prepared_by_email: preparedByEmail.trim() || null,
             currency,
@@ -588,6 +614,24 @@ export function QuoteBuilder({
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
+        // Approval / save gates from /api/quote (S-10 + Mig 078):
+        // APPROVAL_REQUIRED_DISCOUNT, APPROVAL_REQUIRED_PERPETUAL_RIGHTS,
+        // FLOOR_OVERRIDE_REQUIRED, RIGHTS_TERRITORY_REQUIRED, COMPETITOR_BLACKOUT_REQUIRED
+        if (res.status === 403 && j.code) {
+          const codeLabels: Record<string, string> = {
+            APPROVAL_REQUIRED_DISCOUNT:        '🚫 Approval needed: Discount > 25%',
+            APPROVAL_REQUIRED_PERPETUAL_RIGHTS:'🚫 Approval needed: Perpetual rights',
+            FLOOR_OVERRIDE_REQUIRED:           '🚫 Floor override reason required',
+            RIGHTS_TERRITORY_REQUIRED:         '🚫 Set rights territory before saving',
+            COMPETITOR_BLACKOUT_REQUIRED:      '🚫 Name blocked competitors before saving',
+          };
+          const label = codeLabels[j.code] || '🚫 Approval required';
+          setError(`${label}
+
+${j.detail || j.error}`);
+          setSaving(false);
+          return;
+        }
         throw new Error(j.error || `Save failed (${res.status})`);
       }
       const j = await res.json();
@@ -659,6 +703,8 @@ export function QuoteBuilder({
       setGenderSkew(h.gender_skew === 'male' || h.gender_skew === 'female' ? h.gender_skew : 'mixed');
       setRegion(h.region ?? 'KSA');
       setExclusivity(!!h.exclusivity);
+      setRightsTerritory(h.rights_territory || '');
+      setCompetitorBlackout(Array.isArray(h.competitor_blackout) ? h.competitor_blackout.join(', ') : '');
       setExclusivityMonths(typeof h.exclusivity_months === 'number' ? h.exclusivity_months : 0);
       setKpiFocus(h.kpi_focus ?? '');
 
@@ -1101,6 +1147,30 @@ export function QuoteBuilder({
             </div>
             <p className="text-[10px] text-mute mt-1">No competing brand campaigns during exclusivity window. Drives premium.</p>
           </div>
+
+          {/* Rights territory + competitor blackout — required when paid usage / exclusivity */}
+          <div className="md:col-span-2">
+            <label className="label">Rights territory <span className="text-mute font-normal">— required if any line has paid usage rights or exclusivity</span></label>
+            <select value={rightsTerritory} onChange={e => setRightsTerritory(e.target.value)} className="input">
+              <option value="">— not specified (will block save if rights claimed) —</option>
+              <option value="KSA">KSA only</option>
+              <option value="GCC">GCC (KSA + UAE + Kuwait + Qatar + Bahrain + Oman)</option>
+              <option value="MENA">MENA (GCC + Egypt + Levant + North Africa)</option>
+              <option value="APAC">APAC</option>
+              <option value="EU">EU</option>
+              <option value="NA">NA</option>
+              <option value="GLOBAL">Global</option>
+            </select>
+            <p className="text-[10px] text-mute mt-1">Defining territory is the highest hidden-margin lever. Undefined = open exclusivity = future legal liability.</p>
+          </div>
+          {exclusivity && (
+            <div className="md:col-span-2">
+              <label className="label">Competitor blackout list <span className="text-mute font-normal">— comma-separated brand names blocked during exclusivity</span></label>
+              <input type="text" value={competitorBlackout} onChange={e => setCompetitorBlackout(e.target.value)}
+                className="input" placeholder="e.g. STC, Mobily, Zain" />
+              <p className="text-[10px] text-mute mt-1">Required when exclusivity is on. Each named competitor is blocked from this talent for {exclusivityMonths || 1} months.</p>
+            </div>
+          )}
         </div>
       </div>
     ),

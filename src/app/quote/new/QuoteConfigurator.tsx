@@ -16,7 +16,7 @@ import {
 import { newUid, type LineDraft } from './line-draft';
 import { Avatar } from '@/components/Avatar';
 import { getAnchorPremium } from '@/lib/authority-tier';
-import { isDeliverableAvailable } from '@/lib/archetype';
+import { isDeliverableAvailable, getConfidence } from '@/lib/archetype';
 import { getArchetypeCaps } from '@/lib/archetype';
 import { AuthorityChip } from '@/components/AuthorityChip';
 import { ArchetypeChip } from '@/components/ArchetypeChip';
@@ -1738,7 +1738,12 @@ function PriceBreakdownChip({
             <details className="mt-2 rounded-md border border-line bg-white/40 p-2 text-[11px]">
               <summary className="cursor-pointer text-greenDark font-semibold">Why this price?</summary>
               <div className="mt-2 space-y-1 text-mute leading-relaxed">
-                <div>Engine version <code>v1.0-2026-05-09</code></div>
+                <div>Engine version <code>v1.1-2026-05-09</code></div>
+                {(() => {
+                  const conf = getConfidence(talent as any);
+                  const colorClass = conf.level === 'high' ? 'text-greenDark' : conf.level === 'medium' ? 'text-amber-700' : 'text-rose-700';
+                  return <div>Confidence: <strong className={colorClass}>{conf.level} · {conf.score}%</strong> — {conf.reasons.slice(0, 3).join(' · ')}</div>;
+                })()}
                 {(talent as any)?.archetype && (
                   <div>Archetype: <strong className="text-ink">{(talent as any).archetype_override ?? (talent as any).archetype}</strong> — caps which axes carry weight (Authority/Engagement/Audience/Seasonality/Production).</div>
                 )}
