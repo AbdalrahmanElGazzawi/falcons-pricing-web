@@ -27,6 +27,8 @@ export default async function ShowcasePage() {
       .from('players')
       .select('id, nickname, full_name, role, game, team, nationality, tier_code, avatar_url, ' +
               'rate_ig_reel, rate_irl, authority_factor, measurement_confidence, ' +
+              'authority_tier, authority_tier_override, archetype, archetype_override, ' +
+              'pricing_rationale, ' +
               'followers_ig, followers_twitch, followers_yt, followers_tiktok, followers_x, followers_fb, followers_snap, ' +
               'instagram, twitch, youtube, tiktok, x_handle, kick, facebook, ' +
               'bio, achievements, date_of_birth, ingame_role, pricing_rationale, liquipedia_url')

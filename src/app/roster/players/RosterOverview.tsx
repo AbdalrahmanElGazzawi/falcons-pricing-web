@@ -21,6 +21,8 @@ import { CutChip } from '@/components/CutChip';
 import { LiquipediaChip } from '@/components/LiquipediaChip';
 import { RateCellWithHistory } from '@/components/RateCardDeltaChip';
 import { LiquipediaCoverageBanner } from './LiquipediaCoverageBanner';
+import { AuthorityChip } from '@/components/AuthorityChip';
+import { ArchetypeChip } from '@/components/ArchetypeChip';
 
 type Density = 'compact' | 'comfortable' | 'spacious';
 
@@ -492,6 +494,8 @@ function RosterRow({
               <div className="flex items-center gap-1.5 min-w-0">
                 <div className={`font-medium text-ink truncate ${isAdmin ? 'cursor-text hover:underline decoration-dotted' : ''}`} onClick={() => isAdmin && setEditingNick(true)}>{p.nickname}</div>
                 <ReadinessBadge p={p} />
+                <AuthorityChip player={p as any} size="sm" />
+                <ArchetypeChip player={p as any} size="sm" />
               </div>
             )}
             {editingName && isAdmin ? (

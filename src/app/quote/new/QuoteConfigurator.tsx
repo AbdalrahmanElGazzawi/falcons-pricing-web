@@ -17,6 +17,8 @@ import { newUid, type LineDraft } from './line-draft';
 import { Avatar } from '@/components/Avatar';
 import { getAnchorPremium } from '@/lib/authority-tier';
 import { getArchetypeCaps } from '@/lib/archetype';
+import { AuthorityChip } from '@/components/AuthorityChip';
+import { ArchetypeChip } from '@/components/ArchetypeChip';
 
 /**
  * Single-page configurator. Pick a talent, tick deliverables (multi-select),
@@ -323,6 +325,10 @@ export function QuoteConfigurator({
           full_name: c.full_name || '', tier: c.tier_code || '',
           game: (c as any).audience_market || '', team: '', role: '',
           avatar_url: c.avatar_url || '',
+          archetype: (c as any).archetype || null,
+          archetype_override: (c as any).archetype_override || null,
+          authority_tier: null,
+          authority_tier_override: null,
           reach,
         };
       });
@@ -352,6 +358,10 @@ export function QuoteConfigurator({
         full_name: p.full_name || '', tier: p.tier_code || '', game: p.game || '',
         team: p.team || '', role: p.role || '',
         avatar_url: p.avatar_url || '',
+        archetype: (p as any).archetype || null,
+        archetype_override: (p as any).archetype_override || null,
+        authority_tier: (p as any).authority_tier || null,
+        authority_tier_override: (p as any).authority_tier_override || null,
         reach,
       };
     });
@@ -685,6 +695,8 @@ export function QuoteConfigurator({
                         {t.tier && (
                           <span className={`chip border ${tierClass(t.tier)} !px-1.5 !py-0 text-[10px]`}>{t.tier}</span>
                         )}
+                        <AuthorityChip player={t as any} size="sm" />
+                        <ArchetypeChip player={t as any} size="sm" />
                         {t.role && t.role !== 'Player' && t.role !== 'Influencer' && (
                           <span className="chip chip-grey !px-1.5 !py-0 text-[10px]">{t.role}</span>
                         )}
@@ -725,6 +737,8 @@ export function QuoteConfigurator({
                         {(selectedTalent as any).tier_code}
                       </span>
                     )}
+                    <AuthorityChip player={selectedTalent as any} size="sm" showPremium />
+                    <ArchetypeChip player={selectedTalent as any} size="sm" />
                     {(selectedTalent as any).measurement_confidence === 'exact' ? (
                       <span
                         title="Verified — Shikenso confirmed"

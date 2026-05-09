@@ -6,6 +6,8 @@ import {
   Radio, Clock, TrendingUp,
 } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
+import { AuthorityChip } from '@/components/AuthorityChip';
+import { ArchetypeChip } from '@/components/ArchetypeChip';
 
 type Player = {
   id: number; nickname: string; full_name: string | null;
@@ -15,6 +17,8 @@ type Player = {
   rate_ig_reel: number; rate_irl: number;
   pricing_rationale?: string | null;
   authority_factor: number | null; measurement_confidence: string | null;
+  authority_tier?: string | null; authority_tier_override?: string | null;
+  archetype?: string | null; archetype_override?: string | null;
   followers_ig: number | null; followers_twitch: number | null; followers_yt: number | null;
   followers_tiktok: number | null; followers_x: number | null; followers_fb: number | null; followers_snap: number | null;
   instagram: string | null; twitch: string | null; youtube: string | null; tiktok: string | null; x_handle: string | null;
@@ -332,6 +336,41 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
           ))}
         </div>
       </section>
+
+      {/* ─── 🏆 World Champions strip (Migration 071/074) ────────────── */}
+      {(() => {
+        const champs = players.filter(p => (p.authority_tier_override ?? p.authority_tier) === 'AT-1');
+        if (champs.length === 0) return null;
+        return (
+          <section className="px-4 sm:px-6 lg:px-8">
+            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-5">
+              <div className="flex items-baseline justify-between mb-3">
+                <h2 className="text-lg font-bold text-amber-900 flex items-center gap-2">
+                  🏆 World Champions <span className="text-xs font-normal text-amber-700">· Tier-S 1st-place within 12mo</span>
+                </h2>
+                <span className="text-xs text-amber-700 font-semibold tabular-nums">{champs.length} talents · ×1.40 anchor premium</span>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {champs.map(p => (
+                  <div key={p.id} className="flex-shrink-0 w-44 rounded-lg bg-white border border-amber-200 p-3 hover:border-amber-400 transition">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Avatar src={p.avatar_url || undefined} name={p.nickname} size="md" />
+                      <div className="min-w-0">
+                        <div className="font-semibold text-ink truncate">{p.nickname}</div>
+                        <div className="text-[10px] text-mute truncate">{p.tier_code} · {p.game}</div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      <AuthorityChip player={p as any} size="sm" />
+                      <ArchetypeChip player={p as any} size="sm" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* ─── Tab strip ─────────────────────────────────────────────────── */}
       <div className="flex items-center gap-1 border-b border-line overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
