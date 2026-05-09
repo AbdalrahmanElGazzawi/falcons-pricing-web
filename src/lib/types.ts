@@ -235,6 +235,16 @@ export interface Creator {
   // ── Campaign readiness (Migration 059) ─────────────────────────────────
   is_bookable?: boolean;
   profile_strength_pct?: number;
+  // ── Archetype + Profile (Migration 076) — categorization parity ──
+  archetype?: string | null;
+  archetype_override?: string | null;
+  stream_intensity?: number | null;
+  content_intensity?: number | null;
+  solo_video?: boolean | null;
+  cinematic_ready?: boolean | null;
+  irl_availability?: string | null;
+  peak_platforms?: string[] | null;
+  bilingual?: boolean | null;
 }
 
 export interface Tier {
