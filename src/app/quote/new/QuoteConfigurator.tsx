@@ -1734,6 +1734,22 @@ function PriceBreakdownChip({
               <span className="font-mono font-extrabold tabular-nums text-greenDark text-base">{fmtCurrency(line.finalAmount, currency, usdRate)}</span>
             </div>
 
+            {/* ─── S-9 Why this price · structured story ─────────────── */}
+            <details className="mt-2 rounded-md border border-line bg-white/40 p-2 text-[11px]">
+              <summary className="cursor-pointer text-greenDark font-semibold">Why this price?</summary>
+              <div className="mt-2 space-y-1 text-mute leading-relaxed">
+                <div>Engine version <code>v1.0-2026-05-09</code></div>
+                {(talent as any)?.archetype && (
+                  <div>Archetype: <strong className="text-ink">{(talent as any).archetype_override ?? (talent as any).archetype}</strong> — caps which axes carry weight (Authority/Engagement/Audience/Seasonality/Production).</div>
+                )}
+                {(talent as any)?.authority_tier && (talent as any).authority_tier !== 'AT-0' && (
+                  <div>Authority Tier: <strong className="text-ink">{(talent as any).authority_tier_override ?? (talent as any).authority_tier}</strong> — applies anchor premium per Migration 071.</div>
+                )}
+                <div>FX peg locked at <strong>3.75 SAR/USD</strong>. Saudi peg, not editable.</div>
+                <div>Click any multiplier above to override; the engine recomputes live.</div>
+              </div>
+            </details>
+
             <div className="text-[10px] text-mute italic leading-relaxed">
               Click any multiplier to override it for this line. Adjust globally in the Campaign tab.
             </div>
