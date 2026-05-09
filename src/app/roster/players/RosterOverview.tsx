@@ -183,6 +183,8 @@ export function RosterOverview({
   const [dataFilter, setDataFilter] = useState<'' | 'locked' | 'tbd' | 'pending'>('');
   const [liqFilter, setLiqFilter] = useState<'' | 'missing_url' | 'has_url_unsynced' | 'synced' | 'stale'>('');
   const [readinessFilter, setReadinessFilter] = useState<'' | 'bookable' | 'on_hold' | 'strong' | 'mid' | 'weak'>('');
+  const [archetypeFilter, setArchetypeFilter] = useState<string>('');
+  const [authorityFilter, setAuthorityFilter] = useState<string>('');
   const [density, setDensity] = useState<Density>('comfortable');
   const [reviewOnly, setReviewOnly] = useState(false);
   const tierReview = useTierReviewSettings();
@@ -218,6 +220,8 @@ export function RosterOverview({
     return players.filter(p => {
       if (!tabMatch.match(p.role)) return false;
       if (tier && p.tier_code !== tier) return false;
+      if (archetypeFilter && ((p as any).archetype_override ?? (p as any).archetype) !== archetypeFilter) return false;
+      if (authorityFilter && ((p as any).authority_tier_override ?? (p as any).authority_tier) !== authorityFilter) return false;
       if (game && p.game !== game) return false;
       if (team && p.team !== team) return false;
       if (dataFilter) {
@@ -357,6 +361,25 @@ export function RosterOverview({
         <select value={tier} onChange={e => setTier(e.target.value)} className="input max-w-[160px]">
           <option value="">All tiers</option>
           {tiers.map(t => <option key={t.code} value={t.code}>{t.code} · {t.label}</option>)}
+        </select>
+        <select value={archetypeFilter} onChange={e => setArchetypeFilter(e.target.value)} className="input max-w-[200px]" title="Archetype filter (Mig 074)">
+          <option value="">All archetypes</option>
+          <option value="world_class_pro">World-Class Pro</option>
+          <option value="established_pro">Established Pro</option>
+          <option value="regional_pro">Regional Pro</option>
+          <option value="esports_personality">Esports Personality</option>
+          <option value="hybrid_lifestyle">Hybrid Lifestyle</option>
+          <option value="grassroots_competitor">Grassroots</option>
+          <option value="tournament_athlete">Tournament Athlete</option>
+        </select>
+        <select value={authorityFilter} onChange={e => setAuthorityFilter(e.target.value)} className="input max-w-[180px]" title="Authority Tier filter (Mig 071)">
+          <option value="">All authority</option>
+          <option value="AT-1">🏆 AT-1 World Champion</option>
+          <option value="AT-2">🥈 AT-2 Major Finalist</option>
+          <option value="AT-3">⭐ AT-3 Tier-1 Active</option>
+          <option value="AT-4">AT-4 Active Pro</option>
+          <option value="AT-5">AT-5 Emerging</option>
+          <option value="AT-0">No Signal</option>
         </select>
         <DensityToggle value={density} onChange={setDensity} />
         {!tierReview.disabled && (

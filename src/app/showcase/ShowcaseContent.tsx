@@ -204,6 +204,7 @@ function FilterPills({
 export function ShowcaseContent({ players, creators }: { players: Player[]; creators: Creator[] }) {
   const [tab, setTab] = useState<'players' | 'creators'>('players');
   const [q, setQ] = useState('');
+  const [archetypeFilter, setArchetypeFilter] = useState<string>('');
   const [tier, setTier] = useState('');
   const [game, setGame] = useState('');
   const [region, setRegion] = useState('');
@@ -252,6 +253,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
     const s = q.trim().toLowerCase();
     let list = players.filter(p => {
       if (tier && p.tier_code !== tier) return false;
+      if (archetypeFilter && ((p as any).archetype_override ?? (p as any).archetype) !== archetypeFilter) return false;
       if (game && p.game !== game) return false;
       if (region && regionOf(p.nationality) !== region) return false;
       if (championOnly) {
@@ -426,6 +428,16 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                 <option value="SEA">SEA</option>
                 <option value="NA / EU">NA / EU</option>
                 <option value="East Asia">East Asia</option>
+              </select>
+              <select value={archetypeFilter} onChange={e => setArchetypeFilter(e.target.value)} className="input text-sm max-w-[200px]" title="Filter by archetype (Mig 074)">
+                <option value="">All archetypes</option>
+                <option value="world_class_pro">World-Class Pro</option>
+                <option value="established_pro">Established Pro</option>
+                <option value="regional_pro">Regional Pro</option>
+                <option value="esports_personality">Esports Personality</option>
+                <option value="hybrid_lifestyle">Hybrid Lifestyle</option>
+                <option value="grassroots_competitor">Grassroots</option>
+                <option value="tournament_athlete">Tournament Athlete</option>
               </select>
               <button
                 onClick={() => setChampionOnly(v => !v)}
