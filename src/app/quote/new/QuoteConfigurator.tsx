@@ -733,6 +733,31 @@ export function QuoteConfigurator({
 
           {selectedTalent && (
             <div className="space-y-5">
+              {/* ─── Archetype axis hints (S-4) ──────────────────────── */}
+              {(() => {
+                const caps = getArchetypeCaps(selectedTalent as any);
+                if (!caps) return null;
+                const items: Array<{ k: string; cap: number }> = [
+                  { k: 'Authority',   cap: caps.authorityCap   },
+                  { k: 'Engagement',  cap: caps.engagementCap  },
+                  { k: 'Audience',    cap: caps.audienceCap    },
+                  { k: 'Seasonality', cap: caps.seasonalityCap },
+                  { k: 'Production',  cap: caps.productionCap  },
+                ];
+                const heavy   = items.filter(i => i.cap >= 1.30);
+                const neutral = items.filter(i => i.cap < 1.30 && i.cap >= 1.05);
+                const locked  = items.filter(i => i.cap < 1.05);
+                return (
+                  <div className="rounded-lg border border-line bg-greenSoft/40 p-2.5 text-[11px]">
+                    <div className="font-semibold text-greenDark mb-1">Active axes for this archetype</div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1">
+                      {heavy.length > 0 && <span><span className="text-greenDark font-bold">Heavy:</span> {heavy.map(i => `${i.k} ≤${i.cap.toFixed(2)}×`).join(', ')}</span>}
+                      {neutral.length > 0 && <span><span className="text-amber-700 font-bold">Active:</span> {neutral.map(i => `${i.k} ≤${i.cap.toFixed(2)}×`).join(', ')}</span>}
+                      {locked.length > 0 && <span><span className="text-mute font-bold">Locked at 1.00:</span> {locked.map(i => i.k).join(', ')}</span>}
+                    </div>
+                  </div>
+                );
+              })()}
               {/* Talent summary */}
               <div className="flex items-start gap-3">
                 <Avatar src={(selectedTalent as any).avatar_url} name={(selectedTalent as any).nickname} size="lg" />

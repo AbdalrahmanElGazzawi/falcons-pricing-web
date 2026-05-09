@@ -336,6 +336,88 @@ export function PlayerForm({
         </div>
       </details>
 
+      {/* ─── Classification override (Migration 071/074/076) ─────────── */}
+      <div className="card card-p">
+        <h2 className="font-semibold mb-1">Classification override</h2>
+        <p className="text-[11px] text-mute mb-4">
+          Engine reads <code>coalesce(authority_tier_override, authority_tier)</code> and
+          <code>coalesce(archetype_override, archetype)</code>. Set these manually if the
+          auto-derived classification is wrong (Liquipedia scraper missed a major win, etc.).
+        </p>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="label">Authority Tier — auto-derived: <strong>{(v as any).authority_tier ?? 'AT-0'}</strong></label>
+            <select value={(v as any).authority_tier_override ?? ''} onChange={e => set('authority_tier_override' as any, e.target.value || null)} className="input">
+              <option value="">— no override —</option>
+              <option value="AT-1">AT-1 World Champion (×1.40)</option>
+              <option value="AT-2">AT-2 Major Finalist (×1.20)</option>
+              <option value="AT-3">AT-3 Tier-1 Active (×1.10)</option>
+              <option value="AT-4">AT-4 Active Pro (×1.00)</option>
+              <option value="AT-5">AT-5 Emerging (×0.95)</option>
+              <option value="AT-0">AT-0 No Authority Signal (×1.00)</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Archetype — auto-derived: <strong>{(v as any).archetype ?? '—'}</strong></label>
+            <select value={(v as any).archetype_override ?? ''} onChange={e => set('archetype_override' as any, e.target.value || null)} className="input">
+              <option value="">— no override —</option>
+              <option value="world_class_pro">World-Class Pro</option>
+              <option value="established_pro">Established Pro</option>
+              <option value="regional_pro">Regional Pro</option>
+              <option value="esports_personality">Esports Personality</option>
+              <option value="hybrid_lifestyle">Hybrid Lifestyle Creator</option>
+              <option value="grassroots_competitor">Grassroots Competitor</option>
+              <option value="tournament_athlete">Tournament Athlete</option>
+              <option value="pure_lifestyle">Pure Lifestyle Creator</option>
+            </select>
+          </div>
+        </div>
+        <h3 className="font-semibold text-sm mb-2 mt-2">Profile capabilities</h3>
+        <p className="text-[11px] text-mute mb-3">Gates which deliverables are quotable. NiKo's Twitch is hidden from the picker if Stream intensity = 0.</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="label">Stream intensity (0–3)</label>
+            <select value={(v as any).stream_intensity ?? 0} onChange={e => set('stream_intensity' as any, Number(e.target.value))} className="input">
+              <option value={0}>0 — none / hides Twitch + Kick</option>
+              <option value={1}>1 — some</option>
+              <option value={2}>2 — active</option>
+              <option value={3}>3 — heavy</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Content intensity (0–3)</label>
+            <select value={(v as any).content_intensity ?? 0} onChange={e => set('content_intensity' as any, Number(e.target.value))} className="input">
+              <option value={0}>0 — none</option>
+              <option value={1}>1 — some</option>
+              <option value={2}>2 — active</option>
+              <option value={3}>3 — heavy</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">IRL availability</label>
+            <select value={(v as any).irl_availability ?? 'mena'} onChange={e => set('irl_availability' as any, e.target.value)} className="input">
+              <option value="none">none — hides IRL deliverables</option>
+              <option value="saudi_only">saudi_only</option>
+              <option value="mena">mena</option>
+              <option value="apac">apac</option>
+              <option value="global">global — full IRL premium</option>
+            </select>
+          </div>
+          <label className="flex items-center gap-2 text-sm pt-6">
+            <input type="checkbox" checked={!!(v as any).solo_video} onChange={e => set('solo_video' as any, e.target.checked)} />
+            Solo video (YT long-form available)
+          </label>
+          <label className="flex items-center gap-2 text-sm pt-6">
+            <input type="checkbox" checked={!!(v as any).cinematic_ready} onChange={e => set('cinematic_ready' as any, e.target.checked)} />
+            Cinematic ready (scripted production)
+          </label>
+          <label className="flex items-center gap-2 text-sm pt-6">
+            <input type="checkbox" checked={!!(v as any).bilingual} onChange={e => set('bilingual' as any, e.target.checked)} />
+            Bilingual (Arabic + English)
+          </label>
+        </div>
+      </div>
+
       <div className="card card-p">
         <h2 className="font-semibold mb-4">Socials & followers</h2>
         <div className="grid grid-cols-3 gap-4 mb-4">
