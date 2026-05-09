@@ -95,6 +95,13 @@ export interface LineInput {
   archetypeSeasonalityCap?: number;
   archetypeProductionCap?: number;
   /**
+   * Market band ceiling for THIS deliverable in SAR (Migration 079, V3.1).
+   * Per-talent cache pulled from market_bands keyed by archetype × tier × region × platform.
+   * Engine clamps finalUnit ≤ marketCeilingSar after addons + companion.
+   * Opt-in: leave undefined to skip the clamp (existing engine behavior preserved).
+   */
+  marketCeilingSar?: number;
+  /**
    * Creator-specific multipliers — wired into SocialPrice (Migration 059, May 5).
    * Sourced by QuoteBuilder + QuoteConfigurator from the creator record's
    * defaults, with per-line overrides. For player lines (no creator record),
@@ -271,6 +278,10 @@ export interface LineOutput {
   preAddOn: number;
   finalUnit: number;
   finalAmount: number;
+  /** V3.1 Market ceiling clamp: true when finalUnit was clamped down to marketCeilingSar. */
+  ceilingHit?: boolean;
+  /** Amount the ceiling clamp removed from rawUnit (SAR). 0 if no clamp. */
+  ceilingDelta?: number;
   /** Floor enforcement: true if engine clamped finalUnit up to baseFee. */
   floorHit?: boolean;
   /** Floor enforcement: SAR amount the floor enforcement added. */
@@ -434,6 +445,19 @@ export function computeLine(p: LineInput): LineOutput {
   }
 
   // ── Migration 056 — Talent intake floor + agency gross-up ────────────────
+  // Migration 079 (V3.1) — Market band ceiling clamp.
+  // Caps finalUnit at the published market band ceiling for this deliverable.
+  // Protects against axis-stack runaway: a Tournament Athlete's IRL appearance
+  // can't price above what Newzoo / Influencity 2025-26 cite for that tier.
+  // Opt-in — only fires when marketCeilingSar > 0 is passed.
+  let ceilingHit = false;
+  let ceilingDelta = 0;
+  if (p.marketCeilingSar && p.marketCeilingSar > 0 && finalUnit > p.marketCeilingSar) {
+    ceilingHit = true;
+    ceilingDelta = Math.round(finalUnit - p.marketCeilingSar);
+    finalUnit = Math.round(p.marketCeilingSar);
+  }
+
   // Layered ON TOP of the baseFee floor: when the talent has submitted a
   // floor for this deliverable via the /talent/<token> intake, treat it as a
   // defensible minimum after grossing up by the agency fee they declared.
@@ -466,6 +490,7 @@ export function computeLine(p: LineInput): LineOutput {
     authFactor: +authRaw.toFixed(3),
     engGated, audGated, authGated, seasGated, confCap,
     socialPrice, floorPrice, preAddOn,
+    ceilingHit, ceilingDelta,
     finalUnit, finalAmount,
     ...(floorHit ? { floorHit, floorDelta } : {}),
     ...(talentFloorRaw > 0 ? {
