@@ -16,6 +16,7 @@ import {
 import { newUid, type LineDraft } from './line-draft';
 import { Avatar } from '@/components/Avatar';
 import { getAnchorPremium } from '@/lib/authority-tier';
+import { isDeliverableAvailable } from '@/lib/archetype';
 import { getArchetypeCaps } from '@/lib/archetype';
 import { AuthorityChip } from '@/components/AuthorityChip';
 import { ArchetypeChip } from '@/components/ArchetypeChip';
@@ -153,6 +154,7 @@ export function QuoteConfigurator({
   const [saudiOnly, setSaudiOnly] = useState<boolean>(false); // filter players by Saudi nationality
 
   // ── Selected talent
+  const [showAllDeliverables, setShowAllDeliverables] = useState(false);
   const [talentKind, setTalentKind] = useState<'player' | 'creator'>(
     initialEdit?.talent_type ?? 'player'
   );
@@ -392,7 +394,10 @@ export function QuoteConfigurator({
         rate: p.manual ? 0 : ((selectedPlayer as any)[p.key] as number) || 0,
         group: p.group, manual: p.manual,
         suggestedRange: (p as any).suggestedRange ?? null,
-      })).filter(d => d.manual || d.rate > 0);
+      }))
+        .filter(d => d.manual || d.rate > 0)
+        // Migration 074 — profile-gated visibility (toggle below to override)
+        .filter(d => showAllDeliverables || isDeliverableAvailable(selectedPlayer as any, d.key));
     }
     if (selectedCreator) {
       return CREATOR_PLATFORMS.map(p => ({
@@ -400,10 +405,12 @@ export function QuoteConfigurator({
         rate: p.manual ? 0 : ((selectedCreator as any)[p.key] as number) || 0,
         group: p.group, manual: p.manual,
         suggestedRange: (p as any).suggestedRange ?? null,
-      })).filter(d => d.manual || d.rate > 0);
+      }))
+        .filter(d => d.manual || d.rate > 0)
+        .filter(d => showAllDeliverables || isDeliverableAvailable(selectedCreator as any, d.key));
     }
     return [];
-  }, [selectedPlayer, selectedCreator]);
+  }, [selectedPlayer, selectedCreator, showAllDeliverables]);
 
   // ── Live total for current picks
   const previewLines = useMemo(() => {
@@ -808,9 +815,15 @@ export function QuoteConfigurator({
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-label font-semibold mb-2 flex items-center justify-between">
                   <span>Deliverables {selectedCount > 0 && <span className="text-greenDark">· {selectedCount} selected</span>}</span>
-                  {selectedCount > 0 && (
-                    <button onClick={() => setPicks({})} className="text-mute hover:text-ink text-xs normal-case">Clear all</button>
-                  )}
+                  <div className="flex items-center gap-2 normal-case">
+                    <label className="flex items-center gap-1 text-mute text-[10px] cursor-pointer" title="Show deliverables hidden by profile flags (Twitch when stream_intensity=0, etc.)">
+                      <input type="checkbox" checked={showAllDeliverables} onChange={e => setShowAllDeliverables(e.target.checked)} className="h-3 w-3" />
+                      Show all
+                    </label>
+                    {selectedCount > 0 && (
+                      <button onClick={() => setPicks({})} className="text-mute hover:text-ink text-xs">Clear all</button>
+                    )}
+                  </div>
                 </div>
 
                 {deliverables.length === 0 ? (
