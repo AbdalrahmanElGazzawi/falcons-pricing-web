@@ -26,11 +26,15 @@ export default async function DashboardPage() {
     { data: creators },
     { data: tiers },
     { data: teams },
+    { data: recentDeals },
+    { data: recentClassChanges },
   ] = await Promise.all([
-    supabase.from('players').select('id, nickname, full_name, role, game, tier_code, avatar_url, ingame_role, agency_status, agency_name, agency_contact, is_bookable, profile_strength_pct, intake_status').eq('is_active', true),
+    supabase.from('players').select('id, nickname, full_name, role, game, tier_code, avatar_url, ingame_role, agency_status, agency_name, agency_contact, is_bookable, profile_strength_pct, intake_status, authority_tier, authority_tier_override, archetype, archetype_override').eq('is_active', true),
     supabase.from('creators').select('id, nickname, tier_code, is_bookable, profile_strength_pct').eq('is_active', true),
     supabase.from('tiers').select('code, label, sort_order').order('sort_order'),
     supabase.from('esports_teams').select('*').eq('is_active', true).order('sort_order').order('game'),
+    supabase.from('deals').select('id, brand_name, brand_category, status, quoted_price_sar, final_price_sar, discount_percent, created_at, closed_at').order('created_at', { ascending: false }).limit(7),
+    supabase.from('audit_log').select('entity_id, action, diff, created_at').in('action', ['authority_tier_classification','archetype_profile_backfill']).order('created_at', { ascending: false }).limit(50),
   ]);
 
   const allRows = players ?? [];
@@ -311,6 +315,98 @@ export default async function DashboardPage() {
           </div>
         }
       />
+
+      {/* ─── V3.4 Pricing OS at a glance ───────────────────────────── */}
+      {(() => {
+        const at1 = allRows.filter((p: any) => (p.authority_tier_override ?? p.authority_tier) === 'AT-1').length;
+        const at2 = allRows.filter((p: any) => (p.authority_tier_override ?? p.authority_tier) === 'AT-2').length;
+        const at3 = allRows.filter((p: any) => (p.authority_tier_override ?? p.authority_tier) === 'AT-3').length;
+        const at0 = allRows.filter((p: any) => (p.authority_tier_override ?? p.authority_tier) === 'AT-0').length;
+        const archCounts: Record<string, number> = {};
+        for (const p of allRows as any[]) {
+          const a = p.archetype_override ?? p.archetype ?? 'unclassified';
+          archCounts[a] = (archCounts[a] ?? 0) + 1;
+        }
+        const accepted = (recentDeals ?? []).filter((d: any) => d.status === 'accepted').length;
+        const totalDeals = (recentDeals ?? []).length;
+        const avgDiscount = (recentDeals ?? []).filter((d: any) => d.status === 'accepted' && d.discount_percent != null)
+          .reduce((s: number, d: any, _i: number, arr: any[]) => s + Number(d.discount_percent) / arr.length, 0);
+        const overrideCount = (recentClassChanges ?? []).length;
+
+        return (
+          <section className="rounded-2xl border border-greenDark/30 bg-gradient-to-br from-greenSoft/40 via-white to-greenSoft/30 p-5 mb-6">
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="text-lg font-bold text-greenDark flex items-center gap-2">⚡ Pricing OS at a glance</h2>
+              <div className="text-[11px] text-mute">Engine v1.0-2026-05-09 · {allRows.length + allCreators.length} talents classified</div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <div className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">🏆 World Champions</div>
+                <div className="text-3xl font-extrabold tabular-nums text-amber-900 mt-1">{at1}</div>
+                <div className="text-[10px] text-amber-700">AT-1 · ×1.40 anchor lift</div>
+              </div>
+              <div className="rounded-lg border border-line bg-white p-3">
+                <div className="text-[10px] uppercase tracking-wider text-mute font-semibold">🥈 Major Finalists</div>
+                <div className="text-3xl font-extrabold tabular-nums mt-1">{at2}</div>
+                <div className="text-[10px] text-mute">AT-2 · ×1.20</div>
+              </div>
+              <div className="rounded-lg border border-line bg-white p-3">
+                <div className="text-[10px] uppercase tracking-wider text-mute font-semibold">⭐ Tier-1 Active</div>
+                <div className="text-3xl font-extrabold tabular-nums mt-1">{at3}</div>
+                <div className="text-[10px] text-mute">AT-3 · ×1.10</div>
+              </div>
+              <div className="rounded-lg border border-line bg-white p-3">
+                <div className="text-[10px] uppercase tracking-wider text-mute font-semibold">No Authority Signal</div>
+                <div className="text-3xl font-extrabold tabular-nums mt-1">{at0}</div>
+                <div className="text-[10px] text-mute">AT-0 · ×1.00 (bug-fix neutral)</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+              <div className="rounded-lg border border-line bg-white p-3">
+                <div className="text-[11px] uppercase tracking-wider text-label font-semibold mb-2">Archetype distribution</div>
+                <div className="space-y-1.5">
+                  {Object.entries(archCounts).sort((a,b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => (
+                    <div key={k} className="flex items-center gap-2 text-[11px]">
+                      <span className="w-32 truncate text-ink capitalize">{k.replace(/_/g, ' ')}</span>
+                      <div className="flex-1 bg-bg rounded-full h-2 overflow-hidden">
+                        <div className="bg-greenDark h-full" style={{ width: `${Math.min(100, (v / allRows.length) * 100 * 3)}%` }} />
+                      </div>
+                      <span className="text-mute tabular-nums">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-lg border border-line bg-white p-3">
+                <div className="text-[11px] uppercase tracking-wider text-label font-semibold mb-2">Recent deal activity</div>
+                {totalDeals === 0 ? (
+                  <p className="text-xs text-mute italic">No deals logged in last 30 days. <Link href="/admin/deals" className="text-greenDark hover:underline">Log one →</Link></p>
+                ) : (
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between"><span className="text-mute">Last 7 deals</span><span className="font-semibold tabular-nums">{totalDeals}</span></div>
+                    <div className="flex justify-between"><span className="text-mute">Accepted</span><span className="font-semibold text-greenDark tabular-nums">{accepted}/{totalDeals}</span></div>
+                    <div className="flex justify-between"><span className="text-mute">Avg discount on close</span><span className="font-semibold tabular-nums">{avgDiscount.toFixed(1)}%</span></div>
+                    <Link href="/admin/deals" className="text-greenDark hover:underline text-[10px] block mt-1">Open deal log →</Link>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-line">
+              <div className="text-[11px] text-mute">
+                {overrideCount > 0
+                  ? <>Recent classification activity: {overrideCount} overrides logged. <Link href="/admin/audit-log" className="text-greenDark hover:underline">Review →</Link></>
+                  : <>No pending classification overrides. <Link href="/roster/players" className="text-greenDark hover:underline">Audit roster →</Link></>}
+              </div>
+              <div className="flex gap-2">
+                <Link href="/admin/health" className="btn btn-ghost text-xs">📊 Health</Link>
+                <Link href="/admin/inventory-assets" className="btn btn-ghost text-xs">🎬 Inventory</Link>
+                <Link href="/admin/deals" className="btn btn-ghost text-xs">💰 Deals</Link>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       <DashboardLayout
         initialOrder={sectionOrder}
