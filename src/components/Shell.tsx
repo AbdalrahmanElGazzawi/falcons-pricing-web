@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog,
   Sparkles, BookOpen, KeyRound, ScrollText, Calculator, Map, Menu, X,
   Inbox, HelpCircle, Search, Trophy, Layers, PanelLeftClose, PanelLeftOpen, Database, ShieldCheck,
-  BarChart3,
+  BarChart3, ChevronRight, ChevronDown,
 } from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
 import { LocaleSwitcher } from './LocaleSwitcher';
@@ -19,38 +19,73 @@ import { useLocale } from '@/lib/i18n/Locale';
 
 const WELCOME_KEY = 'falcons_welcome_seen_v1';
 
-const NAV = (role: UserRole, email: string) => [
-  { href: '/dashboard',         key: 'nav.dashboard'  as const, icon: LayoutDashboard },
-  { href: '/quote/new',         key: 'nav.new_quote'  as const, icon: PlusCircle, highlight: true },
-  { href: '/calculator',        key: 'nav.calculator' as const, icon: Calculator },
-  { href: '/quotes',            key: 'nav.quote_log'  as const, icon: FileText },
-  { href: '/showcase',          key: 'nav.showcase'   as const, icon: Trophy, highlight: true },
-  { href: '/inquiries',         key: 'nav.inquiries'  as const, icon: Inbox },
-  { href: '/roster/players',    key: 'nav.roster'     as const, icon: Users },
-  { href: '/roster/creators',   key: 'nav.creators'   as const, icon: Sparkles },
-  { href: '/roadmap',           key: 'nav.roadmap'    as const, icon: Map },
-  { href: '/about',             key: 'nav.about'      as const, icon: HelpCircle },
-  { href: '/pricing-logic',     key: 'nav.pricing_logic' as const, icon: Layers },
-  ...(['admin','sales','finance'].includes(role) ? [
-    { href: '/admin/sales-log', key: 'nav.sales_log'  as const, icon: ScrollText },
-    { href: '/admin/activations', key: 'nav.activations' as const, icon: Layers, highlight: true },
-  ] : []),
-  ...(role === 'admin' ? [
-    { href: '/admin/esports-teams', key: 'nav.esports_teams' as const, icon: Trophy },
-    { href: '/admin/talent-intakes', key: 'nav.talent_intakes' as const, icon: ShieldCheck },
-    { href: '/admin/tiers',       key: 'nav.tiers'       as const, icon: Settings },
-    { href: '/admin/market-bands',key: 'nav.market_bands'as const, icon: Database },
-    { href: '/admin/addons',      key: 'nav.addons'      as const, icon: Settings },
-    { href: '/admin/assumptions', key: 'nav.assumptions' as const, icon: BookOpen },
-    { href: '/admin/roadmap',     key: 'nav.admin_roadmap' as const, icon: Map },
-  ] : []),
-  ...(isSuperAdminEmail(email) ? [
-    { href: '/admin/users',     key: 'nav.users'      as const, icon: UserCog },
-    { href: '/admin/pricing',   key: 'nav.pricing_os' as const, icon: Calculator },
-    { href: '/admin/analytics',key: 'nav.analytics'  as const, icon: BarChart3 },
-    { href: '/admin/audit-log', key: 'nav.audit_log'  as const, icon: ScrollText },
-  ] : []),
-];
+type NavItem = { href: string; key: string; icon: any; highlight?: boolean };
+type NavGroup = { id: string; label: string | null; defaultOpen: boolean; items: NavItem[] };
+
+// PINNED is rendered ungrouped at the top; the rest are collapsible sections.
+const NAV_GROUPS = (role: UserRole, email: string): NavGroup[] => {
+  const isStaff = ['admin','sales','finance'].includes(role);
+  const isAdmin = role === 'admin';
+  const isSuper = isSuperAdminEmail(email);
+
+  return [
+    {
+      id: 'pinned', label: null, defaultOpen: true,
+      items: [
+        { href: '/dashboard',  key: 'nav.dashboard', icon: LayoutDashboard },
+        { href: '/quote/new',  key: 'nav.new_quote', icon: PlusCircle, highlight: true },
+        { href: '/quotes',     key: 'nav.quote_log', icon: FileText },
+        { href: '/showcase',   key: 'nav.showcase',  icon: Trophy, highlight: true },
+        { href: '/inquiries',  key: 'nav.inquiries', icon: Inbox },
+      ],
+    },
+    {
+      id: 'talent', label: 'nav.group.talent', defaultOpen: true,
+      items: [
+        { href: '/roster/players',       key: 'nav.roster',         icon: Users },
+        { href: '/roster/creators',      key: 'nav.creators',       icon: Sparkles },
+        ...(isAdmin ? [
+          { href: '/admin/talent-intakes', key: 'nav.talent_intakes', icon: ShieldCheck },
+          { href: '/admin/esports-teams',  key: 'nav.esports_teams',  icon: Trophy },
+        ] : []),
+      ],
+    },
+    {
+      id: 'tools', label: 'nav.group.tools', defaultOpen: false,
+      items: [
+        { href: '/calculator',         key: 'nav.calculator',  icon: Calculator },
+        ...(isStaff ? [
+          { href: '/admin/activations', key: 'nav.activations', icon: Layers, highlight: true },
+          { href: '/admin/sales-log',   key: 'nav.sales_log',   icon: ScrollText },
+        ] : []),
+      ],
+    },
+    {
+      id: 'methodology', label: 'nav.group.methodology', defaultOpen: false,
+      items: [
+        { href: '/roadmap',         key: 'nav.roadmap',       icon: Map },
+        { href: '/pricing-logic',   key: 'nav.pricing_logic', icon: Layers },
+        { href: '/about',           key: 'nav.about',         icon: HelpCircle },
+        ...(isAdmin ? [
+          { href: '/admin/tiers',        key: 'nav.tiers',         icon: Settings },
+          { href: '/admin/market-bands', key: 'nav.market_bands',  icon: Database },
+          { href: '/admin/addons',       key: 'nav.addons',        icon: Settings },
+          { href: '/admin/assumptions',  key: 'nav.assumptions',   icon: BookOpen },
+          { href: '/admin/roadmap',      key: 'nav.admin_roadmap', icon: Map },
+        ] : []),
+      ],
+    },
+    ...(isSuper ? [{
+      id: 'admin', label: 'nav.group.admin', defaultOpen: false,
+      items: [
+        { href: '/admin/users',     key: 'nav.users',      icon: UserCog },
+        { href: '/admin/pricing',   key: 'nav.pricing_os', icon: Calculator },
+        { href: '/admin/analytics', key: 'nav.analytics',  icon: BarChart3 },
+        { href: '/admin/audit-log', key: 'nav.audit_log',  icon: ScrollText },
+      ],
+    } as NavGroup] : []),
+  ].filter(g => g.items.length > 0);
+};
 
 function displayName(fullName: string | null | undefined, email: string): string {
   const trimmed = (fullName ?? '').trim();
@@ -117,7 +152,8 @@ export function Shell({
     router.push('/login');
   }
 
-  const nav = NAV(role, email);
+  const navGroups = NAV_GROUPS(role, email);
+  const allNavItems = navGroups.flatMap(g => g.items);
   const username = displayName(fullName, email);
   const superAdmin = isSuperAdminEmail(email);
 
@@ -214,26 +250,15 @@ export function Shell({
           'flex-1 space-y-0.5 overflow-y-auto',
           collapsed ? 'p-2' : 'p-3',
         ].join(' ')}>
-          {nav.map(item => {
-            const active = pathname === item.href || pathname.startsWith(item.href + '/');
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={collapsed ? t(item.key) : undefined}
-                className={[
-                  'flex items-center rounded-lg text-sm transition',
-                  collapsed ? 'gap-0 px-2 py-2.5 justify-center' : 'gap-3 px-3 py-2.5',
-                  active ? 'bg-white/10 text-white font-medium' : 'text-white/70 hover:bg-white/5 hover:text-white',
-                  item.highlight ? 'text-green hover:text-green' : '',
-                ].join(' ')}
-              >
-                <Icon size={16} />
-                {!collapsed && t(item.key)}
-              </Link>
-            );
-          })}
+          {navGroups.map(group => (
+            <NavGroupBlock
+              key={group.id}
+              group={group}
+              pathname={pathname}
+              collapsed={collapsed}
+              t={t}
+            />
+          ))}
         </nav>
 
         <div className={[
@@ -330,5 +355,105 @@ export function PageHeader({
         {action && <div className="shrink-0 w-full sm:w-auto">{action}</div>}
       </div>
     </div>
+  );
+}
+
+// ─── Collapsible nav group ──────────────────────────────────────────────────
+// PINNED group (label === null) renders ungrouped at the top — items only.
+// All other groups render a clickable header with a chevron + a body that
+// shows/hides items. Open state persists in localStorage per group.id.
+// If the active route lives inside the group, the group force-opens.
+function NavGroupBlock({
+  group, pathname, collapsed, t,
+}: {
+  group: { id: string; label: string | null; defaultOpen: boolean; items: Array<{ href: string; key: string; icon: any; highlight?: boolean }> };
+  pathname: string;
+  collapsed: boolean;
+  t: (k: any) => string;
+}) {
+  const STORAGE_KEY = `falcons.nav.${group.id}`;
+  const containsActive = group.items.some(it => pathname === it.href || pathname.startsWith(it.href + '/'));
+  const [open, setOpen] = useState<boolean>(group.defaultOpen);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem(STORAGE_KEY);
+      if (v === '1' || v === '0') setOpen(v === '1');
+    } catch {}
+    setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // If you navigate to a route inside a collapsed group, open it (without
+  // overwriting localStorage — stays opened until you collapse it manually).
+  const effectiveOpen = open || containsActive;
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    try { window.localStorage.setItem(STORAGE_KEY, next ? '1' : '0'); } catch {}
+  }
+
+  // Pinned (label === null) — render items only, no header
+  if (group.label === null) {
+    return (
+      <div className="space-y-0.5 pb-2 mb-2 border-b border-white/5">
+        {group.items.map(it => <NavItemLink key={it.href} item={it} pathname={pathname} collapsed={collapsed} t={t} />)}
+      </div>
+    );
+  }
+
+  // Collapsed sidebar — show items inline (no headers, no chevrons), keep nav usable when narrow
+  if (collapsed) {
+    return (
+      <div className="space-y-0.5 mb-1">
+        {group.items.map(it => <NavItemLink key={it.href} item={it} pathname={pathname} collapsed={collapsed} t={t} />)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-1">
+      <button
+        type="button"
+        onClick={toggle}
+        className="w-full flex items-center gap-1 px-3 py-1.5 text-[10px] uppercase tracking-wider font-bold text-white/50 hover:text-white/80 transition"
+      >
+        {effectiveOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+        <span className="flex-1 text-start">{t(group.label as any)}</span>
+        <span className="text-[10px] text-white/30 tabular-nums">{group.items.length}</span>
+      </button>
+      {effectiveOpen && (
+        <div className="space-y-0.5 mt-0.5">
+          {group.items.map(it => <NavItemLink key={it.href} item={it} pathname={pathname} collapsed={collapsed} t={t} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NavItemLink({
+  item, pathname, collapsed, t,
+}: {
+  item: { href: string; key: string; icon: any; highlight?: boolean };
+  pathname: string; collapsed: boolean; t: (k: any) => string;
+}) {
+  const active = pathname === item.href || pathname.startsWith(item.href + '/');
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      title={collapsed ? t(item.key as any) : undefined}
+      className={[
+        'flex items-center rounded-lg text-sm transition',
+        collapsed ? 'gap-0 px-2 py-2.5 justify-center' : 'gap-3 px-3 py-2',
+        active ? 'bg-white/10 text-white font-medium' : 'text-white/70 hover:bg-white/5 hover:text-white',
+        item.highlight ? 'text-green hover:text-green' : '',
+      ].join(' ')}
+    >
+      <Icon size={16} />
+      {!collapsed && t(item.key as any)}
+    </Link>
   );
 }
