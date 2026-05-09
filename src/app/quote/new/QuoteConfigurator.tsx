@@ -794,6 +794,55 @@ export function QuoteConfigurator({
                 </div>
               </div>
 
+              {/* ─── V4 Always-visible cumulative price story (Stage 3) ─── */}
+              {previewLines.length > 0 && (() => {
+                const conf = getConfidence(selectedTalent as any);
+                const total = previewLines.reduce((s, l) => s + (l.finalAmount || 0), 0);
+                const lineCount = previewLines.length;
+                const auth = (selectedTalent as any)?.authority_tier_override ?? (selectedTalent as any)?.authority_tier;
+                const arch = (selectedTalent as any)?.archetype_override ?? (selectedTalent as any)?.archetype;
+                const archLabel = arch ? String(arch).replace(/_/g, ' ') : null;
+                return (
+                  <div className="rounded-lg border-2 border-greenDark/30 bg-gradient-to-br from-greenSoft/40 via-white to-greenSoft/30 p-3">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <h3 className="text-[11px] uppercase tracking-wider font-bold text-greenDark">⚡ Why this price (live)</h3>
+                      <span className="text-[10px] text-mute tabular-nums">Engine v1.1 · {lineCount} line{lineCount === 1 ? '' : 's'}</span>
+                    </div>
+                    <div className="flex items-baseline justify-between mb-2">
+                      <div>
+                        <div className="text-2xl font-extrabold text-ink tabular-nums leading-none">{fmtCurrency(total, currency, usdRate ?? 3.75)}</div>
+                        <div className="text-[10px] text-mute mt-1">Pre-VAT subtotal across selected deliverables</div>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold border ${conf.level === 'high' ? 'bg-greenSoft text-greenDark border-green/40' : conf.level === 'medium' ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-rose-50 text-rose-900 border-rose-300'}`}>
+                        {conf.level} · {conf.score}%
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] leading-snug pt-2 border-t border-line">
+                      <div className="text-mute">Engine path</div>
+                      <div className="text-ink">
+                        Base × Authority × Archetype caps × Axes × Confidence cap
+                        {globals.channelMultiplier !== 1 ? ' × Channel' : ''}
+                      </div>
+                      {auth && auth !== 'AT-0' && (
+                        <>
+                          <div className="text-mute">Authority lift</div>
+                          <div className="text-ink"><strong>{auth}</strong> · anchor premium applied per Mig 071</div>
+                        </>
+                      )}
+                      {archLabel && (
+                        <>
+                          <div className="text-mute">Archetype caps</div>
+                          <div className="text-ink capitalize">{archLabel} — only matching axes carry weight</div>
+                        </>
+                      )}
+                      <div className="text-mute">FX peg</div>
+                      <div className="text-ink">3.75 SAR/USD locked</div>
+                    </div>
+                    <p className="text-[10px] text-mute italic mt-2">Defensible to brand: every multiplier is sourced — Newzoo / Influencity / Cloutboost benchmarks for ratios, Authority Tier from Liquipedia for premiums, archetype caps prevent runaway.</p>
+                  </div>
+                );
+              })()}
+
               {/* Content Type toggle — quick decision before picking deliverables */}
               <div className="rounded-lg border border-line bg-bg/40 p-3">
                 <div className="text-[11px] uppercase tracking-wider text-label font-semibold mb-2">

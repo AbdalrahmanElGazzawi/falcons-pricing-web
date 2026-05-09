@@ -1578,6 +1578,28 @@ ${j.detail || j.error}`);
             onRemoveLine={removeLine}
             onDraft={() => save('draft')}
             onSubmit={() => save('pending_approval')}
+            warnings={(() => {
+              const w: Array<{ code: string; label: string; detail: string; severity: 'warn' | 'block' }> = [];
+              const discountPct = 0; // header-level discount tracked separately; placeholder until wired
+              if (exclusivity && !rightsTerritory) {
+                w.push({ code: 'RIGHTS_TERRITORY_REQUIRED', label: 'Rights territory required',
+                  detail: 'Exclusivity is on. Set territory in the Brief tab before saving — undefined territory blocks save.', severity: 'block' });
+              }
+              if (exclusivity && !competitorBlackout.trim()) {
+                w.push({ code: 'COMPETITOR_BLACKOUT_REQUIRED', label: 'Name competitors blocked',
+                  detail: 'Exclusivity needs a competitor blackout list. Add comma-separated brand names in Brief tab.', severity: 'block' });
+              }
+              const belowFloor = computed.rows.find((r: any) => Number(r.finalUnit) > 0 && Number(r.base_rate) > 0 && Number(r.finalUnit) < Number(r.base_rate) * 0.5);
+              if (belowFloor) {
+                w.push({ code: 'FLOOR_OVERRIDE_REQUIRED', label: 'Line below 50% of base',
+                  detail: `${(belowFloor as any).talent_name} · ${(belowFloor as any).platform_label} prices below half of base — needs floor_override_reason or admin save.`, severity: 'block' });
+              }
+              if (exclusivityMonths >= 999) {
+                w.push({ code: 'APPROVAL_REQUIRED_PERPETUAL_RIGHTS', label: 'Perpetual rights — admin only',
+                  detail: 'Will require Legal + executive approval. Only admin role can save this quote.', severity: 'warn' });
+              }
+              return w;
+            })()}
           />
         </aside>
       </div>
@@ -1989,7 +2011,7 @@ function QuotePreview({
 // surfaces them so the rep knows what hasn't been committed yet.
 function QuoteCart({
   rows, totals, currency, vatRate, usdRate, saving, error, clientName,
-  pendingPreview, onRemoveLine, onDraft, onSubmit,
+  pendingPreview, onRemoveLine, onDraft, onSubmit, warnings,
 }: {
   rows: Array<{ uid: string; talent_name: string; talent_id: number | null; talent_type: 'player' | 'creator'; platform_label: string; qty: number; finalAmount: number }>;
   totals: { subtotal: number; preVat: number; vatAmount: number; total: number };
@@ -1998,6 +2020,7 @@ function QuoteCart({
   pendingPreview: { count: number; total: number; talent: string };
   onRemoveLine: (uid: string) => void;
   onDraft: () => void; onSubmit: () => void;
+  warnings?: Array<{ code: string; label: string; detail: string; severity: 'warn' | 'block' }>;
 }) {
   const blocked = clientName.trim() === '' || rows.length === 0;
 
@@ -2086,6 +2109,16 @@ function QuoteCart({
           <Row label={`VAT (${fmtPct(vatRate, 0)})`} value={fmtCurrency(totals.vatAmount, currency, usdRate)} muted />
           <Row label="Total" value={fmtCurrency(totals.total, currency, usdRate)} bold />
         </div>
+        {warnings && warnings.length > 0 && (
+          <div className="space-y-1.5 mb-1">
+            {warnings.map(w => (
+              <div key={w.code} className={`rounded-md border p-2 text-[11px] leading-snug ${w.severity === 'block' ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-amber-50 border-amber-300 text-amber-900'}`}>
+                <div className="font-semibold">{w.severity === 'block' ? '🚫' : '⚠️'} {w.label}</div>
+                <div className="opacity-80 mt-0.5">{w.detail}</div>
+              </div>
+            ))}
+          </div>
+        )}
         <button
           onClick={onSubmit}
           disabled={saving || blocked}
