@@ -148,6 +148,9 @@ export interface Player {
   last_major_finish_date?: string | null;
   last_major_placement?: string | null;
   achievement_decay_factor?: number;
+  // ── Authority Tier (Migration 071) — replaces decay scalar ─────────────
+  authority_tier?: 'AT-0' | 'AT-1' | 'AT-2' | 'AT-3' | 'AT-4' | 'AT-5' | null;
+  authority_tier_override?: 'AT-0' | 'AT-1' | 'AT-2' | 'AT-3' | 'AT-4' | 'AT-5' | null;
   // ── Source / audience verification (already in DB, formalising types) ──
   rate_source?: string | null;
   audience_data_verified?: boolean | null;

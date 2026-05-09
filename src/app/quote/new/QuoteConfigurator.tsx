@@ -15,6 +15,7 @@ import {
   type Player, type Creator, type Tier, type Addon} from '@/lib/types';
 import { newUid, type LineDraft } from './line-draft';
 import { Avatar } from '@/components/Avatar';
+import { getAnchorPremium } from '@/lib/authority-tier';
 
 /**
  * Single-page configurator. Pick a talent, tick deliverables (multi-select),
@@ -420,6 +421,8 @@ export function QuoteConfigurator({
           auth: overrides.o_auth  ?? globals.auth,
           obj: globals.obj, conf: globals.conf,
           channelMultiplier: globals.channelMultiplier,
+          // Migration 071 — Authority Tier anchor premium (×1.40 World Champion etc.)
+          anchorPremium: getAnchorPremium(selectedPlayer ?? {}),
           // Migration 042 — world-class axes (now per-talent local state)
           audCountryMix:    wcAxes.audCountryMix,
           audAgeDemo:       wcAxes.audAgeDemo,

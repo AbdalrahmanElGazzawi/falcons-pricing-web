@@ -9,6 +9,7 @@ import { QuoteConfigurator } from '@/app/quote/new/QuoteConfigurator';
 import { type LineDraft } from '@/app/quote/new/line-draft';
 import { useToast } from '@/components/Toast';
 import { Trash2, Send, Copy, RotateCcw, Sparkles } from 'lucide-react';
+import { getAnchorPremium } from '@/lib/authority-tier';
 
 const LS_KEY = 'falcons.quote-draft.v2'; // matches QuoteBuilder, so the handoff hydrates cleanly
 
@@ -94,6 +95,8 @@ export function Calculator({
         rightsPct: addonsUpliftPct,
         qty: l.qty,
         channelMultiplier,
+        // Migration 071 — Authority Tier anchor premium
+        anchorPremium: getAnchorPremium(playerRec ?? {}),
         // Engine parity (Migrations 035 / 039 / 040 / 042) — neutral defaults
         // when Calculator UI doesn't expose the axis. Same engine as
         // QuoteConfigurator + QuoteBuilder, just no UI to flex these knobs.
@@ -317,12 +320,10 @@ export function Calculator({
           {currency === 'USD' && (
             <div className="mt-2">
               <label className="text-[10px] uppercase tracking-wider text-label font-semibold">Rate (SAR per 1 USD)</label>
-              <input
-                type="number" step="0.01" min={1}
-                value={usdRate}
-                onChange={e => setUsdRate(Math.max(0.01, parseFloat(e.target.value) || 3.75))}
-                className="input text-sm mt-1"
-              />
+              <div className="input text-sm mt-1 bg-zinc-50 text-mute cursor-not-allowed select-none flex items-center justify-between">
+                <span className="tabular-nums">3.75</span>
+                <span className="text-[10px]">🔒 Saudi peg</span>
+              </div>
             </div>
           )}
         </div>

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
 import { newUid, type LineDraft } from './line-draft';
+import { getAnchorPremium } from '@/lib/authority-tier';
 
 // ───────────────────────────────────────────────────────────────────────────
 // Dynamic Pricing Adjustment Matrix — mirrors the Team Falcons Google Sheet
@@ -241,6 +242,8 @@ export function PricingWizard({
       // and QuoteBuilder. Defaults are neutral when globals don't carry the
       // axis. Ensures Wizard preview matches what the Builder will compute.
       channelMultiplier: (globals as any).channelMultiplier,
+      // Migration 071 — Authority Tier anchor premium
+      anchorPremium: getAnchorPremium(selectedPlayer ?? {}),
       productionStyleMultiplier: (globals as any).productionStyleMultiplier ?? 1.0,
       streamActivity: (globals as any).streamActivity ?? 1.0,
       // Migration 042 world-class axes (campaign-level)

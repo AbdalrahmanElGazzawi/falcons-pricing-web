@@ -15,6 +15,7 @@ import { QuoteConfigurator } from './QuoteConfigurator';
 import { newUid, type LineDraft } from './line-draft';
 import { Section } from '@/components/Section';
 import { PricingReference } from './PricingReference';
+import { getAnchorPremium } from '@/lib/authority-tier';
 
 const SECTION_TITLES: Record<string, string> = {
   brand_brief: 'Brand brief',
@@ -478,6 +479,8 @@ export function QuoteBuilder({
           return ps === 'raw' ? 0.9 : ps === 'scripted' ? 1.20 : ps === 'full_studio' ? 1.40 : 1.0;
         })(),
         channelMultiplier,
+        // Migration 071 — Authority Tier anchor premium
+        anchorPremium: getAnchorPremium(playerRec ?? {}),
         // Migration 056 — talent intake floor + agency gross-up
         talentSubmittedFloor: intakeFloor,
         agencyFeePct: intakeAgencyFee,
@@ -831,13 +834,11 @@ export function QuoteBuilder({
           {currency === 'USD' && (
             <div>
               <label className="label">USD rate (SAR per 1 USD)</label>
-              <input
-                type="number" step="0.01" min={1}
-                value={usdRate}
-                onChange={e => setUsdRate(Math.max(0.01, parseFloat(e.target.value) || 3.75))}
-                className="input"
-              />
-              <p className="text-[10px] text-mute mt-1">Default 3.75 (Saudi peg). All SAR values divide by this.</p>
+              <div className="input bg-zinc-50 text-mute cursor-not-allowed select-none flex items-center justify-between">
+                <span className="tabular-nums">3.75</span>
+                <span className="text-[10px] uppercase tracking-wider text-mute">🔒 Saudi peg · locked</span>
+              </div>
+              <p className="text-[10px] text-mute mt-1">Saudi Riyal is pegged to USD at 3.75 — not editable.</p>
             </div>
           )}
         </div>

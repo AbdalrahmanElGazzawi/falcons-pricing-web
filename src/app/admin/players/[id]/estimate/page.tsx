@@ -6,6 +6,7 @@ import { AccessDenied } from '@/components/AccessDenied';
 import { ArrowLeft, Check, X, Info } from 'lucide-react';
 import { CHANNEL_PRESETS, resolveChannelMultiplier } from '@/lib/pricing';
 import { fmtCurrency } from '@/lib/utils';
+import { AuthorityChip } from '@/components/AuthorityChip';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,8 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
       peak_tournament_tier, last_major_finish_date, last_major_placement,
       liquipedia_synced_at, audience_data_verified, engagement_data_verified,
       data_completeness, agency_status, agency_name, agency_contact,
-      min_rates, rate_source, prize_money_24mo_usd
+      min_rates, rate_source, prize_money_24mo_usd,
+      authority_tier, authority_tier_override
     `)
     .eq('id', playerId)
     .single();
@@ -58,13 +60,13 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
     { key: 'rate_ig_post',     label: 'IG Post',         ratio: 0.65 },
     { key: 'rate_ig_story',      label: 'IG Story',        ratio: 0.55 },
     { key: 'rate_tiktok_video',  label: 'TikTok Video',    ratio: 0.80 },
-    { key: 'rate_yt_short',      label: 'YT Short',        ratio: 0.32 },
-    { key: 'rate_yt_full',       label: 'YT Full Video',   ratio: 1.85 },
+    { key: 'rate_yt_short',      label: 'YT Short',        ratio: 0.60 },
+    { key: 'rate_yt_full',       label: 'YT Full Video',   ratio: 2.25 },
     { key: 'rate_twitch_stream', label: 'Twitch Stream',   ratio: 1.45 },
     { key: 'rate_kick_stream',   label: 'Kick Stream',     ratio: 1.45 },
     { key: 'rate_x_post',        label: 'X Post',          ratio: 0.20 },
-    { key: 'rate_snapchat',      label: 'Snapchat',        ratio: 0.40 },
-    { key: 'rate_event_snap',    label: 'Event Snap',         ratio: 1.20 },
+    { key: 'rate_snapchat',      label: 'Snapchat',        ratio: 0.45 },
+    { key: 'rate_event_snap',    label: 'Event Snap',         ratio: 2.20 },
     { key: 'rate_snap_repost',   label: 'Snap Repost',        ratio: 0.20 },
     { key: 'rate_snap_coverage', label: 'Snap Coverage 1-day', ratio: 0.65 },
     { key: 'rate_snap_takeover', label: 'Snap Takeover',      ratio: 1.50 },
@@ -116,6 +118,7 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
       <Link href={`/admin/players/${playerId}`} className="inline-flex items-center gap-1 text-sm text-label hover:text-ink mb-3">
         <ArrowLeft size={14} /> Back to player
       </Link>
+      <div className="mb-1"><AuthorityChip player={p as any} size="md" showPremium /></div>
       <PageHeader
         title={`Quick Estimate · ${p.nickname}`}
         subtitle={[

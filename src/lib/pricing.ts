@@ -75,6 +75,15 @@ export interface LineInput {
    */
   achievementDecay?: number;
   /**
+   * Authority Tier anchor premium (Migration 071, May 9 2026). Multiplies the
+   * channel-adjusted baseFee before the campaign axes. Default 1.00 (neutral).
+   * AT-1 World Champion = 1.40 / AT-2 Major Finalist = 1.20 / AT-3 Tier-1 Active = 1.10
+   * AT-4 Active Pro = 1.00 / AT-5 Emerging = 0.95 / AT-0 No Signal = 1.00
+   * Sourced by all 4 call sites from coalesce(authority_tier_override, authority_tier)
+   * via getAnchorPremium() in src/lib/authority-tier.ts.
+   */
+  anchorPremium?: number;
+  /**
    * Creator-specific multipliers — wired into SocialPrice (Migration 059, May 5).
    * Sourced by QuoteBuilder + QuoteConfigurator from the creator record's
    * defaults, with per-line overrides. For player lines (no creator record),
@@ -328,7 +337,12 @@ export function computeLine(p: LineInput): LineOutput {
   // Each sales channel has its own floor — multipliers can never push below
   // the channel-adjusted baseFee. Defaults to 1.00 (direct_brand).
   const channelMult = p.channelMultiplier ?? 1.0;
-  const effBaseFee = p.baseFee * channelMult;
+  // Authority Tier anchor premium (Migration 071): champions earn lift on every
+  // line regardless of follower count. Default 1.00 = neutral. Applied AFTER
+  // channel so the haircut is on the post-premium price (a brokered NiKo deal
+  // still carries the +40% authority lift, then takes the agency haircut).
+  const anchorPremium = p.anchorPremium ?? 1.0;
+  const effBaseFee = p.baseFee * channelMult * anchorPremium;
   const effIrl = (p.irl ?? 0) * channelMult;
 
   const authRaw = 1 + obj * (auth - 1);

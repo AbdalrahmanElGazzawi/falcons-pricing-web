@@ -45,14 +45,14 @@ export const PLATFORM_RATIO: Record<string, number> = {
   rate_ig_reel:        1.00,
   rate_ig_post:      0.65,
   rate_ig_story:       0.55,
-  rate_ig_repost:      0.50,    // RESTORED M041: 50% of ig_reel
+  rate_ig_repost:      0.25,    // Migration 072: world-MENA — Influencity 2026
   rate_ig_share:       0.15,
   rate_tiktok_video:   0.80,
   rate_tiktok_repost:  0.40,    // RESTORED M041: 50% of tiktok_video (0.80)
   rate_tiktok_share:   0.35,
-  rate_yt_short:       0.32,
-  rate_yt_short_repost: 0.16,    // M041: 50% of yt_short (0.32)
-  rate_yt_full:        1.85,
+  rate_yt_short:       0.60,    // Migration 072: world-MENA — Cloutboost 2024 gaming
+  rate_yt_short_repost: 0.30,    // M072: 50% of yt_short (0.60)
+  rate_yt_full:        2.25,    // Migration 072: world-MENA — Nielsen Esports 2025
   rate_yt_preroll:     1.30,    // Migration 066 — sponsored pre-roll ad-read
   rate_x_post:         0.20,
   rate_x_repost:       0.10,
@@ -69,8 +69,8 @@ export const PLATFORM_RATIO: Record<string, number> = {
   rate_tiktok_ours:    0.80,
   rate_tiktok_client:  0.95,
   rate_x_post_quote:   0.20,
-  rate_snapchat:       0.40,
-  rate_event_snap:     1.20,
+  rate_snapchat:       0.45,    // Migration 072: world-MENA premium
+  rate_event_snap:     2.20,    // Migration 072: matches IRL — same logistics
   rate_twitch_kick_live: 1.45,
   rate_kick_irl:       1.40,
   rate_telegram:       0.30,

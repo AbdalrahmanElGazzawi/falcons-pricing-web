@@ -93,14 +93,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const localeParam = (url.searchParams.get('locale') || '').toLowerCase();
   const pdfLocale: 'en' | 'ar' = localeParam === 'ar' ? 'ar' : 'en';
   const ccyOverride = (url.searchParams.get('ccy') || '').toUpperCase();
-  const rateOverrideRaw = url.searchParams.get('rate');
-  const rateOverride = rateOverrideRaw ? Number(rateOverrideRaw) : NaN;
+  // Migration 074 (FX peg lock): ?rate= query param removed — Saudi peg is
+  // 3.75 SAR/USD, locked. The PDF reads quote.usd_rate (which itself is
+  // locked to 3.75 in QuoteBuilder + Calculator post-Mig 074).
   const currency = (token ? null : (ccyOverride === 'USD' || ccyOverride === 'SAR' ? ccyOverride : null))
     || quote.currency
     || 'SAR';
-  const usdRate = (!token && Number.isFinite(rateOverride) && rateOverride > 0)
-    ? rateOverride
-    : Number(quote.usd_rate || 3.75);
+  const usdRate = Number(quote.usd_rate || 3.75);
   const vatRate = Number(quote.vat_rate || 0.15);
   const subtotal = Number(quote.pre_vat || quote.subtotal || 0);
   const vatAmount = Number(quote.vat_amount || subtotal * vatRate);
