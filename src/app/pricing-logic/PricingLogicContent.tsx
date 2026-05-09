@@ -402,6 +402,155 @@ export function PricingLogicContent({
         </div>
       </section>
 
+      {/* ─── Authority Tier (Migration 071) ──────────────────────────── */}
+      <section className="card card-p">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">🏆</div>
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-ink">Authority Tier · the tournament credentials side</h2>
+            <p className="text-sm text-label mt-0.5">Replaces the old single <code>achievement_decay_factor</code> with a 6-tier classification derived from peak tournament tier × placement × recency. Drives both anchor premium and floor decay.</p>
+
+            <div className="overflow-x-auto mt-4">
+              <table className="w-full text-sm border border-line rounded-lg overflow-hidden">
+                <thead className="bg-bg">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-semibold">Tier</th>
+                    <th className="text-left px-3 py-2 font-semibold">Definition</th>
+                    <th className="text-right px-3 py-2 font-semibold">Anchor lift</th>
+                    <th className="text-right px-3 py-2 font-semibold">Floor decay</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  <tr className="bg-amber-50"><td className="px-3 py-2 font-bold text-amber-900">🏆 AT-1 World Champion</td><td className="px-3 py-2">Tier-S 1st-place finish within last 12 months</td><td className="px-3 py-2 text-right tabular-nums font-bold">×1.40</td><td className="px-3 py-2 text-right tabular-nums">1.20</td></tr>
+                  <tr><td className="px-3 py-2 font-bold">🥈 AT-2 Major Finalist</td><td className="px-3 py-2">Tier-S top-2 in 18mo or 1st 13–24mo old</td><td className="px-3 py-2 text-right tabular-nums">×1.20</td><td className="px-3 py-2 text-right tabular-nums">1.10</td></tr>
+                  <tr><td className="px-3 py-2">⭐ AT-3 Tier-1 Active</td><td className="px-3 py-2">Tier-S any placement within 18mo</td><td className="px-3 py-2 text-right tabular-nums">×1.10</td><td className="px-3 py-2 text-right tabular-nums">1.00</td></tr>
+                  <tr><td className="px-3 py-2">AT-4 Active Pro</td><td className="px-3 py-2">Tier-A or Tier-S 18–24mo since major</td><td className="px-3 py-2 text-right tabular-nums">×1.00</td><td className="px-3 py-2 text-right tabular-nums">0.90</td></tr>
+                  <tr><td className="px-3 py-2">AT-5 Emerging</td><td className="px-3 py-2">Tier-B / Tier-C / unrated with some signal</td><td className="px-3 py-2 text-right tabular-nums">×0.95</td><td className="px-3 py-2 text-right tabular-nums">0.85</td></tr>
+                  <tr><td className="px-3 py-2 text-mute">AT-0 No Signal</td><td className="px-3 py-2 text-mute">No Liquipedia URL / no peak_tier — coach / content-only / new signing</td><td className="px-3 py-2 text-right tabular-nums">×1.00</td><td className="px-3 py-2 text-right tabular-nums">1.00</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-3 text-xs text-label leading-relaxed">
+              <p><strong>How AT is computed (Mig 071):</strong> auto-derived from <code>peak_tournament_tier</code> · <code>last_major_placement</code> · <code>last_major_finish_date</code> · <code>liquipedia_url</code>. 12-month recency for AT-1 — esports cycles fast and yesterday&apos;s champion is yesterday&apos;s news commercially.</p>
+              <p className="mt-2"><strong>Override path:</strong> when the Liquipedia scraper misses (e.g. NiKo classified low because his most recent BLAST Major isn&apos;t parsing), admin sets <code>authority_tier_override</code> on the player edit page. Engine reads <code>coalesce(override, auto)</code>.</p>
+              <p className="mt-2"><strong>AT-0 fix (Mig 077):</strong> 59 talents (coaches, content-only) previously took an unjustified 50% haircut. Now neutral 1.00 — they don&apos;t earn a championship premium but they don&apos;t get penalized for missing one either.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Archetype × Profile (Migration 074) ─────────────────────────── */}
+      <section className="card card-p">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0"><Layers size={20} /></div>
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-ink">Archetype × Profile · the commercial-value side</h2>
+            <p className="text-sm text-label mt-0.5">8 archetypes from the 2-axis grid (Competitive Pedigree × Content Profile) plus 8 capability flags. Caps which axes carry weight per talent type, gates which deliverables are even quotable.</p>
+
+            <div className="overflow-x-auto mt-4">
+              <table className="w-full text-xs border border-line rounded-lg overflow-hidden">
+                <thead className="bg-bg">
+                  <tr>
+                    <th className="text-left px-2 py-2 font-semibold">Archetype</th>
+                    <th className="text-left px-2 py-2 font-semibold">Brand pitch</th>
+                    <th className="text-right px-2 py-2 font-semibold">Auth cap</th>
+                    <th className="text-right px-2 py-2 font-semibold">Eng cap</th>
+                    <th className="text-right px-2 py-2 font-semibold">Aud cap</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  <tr><td className="px-2 py-2 font-semibold">World-Class Pro</td><td className="px-2 py-2">Best-in-the-world credibility — NiKo, Peterbot</td><td className="px-2 py-2 text-right tabular-nums">1.40</td><td className="px-2 py-2 text-right tabular-nums">1.30</td><td className="px-2 py-2 text-right tabular-nums">1.50</td></tr>
+                  <tr><td className="px-2 py-2 font-semibold">Established Pro</td><td className="px-2 py-2">Major-finalist · Cellium, m0NESY, kyousuke</td><td className="px-2 py-2 text-right tabular-nums">1.30</td><td className="px-2 py-2 text-right tabular-nums">1.30</td><td className="px-2 py-2 text-right tabular-nums">1.40</td></tr>
+                  <tr><td className="px-2 py-2 font-semibold">Regional Pro</td><td className="px-2 py-2">MENA/APAC scene leader · madv, FlapTzy</td><td className="px-2 py-2 text-right tabular-nums">1.20</td><td className="px-2 py-2 text-right tabular-nums">1.40</td><td className="px-2 py-2 text-right tabular-nums">1.40</td></tr>
+                  <tr><td className="px-2 py-2 font-semibold">Esports Personality</td><td className="px-2 py-2">Plays + casts + commentates · Abo Najd, Bijw</td><td className="px-2 py-2 text-right tabular-nums">1.10</td><td className="px-2 py-2 text-right tabular-nums">1.50</td><td className="px-2 py-2 text-right tabular-nums">1.40</td></tr>
+                  <tr><td className="px-2 py-2 font-semibold">Hybrid Lifestyle</td><td className="px-2 py-2">MENA cinematic + esports cred · Moaz</td><td className="px-2 py-2 text-right tabular-nums text-mute">1.00</td><td className="px-2 py-2 text-right tabular-nums">1.60</td><td className="px-2 py-2 text-right tabular-nums">1.50</td></tr>
+                  <tr><td className="px-2 py-2 font-semibold">Grassroots Competitor</td><td className="px-2 py-2">Active MENA competitive · Spy, Cuffin, KERORO</td><td className="px-2 py-2 text-right tabular-nums">1.10</td><td className="px-2 py-2 text-right tabular-nums">1.40</td><td className="px-2 py-2 text-right tabular-nums">1.30</td></tr>
+                  <tr><td className="px-2 py-2 font-semibold">Tournament Athlete</td><td className="px-2 py-2">FGC pros · Atif Butt, Farzeen — auth + IRL only</td><td className="px-2 py-2 text-right tabular-nums">1.40</td><td className="px-2 py-2 text-right tabular-nums text-mute">1.00</td><td className="px-2 py-2 text-right tabular-nums text-mute">1.00</td></tr>
+                  <tr><td className="px-2 py-2 font-semibold">Pure Lifestyle Creator</td><td className="px-2 py-2">Saudi cinematic creators — gaming-adjacent</td><td className="px-2 py-2 text-right tabular-nums text-mute">1.00</td><td className="px-2 py-2 text-right tabular-nums">1.60</td><td className="px-2 py-2 text-right tabular-nums">1.40</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-3 text-xs text-label">
+              <p><strong>How it works in the engine:</strong> per-archetype caps are MIN-applied to the existing axis multipliers. A Tournament Athlete&apos;s engagement axis can&apos;t exceed 1.00 even if sales tries to push it — the engine clamps it. A World-Class Pro&apos;s authority axis can hit 1.40 (the full premium).</p>
+              <p className="mt-2"><strong>8 profile capability flags</strong> (per talent): stream_intensity 0–3 · content_intensity 0–3 · solo_video bool · cinematic_ready bool · irl_availability none/saudi_only/mena/apac/global · peak_platforms text[] · bilingual bool · agency_status. These gate which deliverables are quotable — NiKo&apos;s Twitch is hidden if his stream_intensity = 0.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Confidence cap mechanics ─────────────────────────────────────── */}
+      <section className="card card-p">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0"><AlertTriangle size={20} /></div>
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-ink">Confidence cap · pricing uncertainty honestly</h2>
+            <p className="text-sm text-label mt-0.5">When the underlying data is thin, the engine refuses to claim a high confidence number. 4 levels with associated haircuts and axis caps.</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+              <div className="rounded-lg border border-greenDark/30 bg-greenSoft/40 p-3">
+                <div className="text-xs uppercase tracking-wider text-greenDark font-bold">High</div>
+                <div className="text-xs text-label mt-1">Recent closed deal · verified audience · known rate source · matching deliverable history</div>
+                <div className="text-[10px] text-mute mt-1">No haircut. All axis caps 100% available.</div>
+              </div>
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+                <div className="text-xs uppercase tracking-wider text-amber-700 font-bold">Medium</div>
+                <div className="text-xs text-label mt-1">Tier baseline + market reference + partial platform metrics</div>
+                <div className="text-[10px] text-mute mt-1">5% haircut. Authority axis capped at 1.30 (no full World-Champion premium without verified data).</div>
+              </div>
+              <div className="rounded-lg border border-orange-300 bg-orange-50 p-3">
+                <div className="text-xs uppercase tracking-wider text-orange-700 font-bold">Low</div>
+                <div className="text-xs text-label mt-1">Manual rate · stale snapshot · missing engagement or demographic data</div>
+                <div className="text-[10px] text-mute mt-1">15% haircut. Engagement + Audience axes capped at 1.20.</div>
+              </div>
+              <div className="rounded-lg border border-rose-300 bg-rose-50 p-3">
+                <div className="text-xs uppercase tracking-wider text-rose-700 font-bold">Speculative</div>
+                <div className="text-xs text-label mt-1">New player · no market data · no historical deal data</div>
+                <div className="text-[10px] text-mute mt-1">25% haircut. All axes pinned at 1.00 — engine refuses to push price up without evidence.</div>
+              </div>
+            </div>
+            <p className="text-xs text-label mt-3">A low-confidence $20k quote is treated differently from a high-confidence $20k quote — sales should mention this when defending the price to a brand. The chip on every Quick Estimate page shows the score + reasons.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Approval gates + governance ──────────────────────────────────── */}
+      <section className="card card-p">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center flex-shrink-0"><ShieldCheck size={20} /></div>
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-ink">Approval gates · margin protection at the API layer</h2>
+            <p className="text-sm text-label mt-0.5">5 hard gates in <code>/api/quote</code> POST that block save when the quote crosses thresholds without proper authorization. Sales sees a 403 with a structured code; QuoteBuilder surfaces it inline.</p>
+
+            <ul className="space-y-2 mt-4 text-sm">
+              <li className="rounded-lg border border-line bg-bg/40 p-3">
+                <code className="text-xs">APPROVAL_REQUIRED_DISCOUNT</code><br/>
+                <strong className="text-ink">Discount &gt; 25%</strong> — requires Commercial + Finance approval. Block bypassed only by <code>profile.role = &apos;admin&apos;</code>.
+              </li>
+              <li className="rounded-lg border border-line bg-bg/40 p-3">
+                <code className="text-xs">APPROVAL_REQUIRED_PERPETUAL_RIGHTS</code><br/>
+                <strong className="text-ink">Perpetual rights</strong> (rights_term_months ≥ 999) — requires Legal + executive approval.
+              </li>
+              <li className="rounded-lg border border-line bg-bg/40 p-3">
+                <code className="text-xs">FLOOR_OVERRIDE_REQUIRED</code><br/>
+                <strong className="text-ink">Line below 50% of base_rate</strong> — blocks save unless <code>header.floor_override_reason</code> is set with a human explanation. Auditable.
+              </li>
+              <li className="rounded-lg border border-line bg-bg/40 p-3">
+                <code className="text-xs">RIGHTS_TERRITORY_REQUIRED</code> <em className="text-mute text-[10px]">(Mig 078)</em><br/>
+                <strong className="text-ink">Paid usage / exclusivity without territory</strong> — undefined territory = open exclusivity = future legal liability. Brief tab now has a required dropdown.
+              </li>
+              <li className="rounded-lg border border-line bg-bg/40 p-3">
+                <code className="text-xs">COMPETITOR_BLACKOUT_REQUIRED</code> <em className="text-mute text-[10px]">(Mig 078)</em><br/>
+                <strong className="text-ink">Exclusivity = true without competitor list</strong> — must name the competitor brands blocked, otherwise the legal scope is undefined.
+              </li>
+            </ul>
+
+            <p className="text-xs text-label mt-3">Every blocked save writes to <code>audit_log</code> with the actor + reason + diff. The <Link href="/admin/audit-log" className="text-greenDark hover:underline">audit log</Link> is the source of truth for "who tried to push past the gate."</p>
+          </div>
+        </div>
+      </section>
+
             {/* ─── Calibration math (legacy reference) ────────────────────── */}
       <section className="card card-p">
         <div className="flex items-start gap-3">
