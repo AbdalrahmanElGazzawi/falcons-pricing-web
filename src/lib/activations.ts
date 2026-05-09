@@ -52,6 +52,10 @@ export interface Activation {
   status:                   ActivationStatus;
   created_at:               string;
   updated_at:               string;
+  // V3.3 (Mig 080) — Activations × engine bridge
+  talent_slot_requirements?: any[] | null;
+  bundle_compression_factor?: number | null;
+  bundle_compression_notes?: string | null;
 }
 
 // ─── presentation labels ────────────────────────────────────────────────────

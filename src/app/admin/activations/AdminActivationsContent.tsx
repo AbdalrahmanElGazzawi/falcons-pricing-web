@@ -229,7 +229,19 @@ function CanonicalCard({ a, onOpen }: { a: Activation; onOpen: (id: string) => v
       {featured && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gold to-amber" />}
       <div className="flex items-start justify-between mb-2">
         <span className="font-mono text-[11px] tracking-widest text-greenDark font-semibold">№ {String(a.position).padStart(2, '0')}</span>
-        {featured && <span className="chip chip-gold">Tier S</span>}
+        <div className="flex items-center gap-1">
+          {Array.isArray((a as any).talent_slot_requirements) && (a as any).talent_slot_requirements.length > 0 && (
+            <span className="chip text-[10px] bg-purple-50 text-purple-900 border border-purple-200" title="Engine bridge wired (Mig 080) — talent slot requirements + bundle compression configured.">
+              ⚡ {(a as any).talent_slot_requirements.length} slot{(a as any).talent_slot_requirements.length > 1 ? 's' : ''}
+            </span>
+          )}
+          {(a as any).bundle_compression_factor != null && (
+            <span className="chip text-[10px] bg-greenSoft text-greenDark border border-green/30" title="Bundle compression factor applied to constituent talent fees">
+              ×{Number((a as any).bundle_compression_factor).toFixed(2)}
+            </span>
+          )}
+          {featured && <span className="chip chip-gold">Tier S</span>}
+        </div>
       </div>
       <div className="font-bold text-base text-ink leading-tight mb-1">{a.name}</div>
       <div className="text-[11px] text-label italic mb-3 line-clamp-2 min-h-[28px]">{a.archetype_text}</div>
