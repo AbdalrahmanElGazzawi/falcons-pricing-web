@@ -161,7 +161,6 @@ export interface Player {
   irl_availability?: string | null;
   peak_platforms?: string[] | null;
   bilingual?: boolean | null;
-  agency_status?: string | null;
   // ── Source / audience verification (already in DB, formalising types) ──
   rate_source?: string | null;
   audience_data_verified?: boolean | null;
