@@ -155,6 +155,8 @@ export function QuoteConfigurator({
 
   // ── Selected talent
   const [showAllDeliverables, setShowAllDeliverables] = useState(false);
+  // V4.4 — Reduced axis panel: per-archetype hide of axes capped at 1.00
+  const [showLockedAxes, setShowLockedAxes] = useState(false);
   const [talentKind, setTalentKind] = useState<'player' | 'creator'>(
     initialEdit?.talent_type ?? 'player'
   );
@@ -982,13 +984,42 @@ export function QuoteConfigurator({
                   <p className="text-xs text-label">{t('cfg.axis_overrides_hint')}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Talent-aware axis options. Creators get sector-based audience, conversion-driven authority,
-                         and a Production axis (vs Seasonality on players). */}
+                         and a Production axis (vs Seasonality on players).
+                         V4.4 — Per-archetype axis collapse: hide axes capped at 1.00. */}
                     {(() => {
                       const opts = talentKind === 'creator' ? CREATOR_AXIS_OPTIONS : AXIS_OPTIONS;
                       const isCreator = talentKind === 'creator';
+                      // V4.4 — derive per-archetype lock map. Cap < 1.05 (i.e. effectively 1.00)
+                      // means the engine clamps that axis to neutral, so the knob does nothing.
+                      const archCaps = getArchetypeCaps(selectedTalent as any);
+                      const isLocked = (cap: number | undefined) => cap !== undefined && cap < 1.05;
+                      const seasOrProdCap = isCreator ? archCaps?.productionCap : archCaps?.seasonalityCap;
+                      const lock = {
+                        engagement: isLocked(archCaps?.engagementCap),
+                        audience:   isLocked(archCaps?.audienceCap),
+                        seasOrProd: isLocked(seasOrProdCap),
+                        authority:  isLocked(archCaps?.authorityCap),
+                        // Language has no archetype cap row — always rendered.
+                      };
+                      const lockedCount = Object.values(lock).filter(Boolean).length;
+                      const show = (locked: boolean) => !locked || showLockedAxes;
                       return (
                         <>
-                          <AxisRow label="Engagement"
+                          {lockedCount > 0 && (
+                            <div className="sm:col-span-2 flex items-center justify-between gap-2 rounded-md bg-bg/60 border border-line/60 px-2.5 py-1.5">
+                              <span className="text-[11px] text-mute leading-tight">
+                                {lockedCount} {lockedCount === 1 ? 'axis is' : 'axes are'} locked at 1.00 for this archetype — the engine clamps them to neutral.
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setShowLockedAxes(v => !v)}
+                                className="text-[11px] font-semibold text-greenDark hover:underline whitespace-nowrap"
+                              >
+                                {showLockedAxes ? 'Hide locked' : `Show all axes (${lockedCount} locked)`}
+                              </button>
+                            </div>
+                          )}
+                          {show(lock.engagement) && <AxisRow label="Engagement"
                             hint={isCreator
                               ? "Creator's avg engagement rate. >10% means cult-following levels of community heat."
                               : "Talent's last-90-day engagement rate. Best predictor of campaign ROI."}
@@ -998,9 +1029,9 @@ export function QuoteConfigurator({
                             labels={opts.engagement.map(e => e.label.replace(/ —.*$/, ''))}
                             auto={autoOverrides.has('o_eng')}
                             intrinsic={readTalentDefaults(selectedTalent).o_eng}
-                            talentName={(selectedTalent as any)?.nickname || ''} />
+                            talentName={(selectedTalent as any)?.nickname || ''} />}
 
-                          <AxisRow label={isCreator ? "Audience fit" : "Audience"}
+                          {show(lock.audience) && <AxisRow label={isCreator ? "Audience fit" : "Audience"}
                             hint={isCreator
                               ? "Sector-based: how well the creator's audience matches the BRAND vertical."
                               : "How well the audience matches the brand. MENA/Saudi unlocks +30% premium."}
@@ -1010,9 +1041,9 @@ export function QuoteConfigurator({
                             labels={opts.audience.map(e => isCreator ? e.label.replace(/ \/.*/g, '').slice(0, 14) : e.label)}
                             auto={autoOverrides.has('o_aud')}
                             intrinsic={readTalentDefaults(selectedTalent).o_aud}
-                            talentName={(selectedTalent as any)?.nickname || ''} />
+                            talentName={(selectedTalent as any)?.nickname || ''} />}
 
-                          {isCreator ? (
+                          {show(lock.seasOrProd) && (isCreator ? (
                             <AxisRow label="Production"
                               hint="How heavy is the creative effort? Scripted/on-ground = more revisions and cost."
                               value={overrides.o_seas} globalVal={globals.seas}
@@ -1032,7 +1063,7 @@ export function QuoteConfigurator({
                               auto={autoOverrides.has('o_seas')}
                               intrinsic={readTalentDefaults(selectedTalent).o_seas}
                               talentName={(selectedTalent as any)?.nickname || ''} />
-                          )}
+                          ))}
 
                           <AxisRow label="Language"
                             hint="Bilingual reaches both audiences in one activation — highest leverage."
@@ -1044,7 +1075,7 @@ export function QuoteConfigurator({
                             intrinsic={readTalentDefaults(selectedTalent).o_lang}
                             talentName={(selectedTalent as any)?.nickname || ''} />
 
-                          <AxisRow label="Authority"
+                          {show(lock.authority) && <AxisRow label="Authority"
                             hint={isCreator
                               ? "Creator-side authority: 'Hero' = category-defining cultural force; converts at premium."
                               : "Normal = standard. Proven = regional champ / 2yr+ pro. Elite = top-10 world rank or major finalist. Global Star = EWC / Worlds champion. Floor protects pros from being underpriced on social briefs."}
@@ -1054,7 +1085,7 @@ export function QuoteConfigurator({
                             labels={opts.authority.map(e => e.label.split(' / ')[0])}
                             auto={autoOverrides.has('o_auth')}
                             intrinsic={readTalentDefaults(selectedTalent).o_auth}
-                            talentName={(selectedTalent as any)?.nickname || ''} />
+                            talentName={(selectedTalent as any)?.nickname || ''} />}
                         </>
                       );
                     })()}
