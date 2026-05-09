@@ -16,6 +16,7 @@ import { newUid, type LineDraft } from './line-draft';
 import { Section } from '@/components/Section';
 import { PricingReference } from './PricingReference';
 import { getAnchorPremium } from '@/lib/authority-tier';
+import { getArchetypeCaps } from '@/lib/archetype';
 
 const SECTION_TITLES: Record<string, string> = {
   brand_brief: 'Brand brief',
@@ -481,6 +482,12 @@ export function QuoteBuilder({
         channelMultiplier,
         // Migration 071 — Authority Tier anchor premium
         anchorPremium: getAnchorPremium(playerRec ?? {}),
+        // Migration 074 — archetype-aware axis caps
+        archetypeAuthorityCap:   getArchetypeCaps(playerRec ?? {})?.authorityCap,
+        archetypeEngagementCap:  getArchetypeCaps(playerRec ?? {})?.engagementCap,
+        archetypeAudienceCap:    getArchetypeCaps(playerRec ?? {})?.audienceCap,
+        archetypeSeasonalityCap: getArchetypeCaps(playerRec ?? {})?.seasonalityCap,
+        archetypeProductionCap:  getArchetypeCaps(playerRec ?? {})?.productionCap,
         // Migration 056 — talent intake floor + agency gross-up
         talentSubmittedFloor: intakeFloor,
         agencyFeePct: intakeAgencyFee,

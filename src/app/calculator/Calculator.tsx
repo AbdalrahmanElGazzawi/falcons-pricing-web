@@ -10,6 +10,7 @@ import { type LineDraft } from '@/app/quote/new/line-draft';
 import { useToast } from '@/components/Toast';
 import { Trash2, Send, Copy, RotateCcw, Sparkles } from 'lucide-react';
 import { getAnchorPremium } from '@/lib/authority-tier';
+import { getArchetypeCaps } from '@/lib/archetype';
 
 const LS_KEY = 'falcons.quote-draft.v2'; // matches QuoteBuilder, so the handoff hydrates cleanly
 
@@ -97,6 +98,12 @@ export function Calculator({
         channelMultiplier,
         // Migration 071 — Authority Tier anchor premium
         anchorPremium: getAnchorPremium(playerRec ?? {}),
+        // Migration 074 — archetype-aware axis caps
+        archetypeAuthorityCap:   getArchetypeCaps(playerRec ?? {})?.authorityCap,
+        archetypeEngagementCap:  getArchetypeCaps(playerRec ?? {})?.engagementCap,
+        archetypeAudienceCap:    getArchetypeCaps(playerRec ?? {})?.audienceCap,
+        archetypeSeasonalityCap: getArchetypeCaps(playerRec ?? {})?.seasonalityCap,
+        archetypeProductionCap:  getArchetypeCaps(playerRec ?? {})?.productionCap,
         // Engine parity (Migrations 035 / 039 / 040 / 042) — neutral defaults
         // when Calculator UI doesn't expose the axis. Same engine as
         // QuoteConfigurator + QuoteBuilder, just no UI to flex these knobs.

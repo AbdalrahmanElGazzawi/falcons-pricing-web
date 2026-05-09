@@ -151,6 +151,17 @@ export interface Player {
   // ── Authority Tier (Migration 071) — replaces decay scalar ─────────────
   authority_tier?: 'AT-0' | 'AT-1' | 'AT-2' | 'AT-3' | 'AT-4' | 'AT-5' | null;
   authority_tier_override?: 'AT-0' | 'AT-1' | 'AT-2' | 'AT-3' | 'AT-4' | 'AT-5' | null;
+  // ── Archetype + Profile (Migration 074) — categorization spine ────────
+  archetype?: string | null;
+  archetype_override?: string | null;
+  stream_intensity?: number | null;
+  content_intensity?: number | null;
+  solo_video?: boolean | null;
+  cinematic_ready?: boolean | null;
+  irl_availability?: string | null;
+  peak_platforms?: string[] | null;
+  bilingual?: boolean | null;
+  agency_status?: string | null;
   // ── Source / audience verification (already in DB, formalising types) ──
   rate_source?: string | null;
   audience_data_verified?: boolean | null;

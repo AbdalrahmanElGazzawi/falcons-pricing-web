@@ -15,6 +15,7 @@ import {
 import { SearchInput } from '@/components/SearchInput';
 import { newUid, type LineDraft } from './line-draft';
 import { getAnchorPremium } from '@/lib/authority-tier';
+import { getArchetypeCaps } from '@/lib/archetype';
 
 // ───────────────────────────────────────────────────────────────────────────
 // Dynamic Pricing Adjustment Matrix — mirrors the Team Falcons Google Sheet
@@ -244,6 +245,12 @@ export function PricingWizard({
       channelMultiplier: (globals as any).channelMultiplier,
       // Migration 071 — Authority Tier anchor premium
       anchorPremium: getAnchorPremium(selectedPlayer ?? {}),
+      // Migration 074 — archetype-aware axis caps
+      archetypeAuthorityCap:   getArchetypeCaps(selectedPlayer ?? {})?.authorityCap,
+      archetypeEngagementCap:  getArchetypeCaps(selectedPlayer ?? {})?.engagementCap,
+      archetypeAudienceCap:    getArchetypeCaps(selectedPlayer ?? {})?.audienceCap,
+      archetypeSeasonalityCap: getArchetypeCaps(selectedPlayer ?? {})?.seasonalityCap,
+      archetypeProductionCap:  getArchetypeCaps(selectedPlayer ?? {})?.productionCap,
       productionStyleMultiplier: (globals as any).productionStyleMultiplier ?? 1.0,
       streamActivity: (globals as any).streamActivity ?? 1.0,
       // Migration 042 world-class axes (campaign-level)

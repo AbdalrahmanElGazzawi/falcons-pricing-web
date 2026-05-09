@@ -84,6 +84,17 @@ export interface LineInput {
    */
   anchorPremium?: number;
   /**
+   * Archetype caps (Migration 074, May 9 2026). When set, each axis is MIN-capped
+   * to its archetype-specific limit BEFORE the dataCompleteness gates apply.
+   * Sourced by call sites via getArchetypeCaps(player) from src/lib/archetype.ts.
+   * Default null = no extra cap (engine falls back to dataCompleteness-only gates).
+   */
+  archetypeAuthorityCap?: number;
+  archetypeEngagementCap?: number;
+  archetypeAudienceCap?: number;
+  archetypeSeasonalityCap?: number;
+  archetypeProductionCap?: number;
+  /**
    * Creator-specific multipliers — wired into SocialPrice (Migration 059, May 5).
    * Sourced by QuoteBuilder + QuoteConfigurator from the creator record's
    * defaults, with per-line overrides. For player lines (no creator record),
@@ -347,16 +358,21 @@ export function computeLine(p: LineInput): LineOutput {
 
   const authRaw = 1 + obj * (auth - 1);
 
-  // Apply state-driven caps
-  const engGated  = Math.min(eng,    gates.engCap);
-  const audGated  = Math.min(aud,    gates.audCap);
-  const authGated = Math.min(authRaw, gates.authCap);
-  const seasGated = Math.min(seas,   gates.seasCap);
+  // Apply state-driven caps. Migration 074: also MIN-cap by archetype if provided.
+  const engCapEff  = Math.min(gates.engCap,  p.archetypeEngagementCap  ?? Infinity);
+  const audCapEff  = Math.min(gates.audCap,  p.archetypeAudienceCap    ?? Infinity);
+  const authCapEff = Math.min(gates.authCap, p.archetypeAuthorityCap   ?? Infinity);
+  const seasCapEff = Math.min(gates.seasCap, p.archetypeSeasonalityCap ?? Infinity);
+  const engGated   = Math.min(eng,    engCapEff);
+  const audGated   = Math.min(aud,    audCapEff);
+  const authGated  = Math.min(authRaw, authCapEff);
+  const seasGated  = Math.min(seas,   seasCapEff);
 
   const confCap = gates.confCap;
 
-  // Production style multiplier (Migration 039).
-  const prodMult = p.productionStyleMultiplier ?? 1.0;
+  // Production style multiplier (Migration 039 / capped per archetype Mig 074).
+  const prodMultRaw = p.productionStyleMultiplier ?? 1.0;
+  const prodMult = Math.min(prodMultRaw, p.archetypeProductionCap ?? Infinity);
   // Stream activity multiplier (Migration 040).
   const streamMult = p.streamActivity ?? 1.0;
   // Migration 042 — world-class axes

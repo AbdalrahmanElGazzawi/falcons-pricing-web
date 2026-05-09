@@ -16,6 +16,7 @@ import {
 import { newUid, type LineDraft } from './line-draft';
 import { Avatar } from '@/components/Avatar';
 import { getAnchorPremium } from '@/lib/authority-tier';
+import { getArchetypeCaps } from '@/lib/archetype';
 
 /**
  * Single-page configurator. Pick a talent, tick deliverables (multi-select),
@@ -423,6 +424,12 @@ export function QuoteConfigurator({
           channelMultiplier: globals.channelMultiplier,
           // Migration 071 — Authority Tier anchor premium (×1.40 World Champion etc.)
           anchorPremium: getAnchorPremium(selectedPlayer ?? {}),
+          // Migration 074 — archetype-aware axis caps
+          archetypeAuthorityCap:   getArchetypeCaps(selectedPlayer ?? {})?.authorityCap,
+          archetypeEngagementCap:  getArchetypeCaps(selectedPlayer ?? {})?.engagementCap,
+          archetypeAudienceCap:    getArchetypeCaps(selectedPlayer ?? {})?.audienceCap,
+          archetypeSeasonalityCap: getArchetypeCaps(selectedPlayer ?? {})?.seasonalityCap,
+          archetypeProductionCap:  getArchetypeCaps(selectedPlayer ?? {})?.productionCap,
           // Migration 042 — world-class axes (now per-talent local state)
           audCountryMix:    wcAxes.audCountryMix,
           audAgeDemo:       wcAxes.audAgeDemo,

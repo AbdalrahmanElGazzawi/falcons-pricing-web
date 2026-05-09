@@ -7,6 +7,9 @@ import { ArrowLeft, Check, X, Info } from 'lucide-react';
 import { CHANNEL_PRESETS, resolveChannelMultiplier } from '@/lib/pricing';
 import { fmtCurrency } from '@/lib/utils';
 import { AuthorityChip } from '@/components/AuthorityChip';
+import { ArchetypeChip } from '@/components/ArchetypeChip';
+import { ProfileCapabilities } from '@/components/ProfileCapabilities';
+import { ConfidenceChip } from '@/components/ConfidenceChip';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +50,10 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
       liquipedia_synced_at, audience_data_verified, engagement_data_verified,
       data_completeness, agency_status, agency_name, agency_contact,
       min_rates, rate_source, prize_money_24mo_usd,
-      authority_tier, authority_tier_override
+      authority_tier, authority_tier_override,
+      archetype, archetype_override, stream_intensity, content_intensity,
+      solo_video, cinematic_ready, irl_availability, peak_platforms, bilingual,
+      profile_strength_pct
     `)
     .eq('id', playerId)
     .single();
@@ -118,7 +124,12 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
       <Link href={`/admin/players/${playerId}`} className="inline-flex items-center gap-1 text-sm text-label hover:text-ink mb-3">
         <ArrowLeft size={14} /> Back to player
       </Link>
-      <div className="mb-1"><AuthorityChip player={p as any} size="md" showPremium /></div>
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <AuthorityChip player={p as any} size="md" showPremium />
+        <ArchetypeChip player={p as any} size="md" />
+        <ConfidenceChip player={p as any} />
+      </div>
+      <div className="mb-3"><ProfileCapabilities player={p as any} /></div>
       <PageHeader
         title={`Quick Estimate · ${p.nickname}`}
         subtitle={[
