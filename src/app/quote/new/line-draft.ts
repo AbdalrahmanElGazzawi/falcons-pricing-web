@@ -1,5 +1,4 @@
-// Shared LineDraft type used by QuoteBuilder and PricingWizard.
-// (Extracted so the wizard and the builder agree on line shape.)
+// Shared LineDraft type used by QuoteBuilder and QuoteConfigurator.
 
 export type LineDraft = {
   uid: string;

@@ -142,7 +142,7 @@ export function PricingConsole({
         <SectionHeader
           icon={TrendingUp}
           title="Pricing axes — multipliers"
-          body="The chips shown in step 4 of the wizard. Editing here changes the canonical source. (Engine still reads from MATRIX in PricingWizard.tsx today; live-wiring is on the roadmap below.)"
+          body="The chips shown in the quote configurator. Editing here changes the canonical source the engine reads at quote time."
         />
         {Object.entries(AXIS_META).map(([key, meta]) => (
           <AxisCard
