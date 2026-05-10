@@ -10,6 +10,7 @@ import { AuthorityChip } from '@/components/AuthorityChip';
 import { ArchetypeChip } from '@/components/ArchetypeChip';
 import { ProfileCapabilities } from '@/components/ProfileCapabilities';
 import { ConfidenceChip } from '@/components/ConfidenceChip';
+import { getAnchorPremium, getAuthorityTierMeta } from '@/lib/authority-tier';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,6 +99,15 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
   const reachMult = Number(p.reach_multiplier) || 1.0;
   const decay = Number(p.achievement_decay_factor) || 1.0;
 
+  // Migration 071 — anchor_premium is the engine's quote-time lift on baseFee
+  // (AT-1 ×1.40, AT-2 ×1.20, AT-3 ×1.10, AT-4 ×1.00, AT-5 ×0.95, AT-0 ×1.00).
+  // Stored rate × anchor_premium = effective baseFee the engine actually uses
+  // on every quote line. We surface effective as the headline so sales sees
+  // the same number the engine uses.
+  const anchorPremium = getAnchorPremium(p as { authority_tier?: string | null; authority_tier_override?: string | null });
+  const authorityMeta = getAuthorityTierMeta(p as { authority_tier?: string | null; authority_tier_override?: string | null });
+  const effectiveBase = Math.round(base * anchorPremium);
+
   // Data coverage signals (green check / red x)
   const signals: Array<[string, boolean, string | null]> = [
     ['IG followers',        !!p.followers_ig,       p.followers_ig ? `${(p.followers_ig/1000).toFixed(0)}k` : null],
@@ -147,20 +157,34 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
         <span><strong>Internal view.</strong> Not for clients. For the client-facing PDF, use the Quote Builder. For deep audit + manual overrides, use the Pricing audit page.</span>
       </div>
 
-      {/* ENGINE BASE spotlight */}
+      {/* EFFECTIVE BASEFEE spotlight — headline = stored × anchor_premium (engine's quote-time lift) */}
       <div className="card card-p mb-4">
         <div className="flex items-baseline justify-between mb-2">
-          <h2 className="text-sm font-semibold text-label uppercase tracking-wider">Engine base · IG Reel</h2>
+          <h2 className="text-sm font-semibold text-label uppercase tracking-wider">Effective baseFee · IG Reel</h2>
           <Link href={`/admin/players/${playerId}/pricing`} className="text-xs text-mute hover:text-ink underline">Open pricing audit →</Link>
         </div>
         <div className="flex items-baseline gap-3">
-          <div className="text-4xl font-bold tabular-nums text-ink">SAR {base.toLocaleString()}</div>
-          <div className="text-xl text-mute tabular-nums">USD {Math.round(base / 3.75).toLocaleString()}</div>
+          <div className="text-4xl font-bold tabular-nums text-ink">SAR {effectiveBase.toLocaleString()}</div>
+          <div className="text-xl text-mute tabular-nums">USD {Math.round(effectiveBase / 3.75).toLocaleString()}</div>
         </div>
-        <p className="text-xs text-label mt-2">{baseReason.join(' ')}</p>
+        <p className="text-xs text-label mt-2">
+          Stored {base.toLocaleString()} <span className="text-mute">SAR (pre-lift)</span>
+          {anchorPremium !== 1.0 && authorityMeta && (
+            <>
+              <span className="text-mute"> · </span>
+              ×{anchorPremium.toFixed(2)} {authorityMeta.chipEmoji ?? ''} {authorityMeta.displayLabel} anchor premium
+            </>
+          )}
+        </p>
+        <p className="text-[11px] text-mute mt-1">{baseReason.join(' ')}</p>
+        {anchorPremium === 1.0 && (
+          <p className="text-[11px] text-mute mt-1">
+            No authority lift on this talent — engine uses stored value as baseFee directly.
+          </p>
+        )}
         {decay !== 1.0 && (
           <p className="text-[11px] text-mute mt-1">
-            Authority decay {decay.toFixed(2)}× applied to authority floor (peak {p.peak_tournament_tier ?? '?'} tier).
+            Authority floor decay {decay.toFixed(2)}× scales the IRL-derived AuthorityFloor only (peak {p.peak_tournament_tier ?? '?'} tier).
           </p>
         )}
         <p className="text-[11px] text-mute mt-1">
@@ -212,12 +236,19 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
         </div>
       </div>
 
-      {/* CHANNEL × IG REEL preview */}
+      {/* CHANNEL × IG REEL preview — uses effectiveBase so numbers match engine reality */}
       <div className="card card-p mb-4">
-        <h2 className="text-sm font-semibold text-label uppercase tracking-wider mb-3">Channel preview · IG Reel</h2>
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-sm font-semibold text-label uppercase tracking-wider">Channel preview · IG Reel</h2>
+          {anchorPremium !== 1.0 && (
+            <span className="text-[10px] text-mute">
+              {`Channel × effectiveBase (stored ${base.toLocaleString()} × ${anchorPremium.toFixed(2)} anchor premium)`}
+            </span>
+          )}
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {CHANNEL_PRESETS.map(c => {
-            const adjusted = Math.round(base * c.multiplier);
+            const adjusted = Math.round(effectiveBase * c.multiplier);
             return (
               <div key={`${c.channel}-${c.intensity ?? 'none'}`}
                    className={['p-3 rounded-lg border',
@@ -226,7 +257,7 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
                 <div className="text-[10px] uppercase tracking-wider text-label font-semibold">{c.label}</div>
                 <div className="text-2xl font-bold tabular-nums mt-1">SAR {adjusted.toLocaleString()}</div>
                 <div className="text-xs text-mute tabular-nums">USD {Math.round(adjusted/3.75).toLocaleString()}</div>
-                <div className="text-[10px] text-mute mt-1">{c.multiplier.toFixed(2)}× base</div>
+                <div className="text-[10px] text-mute mt-1">{c.multiplier.toFixed(2)}× effective base</div>
                 <div className="text-[10px] text-label mt-1 leading-tight">{c.description}</div>
               </div>
             );

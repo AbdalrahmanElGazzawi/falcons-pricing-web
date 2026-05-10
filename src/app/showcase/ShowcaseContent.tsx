@@ -8,6 +8,7 @@ import {
 import { Avatar } from '@/components/Avatar';
 import { AuthorityChip } from '@/components/AuthorityChip';
 import { ArchetypeChip } from '@/components/ArchetypeChip';
+import { getAnchorPremium } from '@/lib/authority-tier';
 
 type Player = {
   id: number; nickname: string; full_name: string | null;
@@ -618,17 +619,33 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                           </div>
                         )}
 
-                        {showRates && p.rate_ig_reel > 0 && (
-                          <div
-                            className="flex items-center justify-between pt-2 border-t border-dashed border-line"
-                            title={p.pricing_rationale || undefined}
-                          >
-                            <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Starts from</div>
-                            <div className="text-sm font-bold text-greenDark tabular-nums">
-                              SAR {p.rate_ig_reel.toLocaleString('en-US')}
+                        {showRates && p.rate_ig_reel > 0 && (() => {
+                          // Migration 071 — show effective baseFee (stored × anchor_premium) so brands
+                          // see the same rate the engine quotes. Stored value moved to a tooltip.
+                          const premium = getAnchorPremium(p as any);
+                          const effective = Math.round(p.rate_ig_reel * premium);
+                          const liftActive = premium !== 1.0;
+                          return (
+                            <div
+                              className="flex items-center justify-between pt-2 border-t border-dashed border-line"
+                              title={
+                                (liftActive
+                                  ? `Effective baseFee = stored SAR ${p.rate_ig_reel.toLocaleString('en-US')} × ${premium.toFixed(2)} anchor premium (Mig 071)\n`
+                                  : '') + (p.pricing_rationale || '')
+                              }
+                            >
+                              <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Starts from</div>
+                              <div className="text-sm font-bold text-greenDark tabular-nums flex flex-col items-end leading-tight">
+                                <span>SAR {effective.toLocaleString('en-US')}</span>
+                                {liftActive && (
+                                  <span className="text-[9px] text-mute font-medium">
+                                    stored {p.rate_ig_reel.toLocaleString('en-US')} ·{premium.toFixed(2)}×
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                         {showRates && p.pricing_rationale && (
                           <div className="text-[10px] text-mute italic leading-snug -mt-1 line-clamp-2"
                             title={p.pricing_rationale}>

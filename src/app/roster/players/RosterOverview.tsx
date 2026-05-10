@@ -23,6 +23,7 @@ import { RateCellWithHistory } from '@/components/RateCardDeltaChip';
 import { LiquipediaCoverageBanner } from './LiquipediaCoverageBanner';
 import { AuthorityChip } from '@/components/AuthorityChip';
 import { ArchetypeChip } from '@/components/ArchetypeChip';
+import { getAnchorPremium } from '@/lib/authority-tier';
 
 type Density = 'compact' | 'comfortable' | 'spacious';
 
@@ -578,6 +579,7 @@ function RosterRow({
           ccy={ccy}
           source={(p.rate_card_historical as any)?.source}
           captureDate={(p.rate_card_historical as any)?.captured_at}
+          anchorPremium={getAnchorPremium(p as any)}
         />
       </td>
       <td className="text-right whitespace-nowrap" title={p.pricing_rationale || undefined}>
@@ -587,6 +589,7 @@ function RosterRow({
           ccy={ccy}
           source={(p.rate_card_historical as any)?.source}
           captureDate={(p.rate_card_historical as any)?.captured_at}
+          anchorPremium={getAnchorPremium(p as any)}
         />
       </td>
       {isAdmin && (

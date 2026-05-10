@@ -66,6 +66,7 @@ export function RateCellWithHistory({
   rate = 3.75,
   captureDate,
   source,
+  anchorPremium,
 }: {
   sar: number | null | undefined;
   historicalSar: number | null | undefined;
@@ -73,9 +74,21 @@ export function RateCellWithHistory({
   rate?: number;
   captureDate?: string | null;
   source?: string | null;
+  /**
+   * Migration 071 — Authority Tier anchor premium (×1.40 / ×1.20 / ×1.10 / ×1.00 / ×0.95 / ×1.00).
+   * When provided and != 1.0, the cell shows EFFECTIVE baseFee as the headline
+   * (stored × premium) and stored rate as a small subtitle. Lets sales see the
+   * same number the engine uses at quote time, without changing the underlying
+   * stored value.
+   */
+  anchorPremium?: number;
 }) {
-  const m = Number(sar) || 0;
-  if (!m) return <span className="text-mute">—</span>;
+  const stored = Number(sar) || 0;
+  if (!stored) return <span className="text-mute">—</span>;
+
+  const premium = Number(anchorPremium) || 1.0;
+  const effective = Math.round(stored * premium);
+  const liftActive = premium !== 1.0;
 
   const fmt = (n: number) =>
     ccy === 'USD'
@@ -86,7 +99,17 @@ export function RateCellWithHistory({
 
   return (
     <div className="flex flex-col items-end leading-tight tabular-nums">
-      <span className="text-ink font-medium">{fmt(m)}</span>
+      <span
+        className="text-ink font-medium"
+        title={liftActive ? `Effective baseFee = stored ${fmt(stored)} × ${premium.toFixed(2)} anchor premium (Mig 071)` : undefined}
+      >
+        {fmt(effective)}
+      </span>
+      {liftActive && (
+        <span className="text-[10px] text-mute" title={`Stored value (pre-anchor-lift): ${fmt(stored)}`}>
+          stored {fmt(stored)} ·{premium.toFixed(2)}×
+        </span>
+      )}
       {r > 0 && (
         <span
           className="text-[10px] text-mute inline-flex items-center gap-1"

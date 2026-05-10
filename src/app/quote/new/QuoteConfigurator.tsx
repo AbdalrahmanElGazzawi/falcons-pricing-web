@@ -1277,6 +1277,9 @@ function DeliverableGroups({
   onRate: (k: string, r: number) => void;
 }) {
   const priceMap = new Map(previewLines.map(l => [l.key, l]));
+  // Migration 071 — compute anchor_premium once so picker rows can show the
+  // engine-effective baseFee alongside the stored value (no math change, display only).
+  const talentAnchorPremium = getAnchorPremium(talent ?? {});
   const grouped: Record<string, typeof deliverables> = {};
   for (const d of deliverables) (grouped[d.group] ||= []).push(d);
 
@@ -1305,7 +1308,18 @@ function DeliverableGroups({
                           ? (d.suggestedRange
                               ? <span>Approx. <strong className="text-label">SAR {d.suggestedRange[0].toLocaleString()}–{d.suggestedRange[1].toLocaleString()}</strong></span>
                               : <span className="italic">Manual rate</span>)
-                          : `Floor ${fmtCurrency(d.rate, currency, 3.75)}`}
+                          : (() => {
+                              const effective = Math.round(d.rate * talentAnchorPremium);
+                              const liftActive = talentAnchorPremium !== 1.0 && d.rate > 0;
+                              return liftActive ? (
+                                <span title={`Stored ${fmtCurrency(d.rate, currency, 3.75)} × ${talentAnchorPremium.toFixed(2)} anchor premium (Mig 071) = engine baseFee`}>
+                                  Engine base {fmtCurrency(effective, currency, 3.75)}
+                                  <span className="ml-1 text-[10px]">(stored {fmtCurrency(d.rate, currency, 3.75)} ·{talentAnchorPremium.toFixed(2)}×)</span>
+                                </span>
+                              ) : (
+                                <span>Floor {fmtCurrency(d.rate, currency, 3.75)}</span>
+                              );
+                            })()}
                       </div>
                     </div>
                     {checked && priceMap.get(d.key) && (
