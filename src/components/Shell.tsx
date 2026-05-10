@@ -29,6 +29,15 @@ const NAV_GROUPS = (role: UserRole, email: string): NavGroup[] => {
   const isSuper = isSuperAdminEmail(email);
 
   return [
+    // Sprint A.1 (May-10) — slimmed sidebar per audit memo. Pages still exist
+    // at their URLs; they're just no longer surfaced in the nav:
+    //   /about        — content folded into /pricing-logic intro
+    //   /admin/sales-log     — 0 deals logged; promote back when first row exists
+    //   /admin/esports-teams — accessible via direct URL or /admin/data-audit
+    //   /admin/tiers, /market-bands, /addons, /assumptions, /admin/roadmap
+    //                  — consolidated inside /admin/pricing tabs
+    // /inquiries demoted from pinned → talent group (1 inquiry total today;
+    // promote back when inbound traffic > 5/wk).
     {
       id: 'pinned', label: null, defaultOpen: true,
       items: [
@@ -36,43 +45,33 @@ const NAV_GROUPS = (role: UserRole, email: string): NavGroup[] => {
         { href: '/quote/new',  key: 'nav.new_quote', icon: PlusCircle, highlight: true },
         { href: '/quotes',     key: 'nav.quote_log', icon: FileText },
         { href: '/showcase',   key: 'nav.showcase',  icon: Trophy, highlight: true },
-        { href: '/inquiries',  key: 'nav.inquiries', icon: Inbox },
       ],
     },
     {
       id: 'talent', label: 'nav.group.talent', defaultOpen: true,
       items: [
-        { href: '/roster/players',       key: 'nav.roster',         icon: Users },
-        { href: '/roster/creators',      key: 'nav.creators',       icon: Sparkles },
+        { href: '/roster/players',  key: 'nav.roster',    icon: Users },
+        { href: '/roster/creators', key: 'nav.creators',  icon: Sparkles },
+        { href: '/inquiries',       key: 'nav.inquiries', icon: Inbox },
         ...(isAdmin ? [
           { href: '/admin/talent-intakes', key: 'nav.talent_intakes', icon: ShieldCheck },
-          { href: '/admin/esports-teams',  key: 'nav.esports_teams',  icon: Trophy },
         ] : []),
       ],
     },
     {
       id: 'tools', label: 'nav.group.tools', defaultOpen: false,
       items: [
-        { href: '/calculator',         key: 'nav.calculator',  icon: Calculator },
+        { href: '/calculator', key: 'nav.calculator', icon: Calculator },
         ...(isStaff ? [
           { href: '/admin/activations', key: 'nav.activations', icon: Layers, highlight: true },
-          { href: '/admin/sales-log',   key: 'nav.sales_log',   icon: ScrollText },
         ] : []),
       ],
     },
     {
       id: 'methodology', label: 'nav.group.methodology', defaultOpen: false,
       items: [
-        { href: '/roadmap',         key: 'nav.roadmap',       icon: Map },
-        { href: '/pricing-logic',   key: 'nav.pricing_logic', icon: Layers },
-        { href: '/about',           key: 'nav.about',         icon: HelpCircle },
-        ...(isAdmin ? [
-          { href: '/admin/tiers',        key: 'nav.tiers',         icon: Settings },
-          { href: '/admin/market-bands', key: 'nav.market_bands',  icon: Database },
-          { href: '/admin/addons',       key: 'nav.addons',        icon: Settings },
-          { href: '/admin/assumptions',  key: 'nav.assumptions',   icon: BookOpen },
-          { href: '/admin/roadmap',      key: 'nav.admin_roadmap', icon: Map },
-        ] : []),
+        { href: '/roadmap',       key: 'nav.roadmap',       icon: Map },
+        { href: '/pricing-logic', key: 'nav.pricing_logic', icon: Layers },
       ],
     },
     ...(isSuper ? [{
