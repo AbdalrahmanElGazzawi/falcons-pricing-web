@@ -635,13 +635,8 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                               }
                             >
                               <div className="text-[10px] uppercase tracking-wider text-mute font-bold">Starts from</div>
-                              <div className="text-sm font-bold text-greenDark tabular-nums flex flex-col items-end leading-tight">
-                                <span>SAR {effective.toLocaleString('en-US')}</span>
-                                {liftActive && (
-                                  <span className="text-[9px] text-mute font-medium">
-                                    stored {p.rate_ig_reel.toLocaleString('en-US')} ·{premium.toFixed(2)}×
-                                  </span>
-                                )}
+                              <div className="text-sm font-bold text-greenDark tabular-nums">
+                                SAR {effective.toLocaleString('en-US')}
                               </div>
                             </div>
                           );

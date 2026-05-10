@@ -507,7 +507,7 @@ function RosterRow({
   const age = ageFromDob(p.date_of_birth);
 
   return (
-    <tr>
+    <tr className="group">
       <td>
         <div className="flex items-center gap-3 min-w-0">
           <Avatar src={p.avatar_url} name={p.nickname} size="sm" />
@@ -518,8 +518,8 @@ function RosterRow({
               <div className="flex items-center gap-1.5 min-w-0">
                 <div className={`font-medium text-ink truncate ${isAdmin ? 'cursor-text hover:underline decoration-dotted' : ''}`} onClick={() => isAdmin && setEditingNick(true)}>{p.nickname}</div>
                 <ReadinessBadge p={p} />
-                <AuthorityChip player={p as any} size="sm" />
-                <ArchetypeChip player={p as any} size="sm" />
+                {/* Authority + Archetype chips live on per-talent pages; toolbar filters cover bulk views.
+                    Removed from row to stop nickname truncation in narrow Member column. */}
               </div>
             )}
             {editingName && isAdmin ? (
@@ -715,6 +715,9 @@ function TierReviewBadge({ p, isAdmin, onPatch, tierReview }: { p: Player; isAdm
     );
   }
 
+  // Buttons are hidden by default and only shown when the row is hovered or the
+  // flag chip is focused — stops the table from looking like 129 rows of action
+  // buttons. The orange flag chip stays always-visible so the queue is scannable.
   return (
     <div className="inline-flex items-center gap-1 whitespace-nowrap">
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-[11px] font-semibold">
@@ -723,7 +726,7 @@ function TierReviewBadge({ p, isAdmin, onPatch, tierReview }: { p: Player; isAdm
         {expected}
       </span>
       {isAdmin && (
-        <span className="inline-flex items-center gap-0.5">
+        <span className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <button
             type="button"
             disabled={busy}

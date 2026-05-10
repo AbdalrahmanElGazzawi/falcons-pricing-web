@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus, X as XIcon, ChevronDown, ChevronUp, Check,
   Twitter, Instagram, Youtube, Twitch, Facebook, ExternalLink,
-  Lock, Hourglass,
+  Lock,
 } from 'lucide-react';
 import { SearchInput } from '@/components/SearchInput';
 import { computeLine, AXIS_OPTIONS, CREATOR_AXIS_OPTIONS, type MeasurementConfidence } from '@/lib/pricing';
@@ -773,19 +773,12 @@ export function QuoteConfigurator({
                     )}
                     <AuthorityChip player={selectedTalent as any} size="sm" showPremium />
                     <ArchetypeChip player={selectedTalent as any} size="sm" />
-                    {(selectedTalent as any).measurement_confidence === 'exact' ? (
+                    {(selectedTalent as any).measurement_confidence === 'exact' && (
                       <span
                         title="Verified — Shikenso confirmed"
                         className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[9px] font-bold uppercase tracking-wider bg-green/15 text-greenDark border border-green/30"
                       >
                         <Lock size={9} /> Locked
-                      </span>
-                    ) : (
-                      <span
-                        title="TBD — rates use tier baseline (within-tier average) until Shikenso lands. Bump Authority for verified championship credentials."
-                        className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gold/10 text-gold border border-gold/30"
-                      >
-                        <Hourglass size={9} /> TBD
                       </span>
                     )}
                     {(selectedTalent as any).role && <span>{(selectedTalent as any).role}</span>}
@@ -1285,6 +1278,12 @@ function DeliverableGroups({
 
   return (
     <div className="space-y-4">
+      {talentAnchorPremium !== 1.0 && (
+        <div className="rounded-md border border-line bg-bg/40 px-3 py-2 text-[11px] text-label flex items-center gap-2">
+          <span className="font-semibold text-ink">Engine lifts every line ×{talentAnchorPremium.toFixed(2)}</span>
+          <span className="text-mute">for this talent's Authority Tier · applied at quote time per Mig 071</span>
+        </div>
+      )}
       {GROUP_ORDER.filter(g => grouped[g]?.length).map(g => (
         <div key={g}>
           <div className="text-[10px] uppercase tracking-wider text-mute font-semibold mb-1.5">{g}</div>
@@ -1308,18 +1307,9 @@ function DeliverableGroups({
                           ? (d.suggestedRange
                               ? <span>Approx. <strong className="text-label">SAR {d.suggestedRange[0].toLocaleString()}–{d.suggestedRange[1].toLocaleString()}</strong></span>
                               : <span className="italic">Manual rate</span>)
-                          : (() => {
-                              const effective = Math.round(d.rate * talentAnchorPremium);
-                              const liftActive = talentAnchorPremium !== 1.0 && d.rate > 0;
-                              return liftActive ? (
-                                <span title={`Stored ${fmtCurrency(d.rate, currency, 3.75)} × ${talentAnchorPremium.toFixed(2)} anchor premium (Mig 071) = engine baseFee`}>
-                                  Engine base {fmtCurrency(effective, currency, 3.75)}
-                                  <span className="ml-1 text-[10px]">(stored {fmtCurrency(d.rate, currency, 3.75)} ·{talentAnchorPremium.toFixed(2)}×)</span>
-                                </span>
-                              ) : (
-                                <span>Floor {fmtCurrency(d.rate, currency, 3.75)}</span>
-                              );
-                            })()}
+                          : <span title={talentAnchorPremium !== 1.0 ? `Engine lifts ×${talentAnchorPremium.toFixed(2)} for this talent at quote time → effective ${fmtCurrency(Math.round(d.rate * talentAnchorPremium), currency, 3.75)}` : undefined}>
+                              {fmtCurrency(d.rate, currency, 3.75)}
+                            </span>}
                       </div>
                     </div>
                     {checked && priceMap.get(d.key) && (

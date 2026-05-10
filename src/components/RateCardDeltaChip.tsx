@@ -105,11 +105,6 @@ export function RateCellWithHistory({
       >
         {fmt(effective)}
       </span>
-      {liftActive && (
-        <span className="text-[10px] text-mute" title={`Stored value (pre-anchor-lift): ${fmt(stored)}`}>
-          stored {fmt(stored)} ·{premium.toFixed(2)}×
-        </span>
-      )}
       {r > 0 && (
         <span
           className="text-[10px] text-mute inline-flex items-center gap-1"

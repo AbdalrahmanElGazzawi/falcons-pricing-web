@@ -177,11 +177,6 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
           )}
         </p>
         <p className="text-[11px] text-mute mt-1">{baseReason.join(' ')}</p>
-        {anchorPremium === 1.0 && (
-          <p className="text-[11px] text-mute mt-1">
-            No authority lift on this talent — engine uses stored value as baseFee directly.
-          </p>
-        )}
         {decay !== 1.0 && (
           <p className="text-[11px] text-mute mt-1">
             Authority floor decay {decay.toFixed(2)}× scales the IRL-derived AuthorityFloor only (peak {p.peak_tournament_tier ?? '?'} tier).
