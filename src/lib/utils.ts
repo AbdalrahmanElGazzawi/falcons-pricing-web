@@ -69,8 +69,23 @@ export type TierReviewFlag = 'ok' | 'promote' | 'demote' | 'no-data';
 export function tierReviewFlag(
   tierCode: string | null | undefined,
   max: number,
-  opts: { tolerance?: number; thresholds?: Array<{ code: string; min: number }> } = {},
+  opts: {
+    tolerance?: number;
+    thresholds?: Array<{ code: string; min: number }>;
+    /**
+     * When true, the talent already has tier-establishing signal from
+     * elsewhere (Authority Tier classification AT-1..AT-5 from Liquipedia,
+     * OR any social follower data). Tier Review is a fallback queue for
+     * truly-blind talents; if we have signal, the flag is redundant noise.
+     * Returns 'ok' immediately when hasAuthoritySignal is true.
+     */
+    hasAuthoritySignal?: boolean;
+  } = {},
 ): TierReviewFlag {
+  // Short-circuit: if Liquipedia/social signal already establishes the tier,
+  // don't second-guess via reach heuristic. Tier Review only queues talents
+  // we have no other visibility on.
+  if (opts.hasAuthoritySignal) return 'ok';
   if (!max || max <= 0) return 'no-data';
   if (!tierCode) return 'no-data';
   const thresholds = opts.thresholds ?? TIER_REVIEW_THRESHOLDS;

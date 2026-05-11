@@ -264,7 +264,7 @@ export function RosterOverview({
       if (reviewOnly) {
         if (tierReview.disabled) return false;
         if (tierReview.dismissed.has(p.id)) return false;
-        const f = tierReviewFlag(p.tier_code, maxPlatformReach(p), { tolerance: tierReview.tolerance });
+        const f = tierReviewFlag(p.tier_code, maxPlatformReach(p), { tolerance: tierReview.tolerance, hasAuthoritySignal: ((((p as any).authority_tier_override ?? (p as any).authority_tier) ?? null) !== null && (((p as any).authority_tier_override ?? (p as any).authority_tier)) !== 'AT-0') });
         if (f !== 'promote' && f !== 'demote') return false;
       }
       if (readinessFilter) {
@@ -288,7 +288,7 @@ export function RosterOverview({
     if (tierReview.disabled) return 0;
     return players.filter(p => {
       if (tierReview.dismissed.has(p.id)) return false;
-      const f = tierReviewFlag(p.tier_code, maxPlatformReach(p), { tolerance: tierReview.tolerance });
+      const f = tierReviewFlag(p.tier_code, maxPlatformReach(p), { tolerance: tierReview.tolerance, hasAuthoritySignal: ((((p as any).authority_tier_override ?? (p as any).authority_tier) ?? null) !== null && (((p as any).authority_tier_override ?? (p as any).authority_tier)) !== 'AT-0') });
       return f === 'promote' || f === 'demote';
     }).length;
   }, [players, tierReview.disabled, tierReview.dismissed, tierReview.tolerance]);
@@ -705,7 +705,12 @@ function DataLockChip({ confidence }: { confidence?: string | null }) {
 function TierReviewBadge({ p, isAdmin, onPatch, tierReview }: { p: Player; isAdmin: boolean; onPatch: (id: number, body: Record<string, any>) => Promise<boolean>; tierReview: ReturnType<typeof useTierReviewSettings> }) {
   const [busy, setBusy] = useState(false);
   const max = maxPlatformReach(p);
-  const flag = tierReviewFlag(p.tier_code, max, { tolerance: tierReview.tolerance });
+  // Koge May-11: hide the tier-review flag when the talent already has
+  // Liquipedia signal (Authority Tier AT-1..AT-5). The reach-vs-tier heuristic
+  // is a fallback queue for truly-blind talents (AT-0 / no signal), not a
+  // second-guess of methodology-established tiers.
+  const hasAuthoritySignal = (((p as any).authority_tier_override ?? (p as any).authority_tier) ?? null) !== null && (((p as any).authority_tier_override ?? (p as any).authority_tier)) !== 'AT-0';
+  const flag = tierReviewFlag(p.tier_code, max, { tolerance: tierReview.tolerance, hasAuthoritySignal });
   const isDismissed = tierReview.dismissed.has(p.id);
 
   if (flag === 'no-data') return <span className="text-mute text-xs">—</span>;
