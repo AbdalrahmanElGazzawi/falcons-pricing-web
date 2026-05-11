@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const repId = profile?.id ?? profile?.user_id ?? 'unknown';
+  const repId = profile?.id ?? 'unknown';
   const repEmail = profile?.email ?? null;
 
   const { data, error } = await supabase
