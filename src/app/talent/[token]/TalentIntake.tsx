@@ -73,6 +73,8 @@ type PlayerInfo = {
   er_ig: number | null;
   er_tiktok: number | null;
   er_yt: number | null;
+  er_twitch: number | null;
+  er_x: number | null;
   peak_tournament_tier: string | null;
   prize_money_24mo_usd: number | null;
 };
