@@ -423,87 +423,49 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     y = 130;
   }
 
-  // ═══ PRICING METHODOLOGY (left col) + SPECIAL NOTES (right col) ═══
+  // ═══ RIGHTS & SCOPE (left col) + SPECIAL NOTES (right col) ═══
+  // Client-facing only — internal engine plumbing (formulas, axis multipliers,
+  // engine version stamp) has been removed. The audit-log table is the source
+  // of truth for reproducibility; that's an internal record, not a client doc.
   const methX = tableX;
   const methW = tableW * 0.55;
   const methTop = y;
-  doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10).text('PRICING METHODOLOGY', methX, y);
-  y += 13;
-  doc.fillColor(LABEL).font('Helvetica').fontSize(8);
-  const formulaText = 'Final = MAX(Social Price, Authority Floor) × Confidence Cap × (1 + Rights Uplift)';
-  const formulaHeight = doc.heightOfString(formulaText, { width: methW, lineGap: 0 });
-  doc.text(formulaText, methX, y, { width: methW, lineGap: 0 });
-  y += formulaHeight + 6;
 
-  // Campaign-level axes — talent-aware labels
-  const hasCreator = (lines || []).some((l: any) => l.talent_type === 'creator');
-  const hasPlayer  = (lines || []).some((l: any) => l.talent_type === 'player');
-  const dominantKind: 'player' | 'creator' = hasCreator && !hasPlayer ? 'creator' : 'player';
-  doc.fillColor(MUTE).font('Helvetica').fontSize(7.5).text(
-    hasCreator && hasPlayer ? 'CAMPAIGN AXES (mixed roster)' :
-    dominantKind === 'creator' ? 'CAMPAIGN AXES (creator pricing)' : 'CAMPAIGN AXES',
-    methX, y, { characterSpacing: 1 }
-  );
-  y += 10;
-  const audienceLabel = dominantKind === 'creator' ? 'Audience fit' : 'Audience';
-  const seasLabel     = dominantKind === 'creator' ? 'Production'   : 'Seasonality';
-  const axes: Array<[string, string, number]> = [
-    ['Engagement',  'eng',   Number(quote.eng_factor || 1)],
-    [audienceLabel, 'aud',   Number(quote.audience_factor || 1)],
-    [seasLabel,     'seas',  Number(quote.seasonality_factor || 1)],
-    ['Content',     'ctype', Number(quote.content_type_factor || 1)],
-    ['Language',    'lang',  Number(quote.language_factor || 1)],
-    ['Authority',   'auth',  Number(quote.authority_factor || 1)],
-  ];
-  doc.font('Helvetica').fontSize(8.5).fillColor(INK);
-  axes.forEach(([name, key, val]) => {
-    doc.fillColor(LABEL).text(`${name}:`, methX, y);
-    doc.fillColor(INK).text(axisLabel(key, val, dominantKind, pdfLocale), methX + 75, y, { width: methW - 75 });
-    y += 10;
-  });
-  if (Number(quote.addons_uplift_pct || 0) > 0) {
-    doc.fillColor(LABEL).text('Add-on uplift:', methX, y);
-    doc.fillColor(INK).text(`+${fmtPct(Number(quote.addons_uplift_pct))}`, methX + 75, y);
-    y += 10;
-  }
+  // Collect brand-relevant rows. Render section only if at least one row exists.
+  const scopeRows: Array<[string, string]> = [];
   if (currency === 'USD') {
-    doc.fillColor(LABEL).text('FX rate:', methX, y);
-    doc.fillColor(INK).text(`${usdRate.toFixed(2)} SAR per 1 USD (Saudi peg, locked)`, methX + 75, y);
-    y += 10;
+    scopeRows.push(['FX rate', `${usdRate.toFixed(2)} SAR per 1 USD (Saudi peg, locked)`]);
   }
   if (quote.rights_territory) {
-    doc.fillColor(LABEL).text('Rights territory:', methX, y);
-    doc.fillColor(INK).text(String(quote.rights_territory), methX + 75, y);
-    y += 10;
+    scopeRows.push(['Rights territory', String(quote.rights_territory)]);
   }
   if (Array.isArray(quote.competitor_blackout) && quote.competitor_blackout.length > 0) {
-    doc.fillColor(LABEL).text('Competitor blackout:', methX, y);
-    doc.fillColor(INK).text((quote.competitor_blackout as string[]).join(', '), methX + 75, y, { width: methW - 75 });
-    y += 12;
+    scopeRows.push(['Competitor blackout', (quote.competitor_blackout as string[]).join(', ')]);
   }
-  // Engine version stamp (Mig 075/078 — quote reproducibility)
-  doc.fillColor(MUTE).fontSize(7.5).text('Pricing engine v1.1-2026-05-09 · Authority Tier · Archetype × Profile · World-MENA calibration', methX, y, { width: methW });
-  y += 10;
-  doc.fillColor(INK).fontSize(8.5);
-  y += 4;
+  if (Array.isArray(quote.demo_target) && quote.demo_target.length > 0) {
+    scopeRows.push(['Demographic', (quote.demo_target as string[]).join(', ')]);
+  }
+  if (quote.gender_skew && quote.gender_skew !== 'mixed') {
+    scopeRows.push(['Gender skew', String(quote.gender_skew).replace(/^./, c => c.toUpperCase())]);
+  }
+  if (quote.region) {
+    scopeRows.push(['Region', quote.region]);
+  }
+  if (quote.kpi_focus) {
+    scopeRows.push(['Primary KPI', String(quote.kpi_focus).replace(/^./, c => c.toUpperCase())]);
+  }
+  if (quote.exclusivity) {
+    scopeRows.push(['Exclusivity', `${quote.exclusivity_months || ''}mo category lockout`.trim()]);
+  }
 
-  // Brand brief block (conditional — only render if anything captured)
-  const briefFields: Array<[string, string]> = [];
-  if (Array.isArray(quote.demo_target) && quote.demo_target.length > 0)
-    briefFields.push(['Demographic', (quote.demo_target as string[]).join(', ')]);
-  if (quote.gender_skew && quote.gender_skew !== 'mixed')
-    briefFields.push(['Gender skew', String(quote.gender_skew).replace(/^./, c => c.toUpperCase())]);
-  if (quote.region) briefFields.push(['Region', quote.region]);
-  if (quote.kpi_focus) briefFields.push(['Primary KPI', String(quote.kpi_focus).replace(/^./, c => c.toUpperCase())]);
-  if (quote.exclusivity) briefFields.push(['Exclusivity', `${quote.exclusivity_months || ''}mo category lockout`.trim()]);
-
-  if (briefFields.length > 0) {
-    doc.fillColor(MUTE).font('Helvetica').fontSize(7.5).text('BRAND BRIEF', methX, y, { characterSpacing: 1 });
-    y += 10;
-    briefFields.forEach(([name, val]) => {
-      doc.fillColor(LABEL).font('Helvetica').fontSize(8.5).text(`${name}:`, methX, y);
-      doc.fillColor(INK).font('Helvetica').text(val, methX + 75, y, { width: methW - 75 });
-      y += 10;
+  if (scopeRows.length > 0) {
+    doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10).text('RIGHTS & SCOPE', methX, y);
+    y += 13;
+    doc.font('Helvetica').fontSize(8.5);
+    scopeRows.forEach(([name, val]) => {
+      doc.fillColor(LABEL).text(`${name}:`, methX, y);
+      doc.fillColor(INK).text(val, methX + 95, y, { width: methW - 95 });
+      y += 11;
     });
   }
   const methBottom = y;
