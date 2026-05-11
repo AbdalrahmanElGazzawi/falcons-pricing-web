@@ -255,6 +255,8 @@ export default async function TalentIntakePage({ params }: { params: { token: st
           er_ig:           player.er_ig == null ? null : Number(player.er_ig),
           er_tiktok:       player.er_tiktok == null ? null : Number(player.er_tiktok),
           er_yt:           player.er_yt == null ? null : Number(player.er_yt),
+          er_twitch:       player.er_twitch == null ? null : Number(player.er_twitch),
+          er_x:            player.er_x == null ? null : Number(player.er_x),
           peak_tournament_tier: player.peak_tournament_tier ?? null,
           prize_money_24mo_usd: player.prize_money_24mo_usd == null ? null : Number(player.prize_money_24mo_usd),
         }}
