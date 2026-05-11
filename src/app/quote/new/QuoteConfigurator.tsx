@@ -127,6 +127,7 @@ function baseWhyFor(platformKey: string, talent: any, tierCode: string | null): 
 export function QuoteConfigurator({
   players, creators, tiers, addons, globals, currency, usdRate, addonsUpliftPct, scrollHook,
   initialEdit, onCommit, onCancelEdit, onCurrencyChange, onPreviewChange,
+  activationArchetypeFilter,
 }: {
   players: Player[];
   creators: Creator[];
@@ -142,6 +143,13 @@ export function QuoteConfigurator({
   onCancelEdit?: () => void;
   onCurrencyChange?: (next: string) => void;
   onPreviewChange?: (p: { count: number; total: number; talent: string }) => void;
+  /**
+   * Mig 080 bridge — when set (union of required_archetype across activation
+   * slots), the talent picker filters to only the matching archetypes.
+   * Toggleable via a banner at the top of the picker so sales can clear it
+   * if they need to deviate.
+   */
+  activationArchetypeFilter?: string[] | null;
 }) {
   const { t, locale } = useLocale();
   const isEditing = !!initialEdit;
@@ -152,6 +160,9 @@ export function QuoteConfigurator({
   const [roleFilter, setRoleFilter] = useState<string>(''); // '', 'player', 'influencer', 'creator'
   const [gameFilter, setGameFilter] = useState<string>('');
   const [saudiOnly, setSaudiOnly] = useState<boolean>(false); // filter players by Saudi nationality
+  // Mig 080 bridge — sales can clear the activation's archetype shortlist if
+  // they need to deviate from the canonical bundle's slot requirements.
+  const [activationFilterCleared, setActivationFilterCleared] = useState<boolean>(false);
 
   // ── Selected talent
   const [showAllDeliverables, setShowAllDeliverables] = useState(false);
@@ -344,6 +355,14 @@ export function QuoteConfigurator({
     if (gameFilter) list = list.filter(p => p.game === gameFilter);
     // "Saudi" matches both 'Saudi' and 'Saudi Arabia' in the seed data — case-insensitive
     if (saudiOnly) list = list.filter(p => (p.nationality || '').trim().toLowerCase().startsWith('saudi'));
+    // Mig 080 activation bridge — shortlist by required_archetype when active
+    // and respect override (admin set archetype_override).
+    if (activationArchetypeFilter && activationArchetypeFilter.length > 0 && !activationFilterCleared) {
+      list = list.filter(p => {
+        const arch = (p as any).archetype_override ?? (p as any).archetype;
+        return arch && activationArchetypeFilter.includes(arch);
+      });
+    }
     if (q) list = list.filter(p =>
       p.nickname.toLowerCase().includes(q) ||
       (p.full_name ?? '').toLowerCase().includes(q) ||
@@ -369,7 +388,7 @@ export function QuoteConfigurator({
         reach,
       };
     });
-  }, [search, tierFilter, roleFilter, gameFilter, saudiOnly, talentKind, players, creators]);
+  }, [search, tierFilter, roleFilter, gameFilter, saudiOnly, talentKind, players, creators, activationArchetypeFilter, activationFilterCleared]);
 
   const games = useMemo(
     () => Array.from(new Set(players.map(p => p.game).filter(Boolean))).sort() as string[],
@@ -595,6 +614,36 @@ export function QuoteConfigurator({
       <div className="grid grid-cols-1 lg:grid-cols-[340px,1fr] divide-x divide-line">
         {/* ── Talent picker ──────────────────────────────────────────────── */}
         <div className="p-4 space-y-3 lg:max-h-[640px] lg:overflow-y-auto">
+          {/* Activation bridge banner (Mig 080) — appears only when entering via /quote/new?activation=<id> */}
+          {activationArchetypeFilter && activationArchetypeFilter.length > 0 && (
+            <div className={[
+              'rounded-md border px-3 py-2 text-[11px] leading-snug',
+              activationFilterCleared
+                ? 'border-line bg-bg/40 text-mute'
+                : 'border-purple-300 bg-purple-50 text-purple-900',
+            ].join(' ')}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold">
+                    {activationFilterCleared ? 'Activation filter cleared' : 'Filtered by activation slot requirements'}
+                  </div>
+                  <div className={activationFilterCleared ? 'text-mute' : 'text-purple-800'}>
+                    {activationFilterCleared
+                      ? 'Showing the full roster. Re-apply to honour the bundle\'s archetype shortlist.'
+                      : 'Archetypes: ' + activationArchetypeFilter.join(' · ')}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActivationFilterCleared(c => !c)}
+                  className="text-[10px] font-semibold underline hover:text-ink shrink-0"
+                  title={activationFilterCleared ? 'Re-apply the activation\'s archetype filter' : 'Clear filter and show all talents'}
+                >
+                  {activationFilterCleared ? 'Re-apply' : 'Clear'}
+                </button>
+              </div>
+            </div>
+          )}
           {/* Kind toggle */}
           <div className="inline-flex rounded-lg border border-line bg-white overflow-hidden text-xs w-full">
             {([

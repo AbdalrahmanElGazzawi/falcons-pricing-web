@@ -8,9 +8,25 @@ export const dynamic = 'force-dynamic';
 
 const QUOTE_NEW_DEFAULT_ORDER = ['header', 'globals', 'addons', 'lines', 'notes_totals'];
 
-export default async function NewQuotePage() {
+export default async function NewQuotePage({
+  searchParams,
+}: {
+  searchParams?: { activation?: string };
+}) {
   const { denied, profile, supabase } = await requireStaff();
   if (denied) return <AccessDenied />;
+
+  // Activation → quote bridge (Mig 080 schema → UI handoff).
+  // If ?activation=<uuid> is set, fetch the bundle so QuoteBuilder can
+  // render a context banner + filter the talent picker by slot requirements.
+  const activationId = (searchParams?.activation || '').trim();
+  const { data: prefilledActivation } = activationId
+    ? await supabase
+        .from('activations')
+        .select('id, name, kind, archetype_text, positioning, price_floor_sar, price_ceiling_sar, pricing_term, talent_slot_requirements, bundle_compression_factor, bundle_compression_notes')
+        .eq('id', activationId)
+        .maybeSingle()
+    : { data: null };
 
   const [
     { data: players },
@@ -58,6 +74,7 @@ export default async function NewQuotePage() {
         tiers={tiers ?? []}
         addons={addons ?? []}
         drafts={drafts}
+        prefilledActivation={prefilledActivation as any}
         ownerEmail={profile.email}
         ownerName={profile.full_name || profile.email.split('@')[0]}
         ownerTitle={(profile as any).title || ''}

@@ -66,9 +66,35 @@ function PlatformChip({ label }: { label: string }) {
   );
 }
 
+// Mig 080 bridge — when /quote/new?activation=<id> is hit, page.tsx fetches
+// the activation row and passes it here. Renders a context banner, filters
+// the talent picker by required_archetype across slots, and saves
+// activation_id on the quote so the link is persistent.
+export type PrefilledActivation = {
+  id: string;
+  name: string;
+  kind: string | null;
+  archetype_text: string | null;
+  positioning: string | null;
+  price_floor_sar: number | null;
+  price_ceiling_sar: number | null;
+  pricing_term: string | null;
+  talent_slot_requirements: Array<{
+    slot_name?: string;
+    min_count?: number;
+    max_count?: number;
+    compression_role?: string;
+    required_archetype?: string[];
+    required_profile?: Record<string, any>;
+  }> | null;
+  bundle_compression_factor: number | null;
+  bundle_compression_notes: string | null;
+} | null;
+
 export function QuoteBuilder({
   players, creators, tiers, addons, ownerEmail, ownerName,
   initialSectionOrder, canEditLayout, drafts, ownerTitle,
+  prefilledActivation,
 }: {
   players: Player[];
   creators: Creator[];
@@ -80,6 +106,7 @@ export function QuoteBuilder({
   initialSectionOrder: string[];
   canEditLayout: boolean;
   drafts?: DraftSummary[];
+  prefilledActivation?: PrefilledActivation;
 }) {
   const { t, locale } = useLocale();
   const router = useRouter();
@@ -205,6 +232,30 @@ ${j.detail || j.error}`);
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [campaign, setCampaign] = useState('');
+
+  // Activation bridge — keep the linkage on the quote header so it persists
+  // through draft save / reload and so analytics can attribute closed-won
+  // value back to the canonical bundle.
+  const [activationId, setActivationId] = useState<string | null>(prefilledActivation?.id ?? null);
+  // Compute the union of required_archetype across all slots — used to
+  // shortlist talents in the QuoteConfigurator picker when an activation is set.
+  const activationArchetypeFilter = useMemo<string[] | null>(() => {
+    if (!prefilledActivation?.talent_slot_requirements) return null;
+    const set = new Set<string>();
+    for (const slot of prefilledActivation.talent_slot_requirements) {
+      for (const a of (slot.required_archetype ?? [])) set.add(a);
+    }
+    return set.size > 0 ? Array.from(set) : null;
+  }, [prefilledActivation]);
+
+  // Auto-prefill campaign field with the activation name (sales can still edit it)
+  useEffect(() => {
+    if (prefilledActivation && !campaign.trim()) {
+      setCampaign(prefilledActivation.name);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefilledActivation?.id]);
+
   const [currency, setCurrency] = useState('SAR');
   const [vatRate, setVatRate] = useState(0.15);
   const [usdRate, setUsdRate] = useState(3.75);
@@ -567,6 +618,7 @@ ${j.detail || j.error}`);
             channel_intensity: channelIntensity,
             channel_multiplier: channelMultiplier,
             intermediary_name: intermediaryName.trim() || null,
+            activation_id: activationId,
             eng_factor: eng, audience_factor: aud, seasonality_factor: seas,
             content_type_factor: ctype, language_factor: lang, authority_factor: auth,
             objective_weight: obj, measurement_confidence: conf,
@@ -1200,6 +1252,7 @@ ${j.detail || j.error}`);
           }
         }}
         onCancelEdit={wizard?.mode === 'edit' ? closeWizard : undefined}
+        activationArchetypeFilter={activationArchetypeFilter}
       />
     ),
     lines: (
@@ -1472,6 +1525,49 @@ ${j.detail || j.error}`);
       {editingLayout && view === 'campaign' && (
         <div className="rounded-lg border border-green/40 bg-greenSoft px-4 py-3 text-xs text-greenDark">
           Use the ▲ ▼ buttons on each Campaign section to reorder. Saves automatically and is audit-logged.
+        </div>
+      )}
+
+      {/* Activation context banner (Mig 080 bridge) — visible whenever this quote
+          was opened via /quote/new?activation=<id>. Sales sees the canonical
+          bundle the brief is being scoped against, plus the price band the
+          activation lives in. The activation_id persists on the quote header. */}
+      {prefilledActivation && (
+        <div className="rounded-lg border-2 border-purple-300 bg-gradient-to-br from-purple-50/80 via-white to-purple-50/40 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-purple-900">⚡ Activation bundle</span>
+                {prefilledActivation.kind && (
+                  <span className="chip text-[9px] bg-purple-100 text-purple-900 border border-purple-300">{prefilledActivation.kind}</span>
+                )}
+                {prefilledActivation.bundle_compression_factor != null && Number(prefilledActivation.bundle_compression_factor) !== 1.0 && (
+                  <span className="chip text-[9px] bg-greenSoft text-greenDark border border-green/30" title={prefilledActivation.bundle_compression_notes ?? 'Bundle compression factor'}>
+                    Compression ×{Number(prefilledActivation.bundle_compression_factor).toFixed(2)}
+                  </span>
+                )}
+              </div>
+              <div className="font-bold text-ink leading-tight">{prefilledActivation.name}</div>
+              {prefilledActivation.archetype_text && (
+                <div className="text-[11px] text-purple-800 italic mt-0.5 leading-snug">{prefilledActivation.archetype_text}</div>
+              )}
+              {(prefilledActivation.price_floor_sar || prefilledActivation.price_ceiling_sar) && (
+                <div className="text-[11px] text-mute mt-1 tabular-nums">
+                  Catalogue price: SAR {Number(prefilledActivation.price_floor_sar ?? 0).toLocaleString('en-US')}
+                  {prefilledActivation.price_ceiling_sar ? ` — ${Number(prefilledActivation.price_ceiling_sar).toLocaleString('en-US')}` : ''}
+                  {prefilledActivation.pricing_term ? ` · ${prefilledActivation.pricing_term}` : ''}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setActivationId(null)}
+              className="text-[10px] font-semibold text-mute hover:text-rose-700 underline shrink-0"
+              title="Unlink this quote from the activation (the line items stay; only the activation_id is cleared)"
+            >
+              Unlink
+            </button>
+          </div>
         </div>
       )}
 

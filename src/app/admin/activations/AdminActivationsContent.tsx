@@ -1,9 +1,9 @@
 'use client';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import {
   Sparkles, Layers, Filter, Search, X, Calendar, ExternalLink,
-  Trophy, Star, Users, Mic, Tv, Globe, Building, Hotel, Gamepad2,
-} from 'lucide-react';
+  Trophy, Star, Users, Mic, Tv, Globe, Building, Hotel, Gamepad2, ArrowRight} from 'lucide-react';
 import {
   type Activation, type ActivationPillar, type ActivationCohort, type ActivationComplexity,
   PILLAR_LABEL, COHORT_LABEL, COMPLEXITY_LABEL, FALCONS_IPS, fmtSar,
@@ -364,6 +364,21 @@ function DetailPanel({ a, onClose }: { a: Activation; onClose: () => void }) {
         </div>
         <div className="text-sm text-label mt-1">{a.pricing_term}</div>
       </div>
+
+      {/* Mig 080 bridge — opens /quote/new with this activation pre-set.
+          Shown for any activation; canonical bundles with slot_requirements
+          also pre-filter the talent picker by required_archetype. */}
+      <Link
+        href={`/quote/new?activation=${a.id}`}
+        className="btn btn-primary w-full justify-center"
+      >
+        Quote this bundle <ArrowRight size={14} />
+      </Link>
+      {Array.isArray((a as any).talent_slot_requirements) && (a as any).talent_slot_requirements.length > 0 && (
+        <div className="text-[11px] text-mute text-center -mt-2">
+          Talent picker will shortlist by the bundle's slot archetypes ({(a as any).talent_slot_requirements.length} slot{(a as any).talent_slot_requirements.length > 1 ? 's' : ''}).
+        </div>
+      )}
 
       {a.positioning && (
         <div>
