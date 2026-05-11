@@ -277,36 +277,6 @@ ${j.detail || j.error}`);
     return () => { cancelled = true; };
   }, []);
 
-  // Refresh per-talent availability whenever pitch context or lines change
-  useEffect(() => {
-    if (!pitchBrand.trim() || !pitchCategoryCode) {
-      setAvailabilityMap({});
-      return;
-    }
-    const playerIds = Array.from(new Set(
-      lines.filter(l => l.talent_type === 'player' && l.talent_id != null).map(l => l.talent_id as number)
-    ));
-    if (playerIds.length === 0) {
-      setAvailabilityMap({});
-      return;
-    }
-    let cancelled = false;
-    fetch('/api/availability/check', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        talent_ids: playerIds,
-        brand: pitchBrand.trim(),
-        brand_parent: pitchBrandParent.trim() || null,
-        category_code: pitchCategoryCode,
-      }),
-    })
-      .then(r => r.ok ? r.json() : { results: {} })
-      .then(j => { if (!cancelled) setAvailabilityMap(j.results || {}); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [pitchBrand, pitchBrandParent, pitchCategoryCode, lines]);
-
   const [currency, setCurrency] = useState('SAR');
   const [vatRate, setVatRate] = useState(0.15);
   const [usdRate, setUsdRate] = useState(3.75);
@@ -378,6 +348,37 @@ ${j.detail || j.error}`);
 
   // ── Lines
   const [lines, setLines] = useState<LineDraft[]>([]);
+
+  // Refresh per-talent availability whenever pitch context or lines change (Mig 082)
+  // Lives AFTER the `lines` declaration to satisfy block-scoped TDZ.
+  useEffect(() => {
+    if (!pitchBrand.trim() || !pitchCategoryCode) {
+      setAvailabilityMap({});
+      return;
+    }
+    const playerIds = Array.from(new Set(
+      lines.filter(l => l.talent_type === 'player' && l.talent_id != null).map(l => l.talent_id as number)
+    ));
+    if (playerIds.length === 0) {
+      setAvailabilityMap({});
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/availability/check', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        talent_ids: playerIds,
+        brand: pitchBrand.trim(),
+        brand_parent: pitchBrandParent.trim() || null,
+        category_code: pitchCategoryCode,
+      }),
+    })
+      .then(r => r.ok ? r.json() : { results: {} })
+      .then(j => { if (!cancelled) setAvailabilityMap(j.results || {}); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [pitchBrand, pitchBrandParent, pitchCategoryCode, lines]);
   // In-flight preview from the active QuoteConfigurator (un-added picks)
   const [pendingPreview, setPendingPreview] = useState<{ count: number; total: number; talent: string }>({ count: 0, total: 0, talent: '' });
 
