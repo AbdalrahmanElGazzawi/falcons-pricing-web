@@ -586,6 +586,13 @@ export function TalentIntake({
             <h3 className="text-xs font-semibold uppercase tracking-wider text-label">Where is your audience?</h3>
             <DemoSum label="Country mix" map={demoCountry} />
           </div>
+          <p className="text-[11px] text-mute mb-2 italic">
+            Where to find it · <b>IG:</b> Professional Dashboard → Insights → <b>Total followers</b> → Top locations (countries).
+            <b> TikTok:</b> Analytics → Followers → <b>Top territories</b>.
+            <b> YT:</b> Studio → Analytics → Audience → <b>Top geographies</b>.
+            <b> Twitch:</b> Stream Manager → Stream Summary → <b>Top countries</b>.
+            <b> X:</b> Premium Analytics → Audience → <b>Locations</b>.
+          </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {Object.keys(demoCountry).map(k => (
               <div key={k} className="flex items-center gap-2">
@@ -609,6 +616,13 @@ export function TalentIntake({
             <h3 className="text-xs font-semibold uppercase tracking-wider text-label">Age distribution</h3>
             <DemoSum label="Age mix" map={demoAge} />
           </div>
+          <p className="text-[11px] text-mute mb-2 italic">
+            Where to find it · <b>IG:</b> Insights → Total followers → <b>Age range</b>.
+            <b> TikTok:</b> Analytics → Followers → <b>Age</b>.
+            <b> YT:</b> Studio → Analytics → Audience → <b>Age</b>.
+            <b> Twitch:</b> not exposed — best-guess from peer creators or skip.
+            If platforms disagree, lean on the channel where most of your reach lives.
+          </p>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             {Object.keys(demoAge).map(k => (
               <div key={k} className="flex items-center gap-2">
@@ -634,6 +648,12 @@ export function TalentIntake({
             </h3>
             <DemoSum label="Gender" map={demoGender} />
           </div>
+          <p className="text-[11px] text-mute mb-2 italic">
+            Where to find it · <b>IG:</b> Insights → Total followers → <b>Gender</b>.
+            <b> TikTok:</b> Analytics → Followers → <b>Gender</b>.
+            <b> YT:</b> Studio → Analytics → Audience → <b>Gender</b>.
+            Twitch and X don&apos;t expose gender — skip if uncertain.
+          </p>
           <div className="grid grid-cols-3 gap-2">
             {Object.keys(demoGender).map(k => (
               <div key={k} className="flex items-center gap-2">
@@ -656,6 +676,10 @@ export function TalentIntake({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2">
             Top 3 countries <span className="font-normal lowercase">(optional)</span>
           </h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            Where to find it · Same place as Country mix above — just write the top 3 country names by follower share.
+            If IG/TikTok/YT disagree, list the countries that appear in the top 3 on your biggest channel.
+          </p>
           <input
             type="text"
             value={demoTopCountries}
