@@ -209,6 +209,17 @@ ${j.detail || j.error}`);
   const [exclusivityMonths, setExclusivityMonths] = useState(0);
   const [kpiFocus, setKpiFocus] = useState<string>('');
 
+  // ── Brand collision detection (Migration 082) ─────────────────────────────
+  // Pitched brand context. When set, /api/availability/check runs against every
+  // talent on the lines list and surfaces ⛔/⚠️ in the Build view above the
+  // configurator. Empty values disable the check (no false positives).
+  const [pitchBrand, setPitchBrand] = useState<string>('');
+  const [pitchBrandParent, setPitchBrandParent] = useState<string>('');
+  const [pitchCategoryCode, setPitchCategoryCode] = useState<string>('');
+  const [commercialCategories, setCommercialCategories] = useState<Array<{ code: string; name: string; parent_code: string | null }>>([]);
+  const [availabilityMap, setAvailabilityMap] = useState<Record<number, { availability: 'available' | 'clearance_required' | 'blocked'; conflicts: Array<{ brand: string; category_name: string; exclusivity_type: string | null; reason: string }> }>>({});
+  const [overriddenTalents, setOverriddenTalents] = useState<Set<number>>(new Set());
+
   // Track which axes have been auto-suggested by the Brand Brief — so we can show
   // the small 'auto' badge and let the rep override at any time.
   const [autoAxes, setAutoAxes] = useState<Set<'lang'|'obj'>>(new Set());
@@ -255,6 +266,46 @@ ${j.detail || j.error}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefilledActivation?.id]);
+
+  // Load commercial categories once for the Campaign-tab dropdown (Mig 082)
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/commercial-categories')
+      .then(r => r.ok ? r.json() : { categories: [] })
+      .then(j => { if (!cancelled) setCommercialCategories(j.categories || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Refresh per-talent availability whenever pitch context or lines change
+  useEffect(() => {
+    if (!pitchBrand.trim() || !pitchCategoryCode) {
+      setAvailabilityMap({});
+      return;
+    }
+    const playerIds = Array.from(new Set(
+      lines.filter(l => l.talent_type === 'player' && l.talent_id != null).map(l => l.talent_id as number)
+    ));
+    if (playerIds.length === 0) {
+      setAvailabilityMap({});
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/availability/check', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        talent_ids: playerIds,
+        brand: pitchBrand.trim(),
+        brand_parent: pitchBrandParent.trim() || null,
+        category_code: pitchCategoryCode,
+      }),
+    })
+      .then(r => r.ok ? r.json() : { results: {} })
+      .then(j => { if (!cancelled) setAvailabilityMap(j.results || {}); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [pitchBrand, pitchBrandParent, pitchCategoryCode, lines]);
 
   const [currency, setCurrency] = useState('SAR');
   const [vatRate, setVatRate] = useState(0.15);
@@ -1223,6 +1274,30 @@ ${j.detail || j.error}`);
               <p className="text-[10px] text-mute mt-1">Required when exclusivity is on. Each named competitor is blocked from this talent for {exclusivityMonths || 1} months.</p>
             </div>
           )}
+
+          {/* Brand collision check (Mig 082) — pitched brand + category drives ⛔/⚠️ */}
+          <div className="md:col-span-2">
+            <label className="label">Pitched brand <span className="text-mute font-normal">— enables collision check against talent commitments</span></label>
+            <input type="text" value={pitchBrand} onChange={e => setPitchBrand(e.target.value)}
+              className="input" placeholder="e.g. GameSir" />
+            <p className="text-[10px] text-mute mt-1">When set together with a category below, every quote line is checked against active exclusivities and competitor blocklists.</p>
+          </div>
+          <div>
+            <label className="label">Brand parent <span className="text-mute font-normal">— holding-co (optional)</span></label>
+            <input type="text" value={pitchBrandParent} onChange={e => setPitchBrandParent(e.target.value)}
+              className="input" placeholder="e.g. PepsiCo" />
+            <p className="text-[10px] text-mute mt-1">Catches conflicts at the holding-co level.</p>
+          </div>
+          <div>
+            <label className="label">Pitch category</label>
+            <select value={pitchCategoryCode} onChange={e => setPitchCategoryCode(e.target.value)} className="input">
+              <option value="">— select a category —</option>
+              {commercialCategories.map(c => (
+                <option key={c.code} value={c.code}>{c.parent_code ? '  ' : ''}{c.name}</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-mute mt-1">Matches the controlled vocab on talent_brand_commitments. Required for collision check.</p>
+          </div>
         </div>
       </div>
     ),
@@ -1625,6 +1700,87 @@ ${j.detail || j.error}`);
 
           {/* ② BUILD — configurator hero + compact lines list */}
           <div className={view === 'build' ? 'space-y-6' : 'hidden'}>
+              {/* Brand collision panel (Mig 082) — visible only when pitch context is set */}
+              {pitchBrand.trim() && pitchCategoryCode && lines.length > 0 && (() => {
+                const rows = Array.from(new Set(
+                  lines.filter(l => l.talent_type === 'player' && l.talent_id != null).map(l => l.talent_id as number)
+                )).map(tid => {
+                  const r = availabilityMap[tid];
+                  const player = players.find(pl => pl.id === tid);
+                  return { tid, name: player?.nickname ?? `#${tid}`, ...(r ?? { availability: 'available' as const, conflicts: [] }) };
+                });
+                const blocked = rows.filter(r => r.availability === 'blocked' && !overriddenTalents.has(r.tid));
+                const warned  = rows.filter(r => r.availability === 'clearance_required');
+                const total = rows.length;
+                if (blocked.length === 0 && warned.length === 0) {
+                  return (
+                    <div className="rounded-lg border border-emerald-300/40 bg-emerald-500/5 px-4 py-3 text-sm">
+                      <span className="font-semibold text-emerald-700">✓ Brand-collision clean</span>
+                      <span className="text-mute ml-2">All {total} talent{total === 1 ? '' : 's'} on this quote are available for <strong>{pitchBrand}</strong> in this category.</span>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="rounded-lg border border-rose-400/50 bg-rose-500/5 px-4 py-3 text-sm space-y-2">
+                    <div className="font-semibold text-rose-700">
+                      Brand-collision review · {pitchBrand}{pitchBrandParent ? ` (parent: ${pitchBrandParent})` : ''}
+                    </div>
+                    {blocked.length > 0 && (
+                      <ul className="space-y-1">
+                        {blocked.map(r => (
+                          <li key={r.tid} className="flex items-start justify-between gap-3">
+                            <div>
+                              <span className="inline-block bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded mr-2">⛔ BLOCKED</span>
+                              <span className="font-medium">{r.name}</span>
+                              <span className="text-mute ml-2">{r.conflicts.map((c: any) => `${c.brand} (${c.category_name || c.category_code || 'category'} · ${c.exclusivity_type})`).join(' · ')}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const reason = window.prompt(`Override BLOCK on ${r.name}? Type the business reason (min 20 chars). This will be logged.`);
+                                if (!reason || reason.trim().length < 20) {
+                                  if (reason !== null) alert('Reason must be at least 20 characters.');
+                                  return;
+                                }
+                                const res = await fetch('/api/commitments/override', {
+                                  method: 'POST',
+                                  headers: { 'content-type': 'application/json' },
+                                  body: JSON.stringify({ talent_id: r.tid, reason: reason.trim() }),
+                                });
+                                if (res.ok) {
+                                  setOverriddenTalents(prev => { const n = new Set(prev); n.add(r.tid); return n; });
+                                } else {
+                                  const j = await res.json().catch(() => ({}));
+                                  alert('Override rejected: ' + (j.error || res.statusText) + ' (admin role required)');
+                                }
+                              }}
+                              className="text-[11px] underline text-rose-700 hover:text-rose-900 whitespace-nowrap"
+                            >
+                              Override (admin) →
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {warned.length > 0 && (
+                      <ul className="space-y-1">
+                        {warned.map(r => (
+                          <li key={r.tid}>
+                            <span className="inline-block bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded mr-2">⚠️ CLEAR</span>
+                            <span className="font-medium">{r.name}</span>
+                            <span className="text-mute ml-2">{r.conflicts.map((c: any) => c.reason || c.brand).join(' · ')}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {overriddenTalents.size > 0 && (
+                      <div className="text-[10px] text-mute pt-1 border-t border-rose-300/30">
+                        Overrides this session: {overriddenTalents.size} (logged to commitment_override_log)
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               {sectionNodes.configurator}
               {sectionNodes.lines}
               <div className="text-xs text-mute text-center pt-2">
