@@ -186,6 +186,7 @@ export function RosterOverview({
   const [readinessFilter, setReadinessFilter] = useState<'' | 'bookable' | 'on_hold' | 'strong' | 'mid' | 'weak'>('');
   const [archetypeFilter, setArchetypeFilter] = useState<string>('');
   const [authorityFilter, setAuthorityFilter] = useState<string>('');
+  const [regionFilter, setRegionFilter] = useState<string>('');
   const [density, setDensity] = useState<Density>('comfortable');
   const [reviewOnly, setReviewOnly] = useState(false);
   const tierReview = useTierReviewSettings();
@@ -223,6 +224,14 @@ export function RosterOverview({
       if (tier && p.tier_code !== tier) return false;
       if (archetypeFilter && ((p as any).archetype_override ?? (p as any).archetype) !== archetypeFilter) return false;
       if (authorityFilter && ((p as any).authority_tier_override ?? (p as any).authority_tier) !== authorityFilter) return false;
+      if (regionFilter) {
+        const r = ((p as any).audience_market ?? '').toString();
+        if (regionFilter === 'NON_MENA') {
+          if (r === 'MENA' || r === 'KSA') return false;
+        } else if (r !== regionFilter) {
+          return false;
+        }
+      }
       if (game && p.game !== game) return false;
       if (team && p.team !== team) return false;
       if (dataFilter) {
@@ -381,6 +390,16 @@ export function RosterOverview({
           <option value="AT-4">AT-4 Active Pro</option>
           <option value="AT-5">AT-5 Emerging</option>
           <option value="AT-0">No Signal</option>
+        </select>
+        <select value={regionFilter} onChange={e => setRegionFilter(e.target.value)} className="input max-w-[180px]" title="Audience market region filter">
+          <option value="">All regions</option>
+          <option value="MENA">MENA (46)</option>
+          <option value="KSA">KSA (6)</option>
+          <option value="APAC">APAC (58)</option>
+          <option value="EU">EU (40)</option>
+          <option value="NA">NA (28)</option>
+          <option value="GLOBAL">GLOBAL (5)</option>
+          <option value="NON_MENA">— Non-MENA (131)</option>
         </select>
         <DensityToggle value={density} onChange={setDensity} />
         {!tierReview.disabled && (
