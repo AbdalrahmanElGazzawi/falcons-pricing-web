@@ -686,6 +686,12 @@ export function TalentIntake({
 
         <div className="mt-4">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2">Engagement rate (last 90 days)</h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            Where to find it · <b>IG/TikTok:</b> Creator/Pro account → Insights → Reach &amp; Engagement → divide engagements ÷ reach.
+            <b> YT:</b> Studio → Analytics → Engagement → average view duration / impressions click-through.
+            <b> Twitch:</b> Creator Dashboard → Insights → average chat-engagement %.
+            <b> X:</b> Premium Analytics → Engagement rate (engagements ÷ impressions).
+          </p>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             {[
               { label: 'IG',     v: erIg,     setV: setErIg },
@@ -709,6 +715,10 @@ export function TalentIntake({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
             <Twitch size={12} className="text-purple-600" /> Twitch · 90d
           </h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            Where to find it · Twitch Creator Dashboard → <b>Insights → Channel Analytics</b> → set range to <b>Last 90 days</b>.
+            Avg/peak viewers + hours streamed all sit on the same screen. Third-party <b>TwitchTracker.com/&lt;your-name&gt;</b> shows the same numbers if your dashboard is offline.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <PerfNum label="Avg viewers"     val={perf.twitch_avg_viewers}    onChange={v => setPerf(p => ({ ...p, twitch_avg_viewers: v }))} />
             <PerfNum label="Peak viewers"    val={perf.twitch_peak_viewers}   onChange={v => setPerf(p => ({ ...p, twitch_peak_viewers: v }))} />
@@ -718,6 +728,10 @@ export function TalentIntake({
 
         <div className="mt-5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2">Kick · 90d</h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            Where to find it · Kick Creator Dashboard → <b>Analytics</b> → date range <b>Last 90 days</b>.
+            If Kick analytics is incomplete, use <b>KickTracker.live/profile/&lt;your-name&gt;</b> — pull avg viewers, peak viewers, and total hours streamed.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <PerfNum label="Avg viewers"    val={perf.kick_avg_viewers}    onChange={v => setPerf(p => ({ ...p, kick_avg_viewers: v }))} />
             <PerfNum label="Peak viewers"   val={perf.kick_peak_viewers}   onChange={v => setPerf(p => ({ ...p, kick_peak_viewers: v }))} />
@@ -729,6 +743,10 @@ export function TalentIntake({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
             <Youtube size={12} className="text-red-600" /> YouTube · 90d
           </h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            Where to find it · <b>YouTube Studio</b> (studio.youtube.com) → Analytics → Content → set range to <b>Last 90 days</b>.
+            Avg views per video = total views ÷ videos published in the window. Top video views = single highest-performing upload in the same 90-day window.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <PerfNum label="Avg views per video"  val={perf.yt_avg_views_per_video} onChange={v => setPerf(p => ({ ...p, yt_avg_views_per_video: v }))} />
             <PerfNum label="Top video views"      val={perf.yt_top_video_views}     onChange={v => setPerf(p => ({ ...p, yt_top_video_views: v }))} />
@@ -739,6 +757,10 @@ export function TalentIntake({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
             <Music2 size={12} className="text-pink-600" /> TikTok · 90d
           </h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            Where to find it · TikTok Studio (mobile or studio.tiktok.com) → <b>Analytics</b> → Overview → <b>Last 60 days</b> (TikTok caps at 60; double it as a proxy if needed).
+            Avg views per video = total views ÷ posts. Completion rate sits under each video&apos;s <b>Viewer retention</b> chart — eyeball the median across your last ~10 posts.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <PerfNum label="Avg views per video"     val={perf.tiktok_avg_views_per_video}  onChange={v => setPerf(p => ({ ...p, tiktok_avg_views_per_video: v }))} />
             <PerfNum label="Completion rate %"       val={perf.tiktok_completion_rate_pct}  onChange={v => setPerf(p => ({ ...p, tiktok_completion_rate_pct: v }))} />
@@ -749,6 +771,10 @@ export function TalentIntake({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
             <Instagram size={12} className="text-orange-500" /> Instagram · 90d
           </h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            Where to find it · Instagram app → Professional Dashboard → <b>Insights</b> → set range to <b>Last 90 days</b>.
+            <b>Reach per Reel:</b> Insights → Reels tab → average <b>Accounts reached</b>. <b>Story views:</b> Insights → Stories → average <b>Accounts reached</b> per story.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <PerfNum label="Avg reach per Reel"  val={perf.ig_avg_reach_per_reel} onChange={v => setPerf(p => ({ ...p, ig_avg_reach_per_reel: v }))} />
             <PerfNum label="Avg story views"     val={perf.ig_avg_story_views}    onChange={v => setPerf(p => ({ ...p, ig_avg_story_views: v }))} />
@@ -757,6 +783,10 @@ export function TalentIntake({
 
         <div className="mt-5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2">X · 90d</h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            Where to find it · X (twitter.com) → click your profile → <b>Analytics</b> (requires Premium) → 28-day or 90-day window → <b>Tweet impressions</b> ÷ number of posts.
+            No Premium? Pull the last ~20 posts and average the impressions shown under each post manually.
+          </p>
           <PerfNum label="Avg impressions per post" val={perf.x_avg_impressions_per_post} onChange={v => setPerf(p => ({ ...p, x_avg_impressions_per_post: v }))} />
         </div>
       </section>
