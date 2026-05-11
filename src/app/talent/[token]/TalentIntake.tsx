@@ -101,6 +101,12 @@ type Deliverable = {
 };
 
 const fmt = (n: number) => Number(n || 0).toLocaleString('en-US');
+function toFloatOrNull(v: string | number | null | undefined): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(String(v).replace(/[, ]/g, '').replace(',', '.'));
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+}
+
 function toIntOrNull(v: string): number | null {
   const cleaned = String(v ?? '').replace(/[^\d]/g, '');
   if (!cleaned) return null;
@@ -256,6 +262,21 @@ export function TalentIntake({
     male: '', female: '', other: '',
   });
   const [demoTopCountries, setDemoTopCountries] = useState<string>('');
+  // Engagement rate per platform — self-attested %.
+  const [erIg, setErIg]         = useState<string>(player.er_ig         != null ? String(player.er_ig)         : '');
+  const [erTiktok, setErTiktok] = useState<string>(player.er_tiktok     != null ? String(player.er_tiktok)     : '');
+  const [erYt, setErYt]         = useState<string>(player.er_yt         != null ? String(player.er_yt)         : '');
+  const [erTwitch, setErTwitch] = useState<string>(player.er_twitch     != null ? String(player.er_twitch)     : '');
+  const [erX, setErX]           = useState<string>(player.er_x          != null ? String(player.er_x)          : '');
+  // 90-day private analytics — talent fills (we cannot scrape).
+  const [perf, setPerf] = useState({
+    twitch_avg_viewers:    '', twitch_peak_viewers:  '', twitch_hours_streamed:  '',
+    kick_avg_viewers:      '', kick_peak_viewers:    '', kick_hours_streamed:    '',
+    yt_avg_views_per_video:  '', yt_top_video_views:  '',
+    tiktok_avg_views_per_video: '', tiktok_completion_rate_pct: '',
+    ig_avg_reach_per_reel:   '', ig_avg_story_views:  '',
+    x_avg_impressions_per_post: '',
+  });
   const [submitting, setSubmitting] = useState(false);
   // Slim v2: progressive disclosure of secondary surfaces
   const [showAch, setShowAch] = useState(false);
@@ -371,6 +392,42 @@ export function TalentIntake({
               gender_split:     Object.keys(gender).length  ? gender  : null,
               top_countries:    topC.length                 ? topC    : null,
             };
+          })(),
+          engagement_rates: {
+            er_ig:     toFloatOrNull(erIg),
+            er_tiktok: toFloatOrNull(erTiktok),
+            er_yt:     toFloatOrNull(erYt),
+            er_twitch: toFloatOrNull(erTwitch),
+            er_x:      toFloatOrNull(erX),
+          },
+          performance_90d: (() => {
+            const num = (v: string) => {
+              const n = Number(String(v).replace(/[, ]/g, ''));
+              return Number.isFinite(n) && n > 0 ? n : null;
+            };
+            const grp = (prefix: string, fields: string[]) => {
+              const out: Record<string, number> = {};
+              for (const f of fields) {
+                const k = `${prefix}_${f}`;
+                const v = num((perf as Record<string, string>)[k] ?? '');
+                if (v !== null) out[f] = v;
+              }
+              return Object.keys(out).length ? out : null;
+            };
+            const blocks: Record<string, Record<string, number>> = {};
+            const twitch = grp('twitch', ['avg_viewers','peak_viewers','hours_streamed']);
+            const kick   = grp('kick',   ['avg_viewers','peak_viewers','hours_streamed']);
+            const yt     = grp('yt',     ['avg_views_per_video','top_video_views']);
+            const tiktok = grp('tiktok', ['avg_views_per_video','completion_rate_pct']);
+            const ig     = grp('ig',     ['avg_reach_per_reel','avg_story_views']);
+            const x      = grp('x',      ['avg_impressions_per_post']);
+            if (twitch) blocks.twitch = twitch;
+            if (kick)   blocks.kick   = kick;
+            if (yt)     blocks.yt     = yt;
+            if (tiktok) blocks.tiktok = tiktok;
+            if (ig)     blocks.ig     = ig;
+            if (x)      blocks.x      = x;
+            return Object.keys(blocks).length ? blocks : null;
           })(),
           socials: {
             instagram:        socials.instagram.trim() || null,
