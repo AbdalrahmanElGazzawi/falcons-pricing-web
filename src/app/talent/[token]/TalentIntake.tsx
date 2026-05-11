@@ -145,6 +145,18 @@ const TONE_CLASSES: Record<string, { ring: string; bg: string; text: string; chi
 
 // ─── Main component ────────────────────────────────────────────────────────
 
+// Per-field numeric input used inside the Performance-90d section.
+function PerfNum({ label, val, onChange }: { label: string; val: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="text-[11px] text-label block mb-0.5">{label}</label>
+      <input type="number" min={0} step={1} value={val}
+        onChange={e => onChange(e.target.value)}
+        className="input text-sm py-1 w-full tabular-nums" placeholder="0" />
+    </div>
+  );
+}
+
 // Live sum of a percentage map (audience demographics splits)
 function DemoSum({ label, map }: { label: string; map: Record<string, string> }) {
   const total = Object.values(map).reduce((acc, v) => {
@@ -493,6 +505,203 @@ export function TalentIntake({
         </div>
       )}
 
+
+      {/* Audience demographics — talent self-attests */}
+      <section className="rounded-2xl border-2 border-greenDark/30 bg-greenSoft/20 p-5 sm:p-7 mb-6">
+        <div className="flex items-start gap-3 mb-4">
+          <Users className="w-5 h-5 mt-0.5 text-greenDark shrink-0" />
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-ink leading-tight">
+              Audience demographics <span className="text-xs font-normal text-mute">(optional · helps your pricing)</span>
+            </h2>
+            <p className="text-xs text-mute mt-1 leading-relaxed">
+              Self-attested splits — must sum to roughly 100%. Filling these flips your data state from <em>socials only</em>
+              to <em>full</em>, which lifts your engine confidence (no haircut applied) and tightens your Floor / Anchor band.
+            </p>
+          </div>
+        </div>
+
+        {/* Country mix */}
+        <div className="mt-4">
+          <div className="flex items-baseline justify-between mb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-label">Where is your audience?</h3>
+            <DemoSum label="Country mix" map={demoCountry} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {Object.keys(demoCountry).map(k => (
+              <div key={k} className="flex items-center gap-2">
+                <label className="text-xs text-label w-20 shrink-0">{k}</label>
+                <input
+                  type="number" min={0} max={100} step={5}
+                  value={demoCountry[k]}
+                  onChange={e => setDemoCountry(s2 => ({ ...s2, [k]: e.target.value }))}
+                  className="input text-sm py-1 flex-1 tabular-nums"
+                  placeholder="0"
+                />
+                <span className="text-xs text-mute">%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Age distribution */}
+        <div className="mt-5">
+          <div className="flex items-baseline justify-between mb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-label">Age distribution</h3>
+            <DemoSum label="Age mix" map={demoAge} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {Object.keys(demoAge).map(k => (
+              <div key={k} className="flex items-center gap-2">
+                <label className="text-xs text-label w-14 shrink-0">{k}</label>
+                <input
+                  type="number" min={0} max={100} step={5}
+                  value={demoAge[k]}
+                  onChange={e => setDemoAge(s2 => ({ ...s2, [k]: e.target.value }))}
+                  className="input text-sm py-1 flex-1 tabular-nums"
+                  placeholder="0"
+                />
+                <span className="text-xs text-mute">%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Gender split */}
+        <div className="mt-5">
+          <div className="flex items-baseline justify-between mb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-label">
+              Gender split <span className="font-normal lowercase">(optional)</span>
+            </h3>
+            <DemoSum label="Gender" map={demoGender} />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {Object.keys(demoGender).map(k => (
+              <div key={k} className="flex items-center gap-2">
+                <label className="text-xs text-label w-16 shrink-0 capitalize">{k}</label>
+                <input
+                  type="number" min={0} max={100} step={5}
+                  value={demoGender[k]}
+                  onChange={e => setDemoGender(s2 => ({ ...s2, [k]: e.target.value }))}
+                  className="input text-sm py-1 flex-1 tabular-nums"
+                  placeholder="0"
+                />
+                <span className="text-xs text-mute">%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top countries (free-form) */}
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2">
+            Top 3 countries <span className="font-normal lowercase">(optional)</span>
+          </h3>
+          <input
+            type="text"
+            value={demoTopCountries}
+            onChange={e => setDemoTopCountries(e.target.value)}
+            className="input text-sm"
+            placeholder="e.g. Saudi Arabia, UAE, Egypt"
+          />
+          <p className="text-[10px] text-mute mt-1">Comma-separated, max 5.</p>
+        </div>
+      </section>
+
+
+      {/* Performance — last 90 days (talent self-reports analytics we cannot scrape) */}
+      <section className="rounded-2xl border-2 border-amber-300/60 bg-amber-50/40 p-5 sm:p-7 mb-6">
+        <div className="flex items-start gap-3 mb-4">
+          <BarChart3 className="w-5 h-5 mt-0.5 text-amber-700 shrink-0" />
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-ink leading-tight">
+              Performance — last 90 days <span className="text-xs font-normal text-mute">(optional · private analytics)</span>
+            </h2>
+            <p className="text-xs text-mute mt-1 leading-relaxed">
+              Numbers we can&apos;t see from the outside — only you can pull them from your platform dashboards.
+              Filling them lifts your engine confidence and adds defensible reach evidence to your quotes.
+              Skip the channels you don&apos;t use.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2">Engagement rate (last 90 days)</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {[
+              { label: 'IG',     v: erIg,     setV: setErIg },
+              { label: 'TikTok', v: erTiktok, setV: setErTiktok },
+              { label: 'YT',     v: erYt,     setV: setErYt },
+              { label: 'Twitch', v: erTwitch, setV: setErTwitch },
+              { label: 'X',      v: erX,      setV: setErX },
+            ].map(row => (
+              <div key={row.label} className="flex items-center gap-2">
+                <label className="text-xs text-label w-14 shrink-0">{row.label}</label>
+                <input type="number" min={0} max={100} step={0.1}
+                  value={row.v} onChange={e => row.setV(e.target.value)}
+                  className="input text-sm py-1 flex-1 tabular-nums" placeholder="0.0" />
+                <span className="text-xs text-mute">%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
+            <Twitch size={12} className="text-purple-600" /> Twitch · 90d
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <PerfNum label="Avg viewers"     val={perf.twitch_avg_viewers}    onChange={v => setPerf(p => ({ ...p, twitch_avg_viewers: v }))} />
+            <PerfNum label="Peak viewers"    val={perf.twitch_peak_viewers}   onChange={v => setPerf(p => ({ ...p, twitch_peak_viewers: v }))} />
+            <PerfNum label="Hours streamed"  val={perf.twitch_hours_streamed} onChange={v => setPerf(p => ({ ...p, twitch_hours_streamed: v }))} />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2">Kick · 90d</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <PerfNum label="Avg viewers"    val={perf.kick_avg_viewers}    onChange={v => setPerf(p => ({ ...p, kick_avg_viewers: v }))} />
+            <PerfNum label="Peak viewers"   val={perf.kick_peak_viewers}   onChange={v => setPerf(p => ({ ...p, kick_peak_viewers: v }))} />
+            <PerfNum label="Hours streamed" val={perf.kick_hours_streamed} onChange={v => setPerf(p => ({ ...p, kick_hours_streamed: v }))} />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
+            <Youtube size={12} className="text-red-600" /> YouTube · 90d
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <PerfNum label="Avg views per video"  val={perf.yt_avg_views_per_video} onChange={v => setPerf(p => ({ ...p, yt_avg_views_per_video: v }))} />
+            <PerfNum label="Top video views"      val={perf.yt_top_video_views}     onChange={v => setPerf(p => ({ ...p, yt_top_video_views: v }))} />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
+            <Music2 size={12} className="text-pink-600" /> TikTok · 90d
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <PerfNum label="Avg views per video"     val={perf.tiktok_avg_views_per_video}  onChange={v => setPerf(p => ({ ...p, tiktok_avg_views_per_video: v }))} />
+            <PerfNum label="Completion rate %"       val={perf.tiktok_completion_rate_pct}  onChange={v => setPerf(p => ({ ...p, tiktok_completion_rate_pct: v }))} />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
+            <Instagram size={12} className="text-orange-500" /> Instagram · 90d
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <PerfNum label="Avg reach per Reel"  val={perf.ig_avg_reach_per_reel} onChange={v => setPerf(p => ({ ...p, ig_avg_reach_per_reel: v }))} />
+            <PerfNum label="Avg story views"     val={perf.ig_avg_story_views}    onChange={v => setPerf(p => ({ ...p, ig_avg_story_views: v }))} />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2">X · 90d</h3>
+          <PerfNum label="Avg impressions per post" val={perf.x_avg_impressions_per_post} onChange={v => setPerf(p => ({ ...p, x_avg_impressions_per_post: v }))} />
+        </div>
+      </section>
+
       {/* ─── Achievements (Liquipedia) ─────────────────────────────────── */}
       {player.achievements.length > 0 && (
         <div className="rounded-2xl border border-line bg-card overflow-hidden">
@@ -801,110 +1010,7 @@ export function TalentIntake({
       </div>
 
       {/* ─── Notes ─────────────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 space-y-2">
-      {/* Audience demographics — talent self-attests */}
-      <section className="rounded-2xl border-2 border-greenDark/30 bg-greenSoft/20 p-5 sm:p-7 mb-6">
-        <div className="flex items-start gap-3 mb-4">
-          <Users className="w-5 h-5 mt-0.5 text-greenDark shrink-0" />
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-ink leading-tight">
-              Audience demographics <span className="text-xs font-normal text-mute">(optional · helps your pricing)</span>
-            </h2>
-            <p className="text-xs text-mute mt-1 leading-relaxed">
-              Self-attested splits — must sum to roughly 100%. Filling these flips your data state from <em>socials only</em>
-              to <em>full</em>, which lifts your engine confidence (no haircut applied) and tightens your Floor / Anchor band.
-            </p>
-          </div>
-        </div>
-
-        {/* Country mix */}
-        <div className="mt-4">
-          <div className="flex items-baseline justify-between mb-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-label">Where is your audience?</h3>
-            <DemoSum label="Country mix" map={demoCountry} />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {Object.keys(demoCountry).map(k => (
-              <div key={k} className="flex items-center gap-2">
-                <label className="text-xs text-label w-20 shrink-0">{k}</label>
-                <input
-                  type="number" min={0} max={100} step={5}
-                  value={demoCountry[k]}
-                  onChange={e => setDemoCountry(s2 => ({ ...s2, [k]: e.target.value }))}
-                  className="input text-sm py-1 flex-1 tabular-nums"
-                  placeholder="0"
-                />
-                <span className="text-xs text-mute">%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Age distribution */}
-        <div className="mt-5">
-          <div className="flex items-baseline justify-between mb-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-label">Age distribution</h3>
-            <DemoSum label="Age mix" map={demoAge} />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            {Object.keys(demoAge).map(k => (
-              <div key={k} className="flex items-center gap-2">
-                <label className="text-xs text-label w-14 shrink-0">{k}</label>
-                <input
-                  type="number" min={0} max={100} step={5}
-                  value={demoAge[k]}
-                  onChange={e => setDemoAge(s2 => ({ ...s2, [k]: e.target.value }))}
-                  className="input text-sm py-1 flex-1 tabular-nums"
-                  placeholder="0"
-                />
-                <span className="text-xs text-mute">%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Gender split */}
-        <div className="mt-5">
-          <div className="flex items-baseline justify-between mb-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-label">
-              Gender split <span className="font-normal lowercase">(optional)</span>
-            </h3>
-            <DemoSum label="Gender" map={demoGender} />
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {Object.keys(demoGender).map(k => (
-              <div key={k} className="flex items-center gap-2">
-                <label className="text-xs text-label w-16 shrink-0 capitalize">{k}</label>
-                <input
-                  type="number" min={0} max={100} step={5}
-                  value={demoGender[k]}
-                  onChange={e => setDemoGender(s2 => ({ ...s2, [k]: e.target.value }))}
-                  className="input text-sm py-1 flex-1 tabular-nums"
-                  placeholder="0"
-                />
-                <span className="text-xs text-mute">%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Top countries (free-form) */}
-        <div className="mt-5">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2">
-            Top 3 countries <span className="font-normal lowercase">(optional)</span>
-          </h3>
-          <input
-            type="text"
-            value={demoTopCountries}
-            onChange={e => setDemoTopCountries(e.target.value)}
-            className="input text-sm"
-            placeholder="e.g. Saudi Arabia, UAE, Egypt"
-          />
-          <p className="text-[10px] text-mute mt-1">Comma-separated, max 5.</p>
-        </div>
-      </section>
-
-        <label className="text-xs font-semibold text-ink">Notes for your account manager (optional)</label>
+      <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 space-y-2">        <label className="text-xs font-semibold text-ink">Notes for your account manager (optional)</label>
         <textarea
           rows={3}
           value={notes}

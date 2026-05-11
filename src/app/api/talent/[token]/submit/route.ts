@@ -49,6 +49,14 @@ export async function POST(
     agency?: AgencyPayload;
     socials?: SocialsPayload;
     demographics?: DemographicsPayload;
+    engagement_rates?: {
+      er_ig?: number | null;
+      er_tiktok?: number | null;
+      er_yt?: number | null;
+      er_twitch?: number | null;
+      er_x?: number | null;
+    };
+    performance_90d?: Record<string, Record<string, number>> | null;
   } | null;
   if (!body || typeof body !== 'object') {
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
@@ -168,6 +176,36 @@ export async function POST(
     }
   }
 
+  // Sanitise engagement_rates — % values in [0, 100], 2dp.
+  const cleanedER: Record<string, number | null> = {};
+  if (body.engagement_rates && typeof body.engagement_rates === 'object') {
+    for (const k of ['er_ig','er_tiktok','er_yt','er_twitch','er_x'] as const) {
+      const v = body.engagement_rates[k];
+      if (v === null || v === undefined || v === '' as unknown as number) continue;
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 0 || n > 100) continue;
+      cleanedER[k] = Math.round(n * 100) / 100;
+    }
+  }
+
+  // Sanitise performance_90d — talent self-reported private analytics.
+  // Drop non-finite / negative; cap absurd values (>1e9). Store as jsonb.
+  let cleanedPerf: Record<string, Record<string, number>> | null = null;
+  if (body.performance_90d && typeof body.performance_90d === 'object') {
+    const out: Record<string, Record<string, number>> = {};
+    for (const [channel, fields] of Object.entries(body.performance_90d)) {
+      if (!fields || typeof fields !== 'object') continue;
+      const channelOut: Record<string, number> = {};
+      for (const [f, v] of Object.entries(fields as Record<string, unknown>)) {
+        const n = Number(v);
+        if (!Number.isFinite(n) || n < 0 || n > 1_000_000_000) continue;
+        channelOut[f] = Math.round(n);
+      }
+      if (Object.keys(channelOut).length > 0) out[channel] = channelOut;
+    }
+    if (Object.keys(out).length > 0) cleanedPerf = out;
+  }
+
   // Find player by token
   const { data: playerRow } = await supabase
     .from('players')
@@ -245,6 +283,14 @@ export async function POST(
   for (const [k, v] of Object.entries(cleanedDemo)) {
     update[k] = v;
   }
+  for (const [k, v] of Object.entries(cleanedER)) {
+    update[k] = v;
+  }
+  if (cleanedPerf) {
+    update.talent_self_reported_perf = cleanedPerf;
+    // engagement_data_verified stays false — talent self-report. Admin
+    // sets to true after reviewing. Engine reads the value either way.
+  }
 
   const { error: updErr } = await supabase
     .from('players')
@@ -295,6 +341,8 @@ export async function POST(
         agency_fee_pct,
         socials: cleanedSocials,
         demographics: hasAnyDemo ? cleanedDemo : null,
+        engagement_rates: Object.keys(cleanedER).length ? cleanedER : null,
+        performance_90d:  cleanedPerf,
       },
       notes,
     },
