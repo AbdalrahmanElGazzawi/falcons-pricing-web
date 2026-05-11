@@ -144,6 +144,23 @@ const TONE_CLASSES: Record<string, { ring: string; bg: string; text: string; chi
 };
 
 // ─── Main component ────────────────────────────────────────────────────────
+
+// Live sum of a percentage map (audience demographics splits)
+function DemoSum({ label, map }: { label: string; map: Record<string, string> }) {
+  const total = Object.values(map).reduce((acc, v) => {
+    const n = Number(String(v).replace(',', '.'));
+    return acc + (Number.isFinite(n) ? n : 0);
+  }, 0);
+  const ok = total >= 98 && total <= 102;
+  const empty = total === 0;
+  const tone = empty ? 'text-mute' : ok ? 'text-greenDark font-semibold' : 'text-amber-700 font-semibold';
+  return (
+    <span className={'text-[10px] tabular-nums ' + tone}>
+      {label}: {total}% {empty ? '' : ok ? '✓' : '(should be ~100)'}
+    </span>
+  );
+}
+
 export function TalentIntake({
   token, player, market, deliverables, peerOrgs, industryReference,
 }: {
@@ -215,6 +232,18 @@ export function TalentIntake({
   const [editingSocials, setEditingSocials] = useState(false);
 
   const [notes, setNotes] = useState(player.notes ?? '');
+  // Audience demographics — talent self-attestation (Migration 074 columns).
+  // Splits are percentages; each set must sum ≈ 100 to be persisted.
+  const [demoCountry, setDemoCountry] = useState<Record<string, string>>({
+    KSA: '', MENA: '', EU: '', NA: '', APAC: '', GLOBAL: '',
+  });
+  const [demoAge, setDemoAge] = useState<Record<string, string>>({
+    '13-17': '', '18-24': '', '25-34': '', '35-44': '', '45+': '',
+  });
+  const [demoGender, setDemoGender] = useState<Record<string, string>>({
+    male: '', female: '', other: '',
+  });
+  const [demoTopCountries, setDemoTopCountries] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   // Slim v2: progressive disclosure of secondary surfaces
   const [showAch, setShowAch] = useState(false);
@@ -311,6 +340,26 @@ export function TalentIntake({
             name: hasAgency ? agencyName.trim() : null,
             fee_pct: hasAgency ? Number(String(agencyFeePct).replace(',', '.')) : null,
           },
+          demographics: (() => {
+            const toPct = (o: Record<string, string>) => {
+              const out: Record<string, number> = {};
+              for (const [k, v] of Object.entries(o)) {
+                const n = Number(String(v).replace(',', '.'));
+                if (Number.isFinite(n) && n > 0) out[k] = n;
+              }
+              return out;
+            };
+            const country = toPct(demoCountry);
+            const age     = toPct(demoAge);
+            const gender  = toPct(demoGender);
+            const topC    = demoTopCountries.split(',').map(x => x.trim()).filter(Boolean).slice(0, 5);
+            return {
+              country_mix:      Object.keys(country).length ? country : null,
+              age_distribution: Object.keys(age).length     ? age     : null,
+              gender_split:     Object.keys(gender).length  ? gender  : null,
+              top_countries:    topC.length                 ? topC    : null,
+            };
+          })(),
           socials: {
             instagram:        socials.instagram.trim() || null,
             tiktok:           socials.tiktok.trim()    || null,
@@ -753,6 +802,108 @@ export function TalentIntake({
 
       {/* ─── Notes ─────────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 space-y-2">
+      {/* Audience demographics — talent self-attests */}
+      <section className="rounded-2xl border-2 border-greenDark/30 bg-greenSoft/20 p-5 sm:p-7 mb-6">
+        <div className="flex items-start gap-3 mb-4">
+          <Users className="w-5 h-5 mt-0.5 text-greenDark shrink-0" />
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-ink leading-tight">
+              Audience demographics <span className="text-xs font-normal text-mute">(optional · helps your pricing)</span>
+            </h2>
+            <p className="text-xs text-mute mt-1 leading-relaxed">
+              Self-attested splits — must sum to roughly 100%. Filling these flips your data state from <em>socials only</em>
+              to <em>full</em>, which lifts your engine confidence (no haircut applied) and tightens your Floor / Anchor band.
+            </p>
+          </div>
+        </div>
+
+        {/* Country mix */}
+        <div className="mt-4">
+          <div className="flex items-baseline justify-between mb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-label">Where is your audience?</h3>
+            <DemoSum label="Country mix" map={demoCountry} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {Object.keys(demoCountry).map(k => (
+              <div key={k} className="flex items-center gap-2">
+                <label className="text-xs text-label w-20 shrink-0">{k}</label>
+                <input
+                  type="number" min={0} max={100} step={5}
+                  value={demoCountry[k]}
+                  onChange={e => setDemoCountry(s2 => ({ ...s2, [k]: e.target.value }))}
+                  className="input text-sm py-1 flex-1 tabular-nums"
+                  placeholder="0"
+                />
+                <span className="text-xs text-mute">%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Age distribution */}
+        <div className="mt-5">
+          <div className="flex items-baseline justify-between mb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-label">Age distribution</h3>
+            <DemoSum label="Age mix" map={demoAge} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {Object.keys(demoAge).map(k => (
+              <div key={k} className="flex items-center gap-2">
+                <label className="text-xs text-label w-14 shrink-0">{k}</label>
+                <input
+                  type="number" min={0} max={100} step={5}
+                  value={demoAge[k]}
+                  onChange={e => setDemoAge(s2 => ({ ...s2, [k]: e.target.value }))}
+                  className="input text-sm py-1 flex-1 tabular-nums"
+                  placeholder="0"
+                />
+                <span className="text-xs text-mute">%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Gender split */}
+        <div className="mt-5">
+          <div className="flex items-baseline justify-between mb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-label">
+              Gender split <span className="font-normal lowercase">(optional)</span>
+            </h3>
+            <DemoSum label="Gender" map={demoGender} />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {Object.keys(demoGender).map(k => (
+              <div key={k} className="flex items-center gap-2">
+                <label className="text-xs text-label w-16 shrink-0 capitalize">{k}</label>
+                <input
+                  type="number" min={0} max={100} step={5}
+                  value={demoGender[k]}
+                  onChange={e => setDemoGender(s2 => ({ ...s2, [k]: e.target.value }))}
+                  className="input text-sm py-1 flex-1 tabular-nums"
+                  placeholder="0"
+                />
+                <span className="text-xs text-mute">%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top countries (free-form) */}
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2">
+            Top 3 countries <span className="font-normal lowercase">(optional)</span>
+          </h3>
+          <input
+            type="text"
+            value={demoTopCountries}
+            onChange={e => setDemoTopCountries(e.target.value)}
+            className="input text-sm"
+            placeholder="e.g. Saudi Arabia, UAE, Egypt"
+          />
+          <p className="text-[10px] text-mute mt-1">Comma-separated, max 5.</p>
+        </div>
+      </section>
+
         <label className="text-xs font-semibold text-ink">Notes for your account manager (optional)</label>
         <textarea
           rows={3}
