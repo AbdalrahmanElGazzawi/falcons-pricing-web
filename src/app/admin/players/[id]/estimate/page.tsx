@@ -54,7 +54,11 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
       authority_tier, authority_tier_override,
       archetype, archetype_override, stream_intensity, content_intensity,
       solo_video, cinematic_ready, irl_availability, peak_platforms, bilingual,
-      profile_strength_pct
+      profile_strength_pct,
+      twitch_30d_avg_ccv, twitch_30d_peak_ccv, twitch_30d_hours_streamed,
+      twitch_30d_live_views, twitch_30d_new_follows,
+      yt_28d_views, yt_28d_impressions, yt_28d_unique_viewers, yt_28d_ctr_pct,
+      metrics_30d_synced_at
     `)
     .eq('id', playerId)
     .single();
@@ -230,6 +234,67 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
           })}
         </div>
       </div>
+
+      {/* 30-DAY PLATFORM ACTIVITY — Twitch + YouTube creator-dashboard metrics (Mig 081) */}
+      {(p.metrics_30d_synced_at || p.twitch_30d_avg_ccv || p.yt_28d_views) && (
+        <div className="card card-p mb-4">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="text-sm font-semibold text-label uppercase tracking-wider">
+              30-day platform activity
+            </h2>
+            {p.metrics_30d_synced_at && (
+              <span className="text-[10px] text-mute">
+                Synced {new Date(p.metrics_30d_synced_at as string).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+
+          {(p.twitch_30d_avg_ccv || p.twitch_30d_peak_ccv || p.twitch_30d_hours_streamed) && (
+            <div className="mb-3">
+              <div className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1.5">Twitch · 30d</div>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {[
+                  { label: 'Avg CCV',     val: p.twitch_30d_avg_ccv,        suffix: '',  hint: 'avg concurrent viewers' },
+                  { label: 'Peak CCV',    val: p.twitch_30d_peak_ccv,       suffix: '',  hint: 'max concurrent viewers' },
+                  { label: 'Hours',       val: p.twitch_30d_hours_streamed, suffix: 'h', hint: '30d hours streamed' },
+                  { label: 'Live views',  val: p.twitch_30d_live_views,     suffix: '',  hint: '30d total live views' },
+                  { label: 'New follows', val: p.twitch_30d_new_follows,    suffix: '',  hint: 'follows added in 30d (not total)' },
+                ].map(m => (
+                  <div key={m.label} className="p-2 rounded-lg border border-line bg-bg/40">
+                    <div className="text-[10px] text-mute">{m.label}</div>
+                    <div className="text-sm font-bold text-ink tabular-nums">
+                      {m.val != null ? Number(m.val).toLocaleString() + m.suffix : '—'}
+                    </div>
+                    <div className="text-[10px] text-mute mt-0.5">{m.hint}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(p.yt_28d_views || p.yt_28d_impressions || p.yt_28d_unique_viewers) && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1.5">YouTube · 28d</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { label: 'Views',          val: p.yt_28d_views,          suffix: '', hint: 'video views (28d)' },
+                  { label: 'Impressions',    val: p.yt_28d_impressions,    suffix: '', hint: 'thumbnail impressions' },
+                  { label: 'Unique viewers', val: p.yt_28d_unique_viewers, suffix: '', hint: 'bot-resistant reach metric' },
+                  { label: 'CTR',            val: p.yt_28d_ctr_pct,        suffix: '%', hint: 'impressions → views' },
+                ].map(m => (
+                  <div key={m.label} className="p-2 rounded-lg border border-line bg-bg/40">
+                    <div className="text-[10px] text-mute">{m.label}</div>
+                    <div className="text-sm font-bold text-ink tabular-nums">
+                      {m.val != null ? Number(m.val).toLocaleString() + m.suffix : '—'}
+                    </div>
+                    <div className="text-[10px] text-mute mt-0.5">{m.hint}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* CHANNEL × IG REEL preview — uses effectiveBase so numbers match engine reality */}
       <div className="card card-p mb-4">
