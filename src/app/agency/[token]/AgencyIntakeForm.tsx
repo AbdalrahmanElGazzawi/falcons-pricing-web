@@ -2,7 +2,29 @@
 
 import { useState } from 'react';
 
-type Player = { id: number; nickname: string; full_name: string | null; game: string | null; team: string | null; role: string | null };
+type Player = {
+  id: number; nickname: string; full_name: string | null;
+  game: string | null; team: string | null; role: string | null;
+  // Mig 088 — current clause-type record so agency can confirm / amend
+  independent_sponsorship_clause_type?: string | null;
+  independent_sponsorship_notice_days?: number | null;
+  independent_sponsorship_clause_text?: string | null;
+  contract_source_doc_link?: string | null;
+};
+type ContractTerms = {
+  clause_type: '' | 'open_with_consent' | 'open_with_notice' | 'pre_approved_categories' | 'schedule_1_carveouts' | 'none';
+  notice_days: string;
+  clause_text: string;
+  source_doc_link: string;
+};
+function freshTerms(p: Player): ContractTerms {
+  return {
+    clause_type: (p.independent_sponsorship_clause_type as ContractTerms['clause_type']) || '',
+    notice_days: p.independent_sponsorship_notice_days != null ? String(p.independent_sponsorship_notice_days) : '',
+    clause_text: p.independent_sponsorship_clause_text || '',
+    source_doc_link: p.contract_source_doc_link || '',
+  };
+}
 type Existing = { id: number; talent_id: number; brand: string; brand_parent: string | null; category_id: number; sub_category: string | null; exclusivity_scope: string | null; exclusivity_type: string | null; term_start: string | null; term_end: string | null; status: string };
 type Cat = { id: number; code: string; name: string; parent_code: string | null };
 
@@ -55,6 +77,14 @@ export default function AgencyIntakeForm({
     for (const p of players) m[p.id] = [];
     return m;
   });
+  const [terms, setTerms] = useState<Record<number, ContractTerms>>(() => {
+    const m: Record<number, ContractTerms> = {};
+    for (const p of players) m[p.id] = freshTerms(p);
+    return m;
+  });
+  function setTerm<K extends keyof ContractTerms>(pid: number, k: K, v: ContractTerms[K]) {
+    setTerms(s => ({ ...s, [pid]: { ...s[pid], [k]: v } }));
+  }
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -116,15 +146,37 @@ export default function AgencyIntakeForm({
           });
         }
       }
-      if (commitments.length === 0) {
-        setError('Add at least one commitment before submitting.');
+      // Pre-compute terms count to short-circuit the validation
+      let pendingTermsCount = 0;
+      for (const pl of players) {
+        const t = terms[pl.id];
+        if (!t) continue;
+        if (t.clause_type || t.notice_days || t.clause_text.trim() || t.source_doc_link.trim()) pendingTermsCount++;
+      }
+      if (commitments.length === 0 && pendingTermsCount === 0) {
+        setError('Add at least one commitment or contract-terms entry before submitting.');
         setSubmitting(false);
         return;
       }
+      // Build contract_terms array per talent (only include filled rows)
+      const contract_terms: any[] = [];
+      for (const pl of players) {
+        const t = terms[pl.id];
+        if (!t) continue;
+        if (!t.clause_type && !t.notice_days && !t.clause_text.trim() && !t.source_doc_link.trim()) continue;
+        contract_terms.push({
+          talent_id: pl.id,
+          clause_type: t.clause_type || null,
+          notice_days: t.notice_days ? Number(t.notice_days) : null,
+          clause_text: t.clause_text.trim() || null,
+          source_doc_link: t.source_doc_link.trim() || null,
+        });
+      }
+
       const r = await fetch(`/api/agency-intake/${token}/submit`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ commitments }),
+        body: JSON.stringify({ commitments, contract_terms }),
       });
       const j = await r.json();
       if (!r.ok) { setError(j.error || 'Submission failed'); return; }
