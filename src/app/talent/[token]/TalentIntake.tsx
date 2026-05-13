@@ -279,6 +279,26 @@ export function TalentIntake({
     ig_avg_reach_per_reel:   '', ig_avg_story_views:  '',
     x_avg_impressions_per_post: '',
   });
+  // 30-day LIVE platform dashboard pulls (talent fills from current dashboard view).
+  // Each field maps 1:1 to a named DB column (Mig 086).
+  const [perf30, setPerf30] = useState({
+    twitch_30d_unique_viewers: '', twitch_30d_hours_watched: '',
+    twitch_30d_avg_ccv: '', twitch_30d_peak_ccv: '',
+    twitch_30d_hours_streamed: '', twitch_30d_live_views: '', twitch_30d_new_follows: '',
+    yt_28d_views: '', yt_28d_impressions: '', yt_28d_new_viewers_reached: '',
+    yt_28d_ctr_pct: '', yt_28d_avg_watch_time_seconds: '',
+    ig_30d_reach: '', ig_30d_avg_reel_views: '',
+    tiktok_30d_avg_views: '',
+  });
+  const [brandFit, setBrandFit] = useState({
+    english_proficiency: '' as '' | 'native' | 'fluent' | 'conversational' | 'basic' | 'none',
+    min_lead_time_days: '',
+    editing_team_size: '',
+    posts_per_week_ig: '',
+    posts_per_week_tiktok: '',
+    videos_per_week_yt: '',
+    streams_per_week_twitch: '',
+  });
   const [submitting, setSubmitting] = useState(false);
   // Slim v2: progressive disclosure of secondary surfaces
   const [showAch, setShowAch] = useState(false);
@@ -430,6 +450,33 @@ export function TalentIntake({
             if (ig)     blocks.ig     = ig;
             if (x)      blocks.x      = x;
             return Object.keys(blocks).length ? blocks : null;
+          })(),
+          performance_30d_live: (() => {
+            const out: Record<string, number | null> = {};
+            const num = (v: string) => {
+              const n = Number(String(v).replace(/[, ]/g, ''));
+              return Number.isFinite(n) && n >= 0 ? n : null;
+            };
+            for (const [k, v] of Object.entries(perf30)) {
+              const n = num(v);
+              if (n !== null) out[k] = n;
+            }
+            return Object.keys(out).length ? out : null;
+          })(),
+          brand_fit: (() => {
+            const out: Record<string, unknown> = {};
+            if (brandFit.english_proficiency) out.english_proficiency = brandFit.english_proficiency;
+            const num = (v: string) => {
+              const n = Number(String(v).replace(/[, ]/g, ''));
+              return Number.isFinite(n) && n >= 0 ? Math.round(n) : null;
+            };
+            const lt = num(brandFit.min_lead_time_days);  if (lt !== null) out.min_lead_time_days = lt;
+            const et = num(brandFit.editing_team_size);   if (et !== null) out.editing_team_size = et;
+            const pi = num(brandFit.posts_per_week_ig);       if (pi !== null) out.posts_per_week_ig = pi;
+            const pt = num(brandFit.posts_per_week_tiktok);   if (pt !== null) out.posts_per_week_tiktok = pt;
+            const vy = num(brandFit.videos_per_week_yt);      if (vy !== null) out.videos_per_week_yt = vy;
+            const sw = num(brandFit.streams_per_week_twitch); if (sw !== null) out.streams_per_week_twitch = sw;
+            return Object.keys(out).length ? out : null;
           })(),
           socials: {
             instagram:        socials.instagram.trim() || null,
@@ -812,6 +859,148 @@ export function TalentIntake({
             No Premium? Pull the last ~20 posts and average the impressions shown under each post manually.
           </p>
           <PerfNum label="Avg impressions per post" val={perf.x_avg_impressions_per_post} onChange={v => setPerf(p => ({ ...p, x_avg_impressions_per_post: v }))} />
+        </div>
+      </section>
+
+
+      {/* Performance — LAST 30 DAYS (live dashboard pull) — Mig 086 */}
+      <section className="rounded-2xl border-2 border-blue-300/60 bg-blue-50/40 p-5 sm:p-7 mb-6">
+        <div className="flex items-start gap-3 mb-4">
+          <TrendingUp className="w-5 h-5 mt-0.5 text-blue-700 shrink-0" />
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-ink leading-tight">
+              Performance — last 30 days <span className="text-xs font-normal text-mute">(live · brands ask for these)</span>
+            </h2>
+            <p className="text-xs text-mute mt-1 leading-relaxed">
+              Brand teams (FaZe, Cloud9, T1, NRG, 100T agencies) ask for these exact 30-day numbers when evaluating talent.
+              Pull them from your platform dashboard <b>right now</b> and paste them in. Fresher = stronger quotes.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
+            <Twitch size={12} className="text-purple-600" /> Twitch · 30d (live dashboard)
+          </h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            <b>Where to find it:</b> Twitch Creator Dashboard → <b>Insights</b> → set period to <b>Last 30 days</b>.
+            <b> Unique Viewers</b> + <b>Hours Watched</b> sit in the headline KPI row. Mobile? Same path inside the Twitch Studio app.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <PerfNum label="Unique viewers"  val={perf30.twitch_30d_unique_viewers} onChange={v => setPerf30(s => ({ ...s, twitch_30d_unique_viewers: v }))} />
+            <PerfNum label="Hours watched"   val={perf30.twitch_30d_hours_watched}  onChange={v => setPerf30(s => ({ ...s, twitch_30d_hours_watched: v }))} />
+            <PerfNum label="Avg CCV"         val={perf30.twitch_30d_avg_ccv}        onChange={v => setPerf30(s => ({ ...s, twitch_30d_avg_ccv: v }))} />
+            <PerfNum label="Peak viewers"    val={perf30.twitch_30d_peak_ccv}       onChange={v => setPerf30(s => ({ ...s, twitch_30d_peak_ccv: v }))} />
+            <PerfNum label="Time streamed"   val={perf30.twitch_30d_hours_streamed} onChange={v => setPerf30(s => ({ ...s, twitch_30d_hours_streamed: v }))} />
+            <PerfNum label="Live views"      val={perf30.twitch_30d_live_views}     onChange={v => setPerf30(s => ({ ...s, twitch_30d_live_views: v }))} />
+            <PerfNum label="New follows"     val={perf30.twitch_30d_new_follows}    onChange={v => setPerf30(s => ({ ...s, twitch_30d_new_follows: v }))} />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
+            <Youtube size={12} className="text-red-600" /> YouTube · 28d (live Studio)
+          </h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            <b>Where to find it:</b> YouTube Studio → <b>Analytics</b> → set range to <b>Last 28 days</b>.
+            Views / Impressions / CTR / Avg watch time live on the Overview tab. <b>New viewers reached</b> is on the Audience tab (or ask Studio chatbot "how many new viewers reached me?").
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <PerfNum label="Views"               val={perf30.yt_28d_views}                  onChange={v => setPerf30(s => ({ ...s, yt_28d_views: v }))} />
+            <PerfNum label="Impressions"         val={perf30.yt_28d_impressions}            onChange={v => setPerf30(s => ({ ...s, yt_28d_impressions: v }))} />
+            <PerfNum label="New viewers reached" val={perf30.yt_28d_new_viewers_reached}    onChange={v => setPerf30(s => ({ ...s, yt_28d_new_viewers_reached: v }))} />
+            <PerfNum label="CTR %"               val={perf30.yt_28d_ctr_pct}                onChange={v => setPerf30(s => ({ ...s, yt_28d_ctr_pct: v }))} />
+            <PerfNum label="Avg watch time (s)"  val={perf30.yt_28d_avg_watch_time_seconds} onChange={v => setPerf30(s => ({ ...s, yt_28d_avg_watch_time_seconds: v }))} />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
+            <Instagram size={12} className="text-orange-500" /> Instagram · 30d
+          </h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            <b>Where to find it:</b> IG app → Professional Dashboard → <b>Insights</b> → <b>Last 30 days</b>.
+            <b> Reach</b> = "Accounts reached". <b>Avg Reel plays</b> = Reels tab → average <b>Plays</b>.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <PerfNum label="Total reach"      val={perf30.ig_30d_reach}          onChange={v => setPerf30(s => ({ ...s, ig_30d_reach: v }))} />
+            <PerfNum label="Avg Reel plays"   val={perf30.ig_30d_avg_reel_views} onChange={v => setPerf30(s => ({ ...s, ig_30d_avg_reel_views: v }))} />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2 flex items-center gap-1.5">
+            <Music2 size={12} className="text-pink-600" /> TikTok · 30d
+          </h3>
+          <p className="text-[11px] text-mute mb-2 italic">
+            <b>Where to find it:</b> TikTok Studio (or studio.tiktok.com) → <b>Analytics</b> → <b>Last 28 days</b>. Avg views per post sits in the Overview header.
+          </p>
+          <PerfNum label="Avg views per post" val={perf30.tiktok_30d_avg_views} onChange={v => setPerf30(s => ({ ...s, tiktok_30d_avg_views: v }))} />
+        </div>
+      </section>
+
+
+      {/* Brand fit & availability — Mig 086 */}
+      <section className="rounded-2xl border-2 border-purple-300/60 bg-purple-50/40 p-5 sm:p-7 mb-6">
+        <div className="flex items-start gap-3 mb-4">
+          <Building2 className="w-5 h-5 mt-0.5 text-purple-700 shrink-0" />
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-ink leading-tight">
+              Brand fit & availability <span className="text-xs font-normal text-mute">(optional · helps sales match you to briefs)</span>
+            </h2>
+            <p className="text-xs text-mute mt-1 leading-relaxed">
+              Cadence + lead-time + language fluency. Helps Falcons sales route brand requests to the right talent without bothering you with bad fits.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-label block mb-1">English proficiency</label>
+            <select
+              value={brandFit.english_proficiency}
+              onChange={e => setBrandFit(s => ({ ...s, english_proficiency: e.target.value as typeof brandFit.english_proficiency }))}
+              className="input text-sm py-1 w-full"
+            >
+              <option value="">— select —</option>
+              <option value="native">Native</option>
+              <option value="fluent">Fluent</option>
+              <option value="conversational">Conversational</option>
+              <option value="basic">Basic</option>
+              <option value="none">None</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-label block mb-1">Minimum lead time (days)</label>
+            <input
+              type="number" min={0} max={90} step={1}
+              value={brandFit.min_lead_time_days}
+              onChange={e => setBrandFit(s => ({ ...s, min_lead_time_days: e.target.value }))}
+              className="input text-sm py-1 w-full tabular-nums"
+              placeholder="e.g. 7"
+            />
+            <p className="text-[10px] text-mute mt-0.5">Days notice you need from brief → delivery.</p>
+          </div>
+          <div>
+            <label className="text-xs text-label block mb-1">Editing team size</label>
+            <input
+              type="number" min={0} max={20} step={1}
+              value={brandFit.editing_team_size}
+              onChange={e => setBrandFit(s => ({ ...s, editing_team_size: e.target.value }))}
+              className="input text-sm py-1 w-full tabular-nums"
+              placeholder="0 = solo, 1+ = editor(s) on call"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-label mb-2">Posting cadence (per week)</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <PerfNum label="IG"     val={brandFit.posts_per_week_ig}       onChange={v => setBrandFit(s => ({ ...s, posts_per_week_ig: v }))} />
+            <PerfNum label="TikTok" val={brandFit.posts_per_week_tiktok}   onChange={v => setBrandFit(s => ({ ...s, posts_per_week_tiktok: v }))} />
+            <PerfNum label="YT"     val={brandFit.videos_per_week_yt}      onChange={v => setBrandFit(s => ({ ...s, videos_per_week_yt: v }))} />
+            <PerfNum label="Twitch" val={brandFit.streams_per_week_twitch} onChange={v => setBrandFit(s => ({ ...s, streams_per_week_twitch: v }))} />
+          </div>
         </div>
       </section>
 

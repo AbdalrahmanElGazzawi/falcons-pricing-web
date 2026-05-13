@@ -57,7 +57,12 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
       profile_strength_pct,
       twitch_30d_avg_ccv, twitch_30d_peak_ccv, twitch_30d_hours_streamed,
       twitch_30d_live_views, twitch_30d_new_follows,
+      twitch_30d_unique_viewers, twitch_30d_hours_watched,
       yt_28d_views, yt_28d_impressions, yt_28d_unique_viewers, yt_28d_ctr_pct,
+      yt_28d_new_viewers_reached, yt_28d_avg_watch_time_seconds,
+      ig_30d_reach, ig_30d_avg_reel_views, tiktok_30d_avg_views,
+      posts_per_week_ig, posts_per_week_tiktok, videos_per_week_yt, streams_per_week_twitch,
+      english_proficiency, min_lead_time_days, editing_team_size,
       metrics_30d_synced_at
     `)
     .eq('id', playerId)
@@ -236,7 +241,7 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
       </div>
 
       {/* 30-DAY PLATFORM ACTIVITY — Twitch + YouTube creator-dashboard metrics (Mig 081) */}
-      {(p.metrics_30d_synced_at || p.twitch_30d_avg_ccv || p.yt_28d_views) && (
+      {(p.metrics_30d_synced_at || p.twitch_30d_avg_ccv || p.yt_28d_views || p.twitch_30d_unique_viewers || p.ig_30d_reach || p.tiktok_30d_avg_views || p.english_proficiency || p.min_lead_time_days) && (
         <div className="card card-p mb-4">
           <div className="flex items-baseline justify-between mb-3">
             <h2 className="text-sm font-semibold text-label uppercase tracking-wider">
@@ -249,16 +254,18 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
             )}
           </div>
 
-          {(p.twitch_30d_avg_ccv || p.twitch_30d_peak_ccv || p.twitch_30d_hours_streamed) && (
+          {(p.twitch_30d_avg_ccv || p.twitch_30d_peak_ccv || p.twitch_30d_hours_streamed || p.twitch_30d_unique_viewers) && (
             <div className="mb-3">
               <div className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1.5">Twitch · 30d</div>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
                 {[
-                  { label: 'Avg CCV',     val: p.twitch_30d_avg_ccv,        suffix: '',  hint: 'avg concurrent viewers' },
-                  { label: 'Peak CCV',    val: p.twitch_30d_peak_ccv,       suffix: '',  hint: 'max concurrent viewers' },
-                  { label: 'Hours',       val: p.twitch_30d_hours_streamed, suffix: 'h', hint: '30d hours streamed' },
-                  { label: 'Live views',  val: p.twitch_30d_live_views,     suffix: '',  hint: '30d total live views' },
-                  { label: 'New follows', val: p.twitch_30d_new_follows,    suffix: '',  hint: 'follows added in 30d (not total)' },
+                  { label: 'Unique viewers', val: p.twitch_30d_unique_viewers, suffix: '',  hint: 'distinct accounts watched 30d' },
+                  { label: 'Hours watched',  val: p.twitch_30d_hours_watched,  suffix: 'h', hint: 'viewer-hours (audience time)' },
+                  { label: 'Avg CCV',        val: p.twitch_30d_avg_ccv,        suffix: '',  hint: 'avg concurrent viewers' },
+                  { label: 'Peak CCV',       val: p.twitch_30d_peak_ccv,       suffix: '',  hint: 'max concurrent viewers' },
+                  { label: 'Hours streamed', val: p.twitch_30d_hours_streamed, suffix: 'h', hint: 'time live on platform' },
+                  { label: 'Live views',     val: p.twitch_30d_live_views,     suffix: '',  hint: '30d total live views' },
+                  { label: 'New follows',    val: p.twitch_30d_new_follows,    suffix: '',  hint: 'follows added in 30d (not total)' },
                 ].map(m => (
                   <div key={m.label} className="p-2 rounded-lg border border-line bg-bg/40">
                     <div className="text-[10px] text-mute">{m.label}</div>
@@ -272,20 +279,68 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
             </div>
           )}
 
-          {(p.yt_28d_views || p.yt_28d_impressions || p.yt_28d_unique_viewers) && (
-            <div>
+          {(p.yt_28d_views || p.yt_28d_impressions || p.yt_28d_unique_viewers || p.yt_28d_new_viewers_reached) && (
+            <div className="mb-3">
               <div className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1.5">YouTube · 28d</div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 {[
-                  { label: 'Views',          val: p.yt_28d_views,          suffix: '', hint: 'video views (28d)' },
-                  { label: 'Impressions',    val: p.yt_28d_impressions,    suffix: '', hint: 'thumbnail impressions' },
-                  { label: 'Unique viewers', val: p.yt_28d_unique_viewers, suffix: '', hint: 'bot-resistant reach metric' },
-                  { label: 'CTR',            val: p.yt_28d_ctr_pct,        suffix: '%', hint: 'impressions → views' },
+                  { label: 'Views',           val: p.yt_28d_views,                   suffix: '', hint: 'video views (28d)' },
+                  { label: 'Impressions',     val: p.yt_28d_impressions,             suffix: '', hint: 'thumbnail impressions' },
+                  { label: 'New viewers',     val: p.yt_28d_new_viewers_reached,     suffix: '', hint: 'first-time viewers reached' },
+                  { label: 'CTR',             val: p.yt_28d_ctr_pct,                 suffix: '%', hint: 'impressions → views' },
+                  { label: 'Avg watch (s)',   val: p.yt_28d_avg_watch_time_seconds,  suffix: 's', hint: 'avg view duration' },
+                  { label: 'Unique viewers',  val: p.yt_28d_unique_viewers,          suffix: '', hint: 'legacy — same as New viewers' },
                 ].map(m => (
                   <div key={m.label} className="p-2 rounded-lg border border-line bg-bg/40">
                     <div className="text-[10px] text-mute">{m.label}</div>
                     <div className="text-sm font-bold text-ink tabular-nums">
                       {m.val != null ? Number(m.val).toLocaleString() + m.suffix : '—'}
+                    </div>
+                    <div className="text-[10px] text-mute mt-0.5">{m.hint}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(p.ig_30d_reach || p.ig_30d_avg_reel_views || p.tiktok_30d_avg_views) && (
+            <div className="mb-3">
+              <div className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1.5">IG / TikTok · 30d</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { label: 'IG reach',       val: p.ig_30d_reach,          suffix: '', hint: 'accounts reached 30d' },
+                  { label: 'IG avg reel',    val: p.ig_30d_avg_reel_views, suffix: '', hint: 'avg Reel plays' },
+                  { label: 'TikTok avg',     val: p.tiktok_30d_avg_views,  suffix: '', hint: 'avg views per post' },
+                ].map(m => (
+                  <div key={m.label} className="p-2 rounded-lg border border-line bg-bg/40">
+                    <div className="text-[10px] text-mute">{m.label}</div>
+                    <div className="text-sm font-bold text-ink tabular-nums">
+                      {m.val != null ? Number(m.val).toLocaleString() + m.suffix : '—'}
+                    </div>
+                    <div className="text-[10px] text-mute mt-0.5">{m.hint}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(p.posts_per_week_ig || p.posts_per_week_tiktok || p.videos_per_week_yt || p.streams_per_week_twitch || p.english_proficiency || p.min_lead_time_days || p.editing_team_size) && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1.5">Cadence & brand fit</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                {[
+                  { label: 'IG /wk',     val: p.posts_per_week_ig,        suffix: '',  hint: 'posts per week' },
+                  { label: 'TikTok /wk', val: p.posts_per_week_tiktok,    suffix: '',  hint: 'posts per week' },
+                  { label: 'YT /wk',     val: p.videos_per_week_yt,       suffix: '',  hint: 'uploads per week' },
+                  { label: 'Twitch /wk', val: p.streams_per_week_twitch,  suffix: '',  hint: 'streams per week' },
+                  { label: 'English',    val: p.english_proficiency,      suffix: '',  hint: 'self-reported fluency' },
+                  { label: 'Lead time',  val: p.min_lead_time_days,       suffix: 'd', hint: 'min days notice' },
+                  { label: 'Editors',    val: p.editing_team_size,        suffix: '',  hint: 'production team size' },
+                ].map(m => (
+                  <div key={m.label} className="p-2 rounded-lg border border-line bg-bg/40">
+                    <div className="text-[10px] text-mute">{m.label}</div>
+                    <div className="text-sm font-bold text-ink tabular-nums">
+                      {m.val != null && m.val !== '' ? (typeof m.val === 'number' ? Number(m.val).toLocaleString() + m.suffix : String(m.val)) : '—'}
                     </div>
                     <div className="text-[10px] text-mute mt-0.5">{m.hint}</div>
                   </div>

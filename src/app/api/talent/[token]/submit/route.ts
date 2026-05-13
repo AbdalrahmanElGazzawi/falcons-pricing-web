@@ -43,6 +43,32 @@ export async function POST(
     gender_split?: Record<string, number> | null;       // male / female / other → %
     top_countries?: string[] | null;
   };
+  type Perf30dPayload = {
+    twitch_30d_unique_viewers?: number | null;
+    twitch_30d_hours_watched?:  number | null;
+    twitch_30d_avg_ccv?:        number | null;
+    twitch_30d_peak_ccv?:       number | null;
+    twitch_30d_hours_streamed?: number | null;
+    twitch_30d_live_views?:     number | null;
+    twitch_30d_new_follows?:    number | null;
+    yt_28d_views?:                  number | null;
+    yt_28d_impressions?:            number | null;
+    yt_28d_new_viewers_reached?:    number | null;
+    yt_28d_ctr_pct?:                number | null;
+    yt_28d_avg_watch_time_seconds?: number | null;
+    ig_30d_reach?:          number | null;
+    ig_30d_avg_reel_views?: number | null;
+    tiktok_30d_avg_views?:  number | null;
+  };
+  type BrandFitPayload = {
+    english_proficiency?: 'native' | 'fluent' | 'conversational' | 'basic' | 'none' | null;
+    min_lead_time_days?:  number | null;
+    editing_team_size?:   number | null;
+    posts_per_week_ig?:        number | null;
+    posts_per_week_tiktok?:    number | null;
+    videos_per_week_yt?:       number | null;
+    streams_per_week_twitch?:  number | null;
+  };
   const body = await req.json().catch(() => null) as {
     min_rates?: Record<string, number>;
     notes?: string;
@@ -57,6 +83,8 @@ export async function POST(
       er_x?: number | null;
     };
     performance_90d?: Record<string, Record<string, number>> | null;
+    performance_30d_live?: Perf30dPayload | null;
+    brand_fit?: BrandFitPayload | null;
   } | null;
   if (!body || typeof body !== 'object') {
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
@@ -206,6 +234,70 @@ export async function POST(
     if (Object.keys(out).length > 0) cleanedPerf = out;
   }
 
+  // Sanitise performance_30d_live — 30-day metrics from Twitch / YT / IG / TikTok
+  // dashboards. Each field maps to a named column (not jsonb). Mig 086 added
+  // these columns; semantics documented per-column.
+  const PERF_30D_INT_KEYS = new Set([
+    'twitch_30d_unique_viewers','twitch_30d_hours_watched','twitch_30d_avg_ccv',
+    'twitch_30d_peak_ccv','twitch_30d_live_views','twitch_30d_new_follows',
+    'yt_28d_views','yt_28d_impressions','yt_28d_new_viewers_reached',
+    'yt_28d_avg_watch_time_seconds',
+    'ig_30d_reach','ig_30d_avg_reel_views','tiktok_30d_avg_views',
+  ] as const);
+  const cleanedPerf30: Record<string, number | null> = {};
+  if (body.performance_30d_live && typeof body.performance_30d_live === 'object') {
+    const src30 = body.performance_30d_live as Record<string, unknown>;
+    for (const k of PERF_30D_INT_KEYS) {
+      const v = src30[k];
+      if (v === null || v === undefined || v === '') continue;
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 0 || n > 1_000_000_000) continue;
+      cleanedPerf30[k] = Math.round(n);
+    }
+    // 30d hours streamed is decimal (e.g. 156.37)
+    const hs = src30['twitch_30d_hours_streamed'];
+    if (hs !== null && hs !== undefined && hs !== '') {
+      const n = Number(hs);
+      if (Number.isFinite(n) && n >= 0 && n <= 1_000_000) {
+        cleanedPerf30['twitch_30d_hours_streamed'] = Math.round(n * 100) / 100;
+      }
+    }
+    // 28d CTR is percentage in [0,100], 2dp
+    const ctr = src30['yt_28d_ctr_pct'];
+    if (ctr !== null && ctr !== undefined && ctr !== '') {
+      const n = Number(ctr);
+      if (Number.isFinite(n) && n >= 0 && n <= 100) {
+        cleanedPerf30['yt_28d_ctr_pct'] = Math.round(n * 100) / 100;
+      }
+    }
+  }
+
+  // Sanitise brand_fit — small set of typed columns.
+  const ENGLISH_PROF = new Set(['native','fluent','conversational','basic','none']);
+  const cleanedBrandFit: Record<string, string | number | null> = {};
+  if (body.brand_fit && typeof body.brand_fit === 'object') {
+    const bf = body.brand_fit as Record<string, unknown>;
+    if (typeof bf.english_proficiency === 'string' && ENGLISH_PROF.has(bf.english_proficiency)) {
+      cleanedBrandFit.english_proficiency = bf.english_proficiency;
+    }
+    const lt = Number(bf.min_lead_time_days);
+    if (Number.isFinite(lt) && lt >= 0 && lt <= 90) {
+      cleanedBrandFit.min_lead_time_days = Math.round(lt);
+    }
+    const et = Number(bf.editing_team_size);
+    if (Number.isFinite(et) && et >= 0 && et <= 20) {
+      cleanedBrandFit.editing_team_size = Math.round(et);
+    }
+    for (const k of ['posts_per_week_ig','posts_per_week_tiktok','videos_per_week_yt','streams_per_week_twitch'] as const) {
+      const v = bf[k];
+      if (v === null || v === undefined || v === '') continue;
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 0 && n <= 100) {
+        cleanedBrandFit[k] = Math.round(n);
+      }
+    }
+  }
+
   // Find player by token
   const { data: playerRow } = await supabase
     .from('players')
@@ -291,6 +383,13 @@ export async function POST(
     // engagement_data_verified stays false — talent self-report. Admin
     // sets to true after reviewing. Engine reads the value either way.
   }
+  if (Object.keys(cleanedPerf30).length > 0) {
+    for (const [k, v] of Object.entries(cleanedPerf30)) update[k] = v;
+    update.metrics_30d_synced_at = new Date().toISOString();
+  }
+  if (Object.keys(cleanedBrandFit).length > 0) {
+    for (const [k, v] of Object.entries(cleanedBrandFit)) update[k] = v;
+  }
 
   const { error: updErr } = await supabase
     .from('players')
@@ -343,6 +442,8 @@ export async function POST(
         demographics: hasAnyDemo ? cleanedDemo : null,
         engagement_rates: Object.keys(cleanedER).length ? cleanedER : null,
         performance_90d:  cleanedPerf,
+        performance_30d_live: Object.keys(cleanedPerf30).length ? cleanedPerf30 : null,
+        brand_fit:           Object.keys(cleanedBrandFit).length ? cleanedBrandFit : null,
       },
       notes,
     },
