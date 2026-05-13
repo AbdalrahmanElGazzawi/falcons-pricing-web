@@ -30,7 +30,7 @@ export default async function AgencyIntakePage({ params }: { params: { token: st
   const ids: number[] = tok.scope_talent_ids ?? [];
   const { data: players } = await supabase
     .from('players')
-    .select('id, nickname, full_name, game, team, role, agency_name')
+    .select('id, nickname, full_name, game, team, role, agency_name, independent_sponsorship_clause_type, independent_sponsorship_notice_days, independent_sponsorship_clause_text, contract_source_doc_link')
     .in('id', ids);
 
   // Existing commitments for those players (so agency sees what's already on file)
@@ -64,9 +64,13 @@ export default async function AgencyIntakePage({ params }: { params: { token: st
       <AgencyIntakeForm
         token={params.token}
         agencyName={tok.agency_name}
-        players={(players ?? []).map(p => ({
+        players={(players ?? []).map((p: any) => ({
           id: p.id, nickname: p.nickname, full_name: p.full_name ?? null,
           game: p.game ?? null, team: p.team ?? null, role: p.role ?? null,
+          independent_sponsorship_clause_type: p.independent_sponsorship_clause_type ?? null,
+          independent_sponsorship_notice_days: p.independent_sponsorship_notice_days ?? null,
+          independent_sponsorship_clause_text: p.independent_sponsorship_clause_text ?? null,
+          contract_source_doc_link: p.contract_source_doc_link ?? null,
         }))}
         existing={(commits ?? []).map((c: any) => ({
           id: c.id, talent_id: c.talent_id, brand: c.brand, brand_parent: c.brand_parent,

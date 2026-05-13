@@ -63,12 +63,30 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
       ig_30d_reach, ig_30d_avg_reel_views, tiktok_30d_avg_views,
       posts_per_week_ig, posts_per_week_tiktok, videos_per_week_yt, streams_per_week_twitch,
       english_proficiency, min_lead_time_days, editing_team_size,
+      independent_sponsorship_clause_type, independent_sponsorship_notice_days,
+      independent_sponsorship_clause_text, contract_source_doc_link,
       metrics_30d_synced_at
     `)
     .eq('id', playerId)
     .single();
 
   if (!p) notFound();
+
+  // Parallel fetch — commercial commitments + Schedule-1 reserved categories
+  const [{ data: commitments }, { data: reservedCats }] = await Promise.all([
+    supabase.from('talent_brand_commitments')
+      .select('id, brand, brand_parent, commercial_category_id, sub_category, exclusivity_scope, exclusivity_type, competitor_blocklist, territory, term_start, term_end, source_doc_link, notes, commercial_categories(name, code)')
+      .eq('talent_id', playerId)
+      .order('created_at', { ascending: false }),
+    supabase.from('talent_reserved_categories')
+      .select('id, commercial_category_id, sub_category, permitted_territory, permitted_distribution, notice_days_override, source_clause, commercial_categories(name, code)')
+      .eq('talent_id', playerId)
+      .order('id', { ascending: true }),
+  ]);
+  type CommitmentRow = { id: number; brand: string; brand_parent: string | null; commercial_category_id: number; sub_category: string | null; exclusivity_scope: string | null; exclusivity_type: string | null; competitor_blocklist: string[] | null; territory: string | null; term_start: string | null; term_end: string | null; source_doc_link: string | null; notes: string | null; commercial_categories: { name: string; code: string } | null };
+  type ReservedRow   = { id: number; commercial_category_id: number; sub_category: string | null; permitted_territory: string | null; permitted_distribution: string[] | null; notice_days_override: number | null; source_clause: string | null; commercial_categories: { name: string; code: string } | null };
+  const commitmentList: CommitmentRow[] = (commitments ?? []) as unknown as CommitmentRow[];
+  const reservedList:   ReservedRow[]   = (reservedCats ?? []) as unknown as ReservedRow[];
 
   // Top-of-card platforms in display order (most-quoted first).
   const PLATFORMS: Array<{ key: keyof typeof p; label: string; ratio: number }> = [
@@ -343,6 +361,95 @@ export default async function QuickEstimatePage({ params }: { params: { id: stri
                       {m.val != null && m.val !== '' ? (typeof m.val === 'number' ? Number(m.val).toLocaleString() + m.suffix : String(m.val)) : '—'}
                     </div>
                     <div className="text-[10px] text-mute mt-0.5">{m.hint}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* COMMERCIAL · clause type + active commitments + Schedule-1 carveouts (Mig 088) */}
+      {(p.independent_sponsorship_clause_type || commitmentList.length > 0 || reservedList.length > 0) && (
+        <div className="card card-p mb-4">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="text-sm font-semibold text-label uppercase tracking-wider">
+              Commercial · independent-sponsor clause + commitments
+            </h2>
+            {p.contract_source_doc_link && (
+              <a href={p.contract_source_doc_link as string} className="text-[10px] text-mute underline" target="_blank" rel="noopener noreferrer">contract</a>
+            )}
+          </div>
+
+          {p.independent_sponsorship_clause_type && (
+            <div className="mb-3 p-3 rounded-lg border border-line bg-bg/40">
+              <div className="flex flex-wrap items-baseline gap-3 mb-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-mute">Clause type</span>
+                <span className="text-sm font-bold text-ink">{String(p.independent_sponsorship_clause_type).replace(/_/g, ' ')}</span>
+                {p.independent_sponsorship_notice_days != null && (
+                  <>
+                    <span className="text-[10px] uppercase tracking-wider text-mute ml-2">Notice</span>
+                    <span className="text-sm font-bold text-ink">{Number(p.independent_sponsorship_notice_days).toLocaleString()} days</span>
+                  </>
+                )}
+              </div>
+              {p.independent_sponsorship_clause_text && (
+                <p className="text-[11px] text-mute leading-relaxed mt-1">{String(p.independent_sponsorship_clause_text)}</p>
+              )}
+            </div>
+          )}
+
+          {commitmentList.length > 0 && (
+            <div className="mb-3">
+              <div className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1.5">
+                Active commitments ({commitmentList.length})
+              </div>
+              <div className="space-y-1.5">
+                {commitmentList.map(c => (
+                  <div key={c.id} className="p-2 rounded-lg border border-line bg-bg/40">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <span className="text-sm font-bold text-ink">{c.brand}</span>
+                      {c.brand_parent && <span className="text-[10px] text-mute">({c.brand_parent})</span>}
+                      <span className="text-[10px] text-mute">·</span>
+                      <span className="text-[11px] text-ink">{c.commercial_categories?.name ?? `cat#${c.commercial_category_id}`}{c.sub_category ? ` — ${c.sub_category}` : ''}</span>
+                      <span className="text-[10px] text-mute">·</span>
+                      <span className="text-[11px] text-ink">{c.exclusivity_type ?? '—'} {c.exclusivity_scope ?? ''}</span>
+                      {c.territory && <><span className="text-[10px] text-mute">·</span><span className="text-[11px] text-ink">{c.territory}</span></>}
+                    </div>
+                    {Array.isArray(c.competitor_blocklist) && c.competitor_blocklist.length > 0 && (
+                      <div className="text-[10px] text-mute mt-0.5">
+                        Blocks: {c.competitor_blocklist.join(' · ')}
+                      </div>
+                    )}
+                    {c.notes && <div className="text-[10px] text-mute mt-0.5 italic">{c.notes}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {reservedList.length > 0 && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-label font-semibold mb-1.5">
+                Schedule-1 reserved categories ({reservedList.length}) <span className="text-mute font-normal normal-case">— talent has right to sign individually</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {reservedList.map(r => (
+                  <div key={r.id} className="p-2 rounded-lg border border-line bg-bg/40">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-[11px] font-bold text-ink">
+                        {r.commercial_categories?.name ?? `cat#${r.commercial_category_id}`}
+                        {r.sub_category ? ` — ${r.sub_category}` : ''}
+                      </span>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${r.permitted_territory === 'Global' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}`}>
+                        {r.permitted_territory ?? '—'}
+                      </span>
+                    </div>
+                    {Array.isArray(r.permitted_distribution) && r.permitted_distribution.length > 0 && (
+                      <div className="text-[10px] text-mute mt-0.5">
+                        {r.permitted_distribution.map(d => d.replace(/_/g, ' ')).join(' · ')}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

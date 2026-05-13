@@ -180,6 +180,57 @@ export default function AgencyIntakeForm({
               </div>
             )}
 
+            <div className="rounded border border-purple-300/40 bg-purple-50/30 p-3 mb-2">
+              <div className="text-xs font-semibold text-purple-900 mb-2">Contract terms — independent-sponsorship clause</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] text-mute block mb-0.5">Clause type</label>
+                  <select
+                    value={terms[p.id]?.clause_type || ''}
+                    onChange={e => setTerm(p.id, 'clause_type', e.target.value as ContractTerms['clause_type'])}
+                    className="input text-sm py-1 w-full"
+                  >
+                    <option value="">— unspecified —</option>
+                    <option value="open_with_consent">Open with consent</option>
+                    <option value="open_with_notice">Open with notice</option>
+                    <option value="pre_approved_categories">Pre-approved categories</option>
+                    <option value="schedule_1_carveouts">Schedule-1 carveouts</option>
+                    <option value="none">None (fully exclusive to Team)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] text-mute block mb-0.5">Notice days (if applicable)</label>
+                  <input
+                    type="number" min={0} max={365}
+                    value={terms[p.id]?.notice_days || ''}
+                    onChange={e => setTerm(p.id, 'notice_days', e.target.value)}
+                    className="input text-sm py-1 w-full tabular-nums"
+                    placeholder="e.g. 5 or 14"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-[11px] text-mute block mb-0.5">Clause text (paste from contract)</label>
+                  <textarea
+                    rows={3}
+                    value={terms[p.id]?.clause_text || ''}
+                    onChange={e => setTerm(p.id, 'clause_text', e.target.value)}
+                    className="input text-sm py-1 w-full"
+                    placeholder="Paste the relevant Section / clause language. Helps Falcons commercial reference the exact wording when negotiating."
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-[11px] text-mute block mb-0.5">Source doc link (Doc ID, Drive URL, etc.)</label>
+                  <input
+                    type="text"
+                    value={terms[p.id]?.source_doc_link || ''}
+                    onChange={e => setTerm(p.id, 'source_doc_link', e.target.value)}
+                    className="input text-sm py-1 w-full"
+                    placeholder="optional"
+                  />
+                </div>
+              </div>
+            </div>
+
             {drafts.map((c, idx) => (
               <CommitmentCard
                 key={idx}
@@ -202,9 +253,9 @@ export default function AgencyIntakeForm({
         </div>
         <div className="flex items-center gap-3">
           {error && <span className="text-sm text-rose-600">{error}</span>}
-          <button onClick={submit} disabled={submitting || totalDrafted === 0}
+          <button onClick={submit} disabled={submitting}
             className="rounded bg-emerald-600 text-white px-4 py-2 text-sm font-medium disabled:opacity-50">
-            {submitting ? 'Submitting…' : `Submit all (${totalDrafted})`}
+            {submitting ? 'Submitting…' : `Submit (${totalDrafted} commit${totalDrafted === 1 ? '' : 's'} + contract terms)`}
           </button>
         </div>
       </div>

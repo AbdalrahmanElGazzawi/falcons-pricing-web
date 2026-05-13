@@ -30,11 +30,15 @@ export async function POST(req: Request, { params }: { params: { token: string }
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const incoming = Array.isArray(body?.commitments) ? body.commitments : [];
-  if (incoming.length === 0) return NextResponse.json({ error: 'No commitments to insert' }, { status: 400 });
+  const incoming      = Array.isArray(body?.commitments)     ? body.commitments     : [];
+  const incomingTerms = Array.isArray(body?.contract_terms)  ? body.contract_terms  : [];
+  if (incoming.length === 0 && incomingTerms.length === 0) {
+    return NextResponse.json({ error: 'No commitments or contract terms to insert' }, { status: 400 });
+  }
 
-  // Filter by scope_talent_ids
   const scope = new Set<number>(tok.scope_talent_ids ?? []);
+
+  // -- Commitments insert (talent_brand_commitments)
   const rows = incoming
     .filter((c: any) => Number.isFinite(c?.talent_id) && scope.has(Number(c.talent_id)))
     .map((c: any) => ({
@@ -44,23 +48,54 @@ export async function POST(req: Request, { params }: { params: { token: string }
       last_verified_at: new Date().toISOString(),
     }));
 
-  if (rows.length === 0) {
-    return NextResponse.json({ error: 'None of the submitted commitments target a player in your scope' }, { status: 400 });
+  let insertedCount = 0;
+  let insertedRows: any[] = [];
+  if (rows.length > 0) {
+    const { data: inserted, error } = await supabase
+      .from('talent_brand_commitments')
+      .insert(rows)
+      .select('id, talent_id, brand');
+    if (error) {
+      return NextResponse.json({ error: 'Commitment insert failed: ' + error.message }, { status: 500 });
+    }
+    insertedCount = (inserted ?? []).length;
+    insertedRows = inserted ?? [];
   }
 
-  const { data: inserted, error } = await supabase
-    .from('talent_brand_commitments')
-    .insert(rows)
-    .select('id, talent_id, brand');
-  if (error) {
-    return NextResponse.json({ error: 'Insert failed: ' + error.message }, { status: 500 });
+  // -- Contract terms update (players.independent_sponsorship_*) — Mig 088
+  const VALID_CLAUSE_TYPES = new Set(['open_with_consent','open_with_notice','pre_approved_categories','schedule_1_carveouts','none']);
+  let termsUpdated = 0;
+  for (const t of incomingTerms) {
+    const tid = Number(t?.talent_id);
+    if (!Number.isFinite(tid) || !scope.has(tid)) continue;
+    const upd: Record<string, unknown> = {};
+    if (t.clause_type && VALID_CLAUSE_TYPES.has(t.clause_type)) upd.independent_sponsorship_clause_type = t.clause_type;
+    if (t.notice_days != null) {
+      const n = Number(t.notice_days);
+      if (Number.isFinite(n) && n >= 0 && n <= 365) upd.independent_sponsorship_notice_days = Math.round(n);
+    }
+    if (typeof t.clause_text === 'string' && t.clause_text.trim().length > 0) {
+      upd.independent_sponsorship_clause_text = t.clause_text.slice(0, 8000);
+    }
+    if (typeof t.source_doc_link === 'string' && t.source_doc_link.trim().length > 0) {
+      upd.contract_source_doc_link = t.source_doc_link.slice(0, 500);
+    }
+    if (Object.keys(upd).length === 0) continue;
+    upd.updated_at = new Date().toISOString();
+    const { error: terr } = await supabase.from('players').update(upd).eq('id', tid);
+    if (!terr) termsUpdated++;
   }
 
-  // Mark token used (but don't expire — agency may submit multiple times if needed)
+  // Mark token used (but don't expire — agency may submit multiple times)
   await supabase
     .from('agency_intake_tokens')
     .update({ used_at: new Date().toISOString() })
     .eq('token', params.token);
 
-  return NextResponse.json({ ok: true, inserted: (inserted ?? []).length, rows: inserted });
+  return NextResponse.json({
+    ok: true,
+    inserted_commitments: insertedCount,
+    updated_contract_terms: termsUpdated,
+    rows: insertedRows,
+  });
 }
