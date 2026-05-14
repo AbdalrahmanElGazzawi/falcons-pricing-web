@@ -9,8 +9,7 @@ import {
   LayoutDashboard, Users, FileText, PlusCircle, Settings, LogOut, UserCog,
   Sparkles, BookOpen, KeyRound, ScrollText, Calculator, Map, Menu, X,
   Inbox, HelpCircle, Search, Trophy, Layers, PanelLeftClose, PanelLeftOpen, Database, ShieldCheck,
-  BarChart3, ChevronRight, ChevronDown,
-} from 'lucide-react';
+  BarChart3, ChevronRight, ChevronDown, Package} from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
 import { LocaleSwitcher } from './LocaleSwitcher';
 import { ThemeToggle } from './ThemeToggle';
@@ -63,7 +62,8 @@ const NAV_GROUPS = (role: UserRole, email: string): NavGroup[] => {
       items: [
         { href: '/calculator', key: 'nav.calculator', icon: Calculator },
         ...(isStaff ? [
-          { href: '/admin/activations', key: 'nav.activations', icon: Layers, highlight: true },
+          { href: '/admin/activations',       key: 'nav.activations',   icon: Layers,  highlight: true },
+          { href: '/admin/inventory-assets',  key: 'nav.media_assets',  icon: Package },
         ] : []),
       ],
     },

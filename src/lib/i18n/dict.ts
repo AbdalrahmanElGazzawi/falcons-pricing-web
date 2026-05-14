@@ -41,6 +41,7 @@ export const dict = {
   'nav.audit_log':    { en: 'Audit Log',    ar: 'سجل التدقيق' },
   'nav.sales_log':    { en: 'Sales Log',    ar: 'سجل المبيعات' },
   'nav.activations':  { en: 'Activations',  ar: 'الباقات الترويجية' },
+  'nav.media_assets': { en: 'Media Assets', ar: 'الأصول الإعلانية' },
   'nav.search':       { en: 'Search…',      ar: '...بحث' },
   'nav.change_pwd':   { en: 'Change password', ar: 'تغيير كلمة المرور' },
   'nav.sign_out':     { en: 'Sign out',     ar: 'تسجيل الخروج' },
