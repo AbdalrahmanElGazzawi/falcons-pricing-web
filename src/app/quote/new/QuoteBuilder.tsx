@@ -1252,53 +1252,10 @@ ${j.detail || j.error}`);
             <p className="text-[10px] text-mute mt-1">No competing brand campaigns during exclusivity window. Drives premium.</p>
           </div>
 
-          {/* Rights territory + competitor blackout — required when paid usage / exclusivity */}
-          <div className="md:col-span-2">
-            <label className="label">Rights territory <span className="text-mute font-normal">— required if any line has paid usage rights or exclusivity</span></label>
-            <select value={rightsTerritory} onChange={e => setRightsTerritory(e.target.value)} className="input">
-              <option value="">— not specified (will block save if rights claimed) —</option>
-              <option value="KSA">KSA only</option>
-              <option value="GCC">GCC (KSA + UAE + Kuwait + Qatar + Bahrain + Oman)</option>
-              <option value="MENA">MENA (GCC + Egypt + Levant + North Africa)</option>
-              <option value="APAC">APAC</option>
-              <option value="EU">EU</option>
-              <option value="NA">NA</option>
-              <option value="GLOBAL">Global</option>
-            </select>
-            <p className="text-[10px] text-mute mt-1">Defining territory is the highest hidden-margin lever. Undefined = open exclusivity = future legal liability.</p>
-          </div>
-          {exclusivity && (
-            <div className="md:col-span-2">
-              <label className="label">Competitor blackout list <span className="text-mute font-normal">— comma-separated brand names blocked during exclusivity</span></label>
-              <input type="text" value={competitorBlackout} onChange={e => setCompetitorBlackout(e.target.value)}
-                className="input" placeholder="e.g. STC, Mobily, Zain" />
-              <p className="text-[10px] text-mute mt-1">Required when exclusivity is on. Each named competitor is blocked from this talent for {exclusivityMonths || 1} months.</p>
-            </div>
-          )}
-
-          {/* Brand collision check (Mig 082) — pitched brand + category drives ⛔/⚠️ */}
-          <div className="md:col-span-2">
-            <label className="label">Pitched brand <span className="text-mute font-normal">— enables collision check against talent commitments</span></label>
-            <input type="text" value={pitchBrand} onChange={e => setPitchBrand(e.target.value)}
-              className="input" placeholder="e.g. GameSir" />
-            <p className="text-[10px] text-mute mt-1">When set together with a category below, every quote line is checked against active exclusivities and competitor blocklists.</p>
-          </div>
-          <div>
-            <label className="label">Brand parent <span className="text-mute font-normal">— holding-co (optional)</span></label>
-            <input type="text" value={pitchBrandParent} onChange={e => setPitchBrandParent(e.target.value)}
-              className="input" placeholder="e.g. PepsiCo" />
-            <p className="text-[10px] text-mute mt-1">Catches conflicts at the holding-co level.</p>
-          </div>
-          <div>
-            <label className="label">Pitch category</label>
-            <select value={pitchCategoryCode} onChange={e => setPitchCategoryCode(e.target.value)} className="input">
-              <option value="">— select a category —</option>
-              {commercialCategories.map(c => (
-                <option key={c.code} value={c.code}>{c.parent_code ? '  ' : ''}{c.name}</option>
-              ))}
-            </select>
-            <p className="text-[10px] text-mute mt-1">Matches the controlled vocab on talent_brand_commitments. Required for collision check.</p>
-          </div>
+          {/* Rights territory + competitor blackout + brand-collision inputs removed per 2026-05-14 Koge ask.
+              State vars (rightsTerritory, competitorBlackout, pitchBrand, pitchBrandParent, pitchCategoryCode)
+              remain at '' defaults so TypeScript + save path still compile; the underlying API + collision
+              check are dormant until a future surface re-exposes these inputs. */}
         </div>
       </div>
     ),
@@ -1834,14 +1791,9 @@ ${j.detail || j.error}`);
             warnings={(() => {
               const w: Array<{ code: string; label: string; detail: string; severity: 'warn' | 'block' }> = [];
               const discountPct = 0; // header-level discount tracked separately; placeholder until wired
-              if (exclusivity && !rightsTerritory) {
-                w.push({ code: 'RIGHTS_TERRITORY_REQUIRED', label: 'Rights territory required',
-                  detail: 'Exclusivity is on. Set territory in the Brief tab before saving — undefined territory blocks save.', severity: 'block' });
-              }
-              if (exclusivity && !competitorBlackout.trim()) {
-                w.push({ code: 'COMPETITOR_BLACKOUT_REQUIRED', label: 'Name competitors blocked',
-                  detail: 'Exclusivity needs a competitor blackout list. Add comma-separated brand names in Brief tab.', severity: 'block' });
-              }
+              // Rights-territory + competitor-blackout pre-save warnings dropped 2026-05-14:
+              // the inputs that fed them were removed from the Brief tab, so requiring them blocks every
+              // exclusivity quote with no way to satisfy. Re-enable when the inputs return.
               const belowFloor = computed.rows.find((r: any) => Number(r.finalUnit) > 0 && Number(r.base_rate) > 0 && Number(r.finalUnit) < Number(r.base_rate) * 0.5);
               if (belowFloor) {
                 w.push({ code: 'FLOOR_OVERRIDE_REQUIRED', label: 'Line below 50% of base',
