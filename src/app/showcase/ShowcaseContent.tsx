@@ -202,6 +202,217 @@ function FilterPills({
     </div>
   );
 }
+// NAT_LOOKUP — canonical mapping from raw nationality string -> {country, region}.
+// Handles both adjective form ("Filipino") and country form ("Philippines"), plus DB
+// typos and dual-nationality entries ("French/Iranian" -> uses the first token).
+// Buckets: KSA, GCC, MENA, SEA, South Asia, East Asia, Europe, North America, LATAM, Oceania, Other.
+const NAT_LOOKUP: Record<string, { country: string; region: string }> = {
+  // KSA
+  'saudi': { country: 'Saudi Arabia', region: 'KSA' },
+  'saudi arabia': { country: 'Saudi Arabia', region: 'KSA' },
+  'saudi arabian': { country: 'Saudi Arabia', region: 'KSA' },
+  // GCC
+  'emirati': { country: 'UAE', region: 'GCC' },
+  'uae': { country: 'UAE', region: 'GCC' },
+  'united arab emirates': { country: 'UAE', region: 'GCC' },
+  'bahraini': { country: 'Bahrain', region: 'GCC' },
+  'bahrain': { country: 'Bahrain', region: 'GCC' },
+  'kuwaiti': { country: 'Kuwait', region: 'GCC' },
+  'kuwait': { country: 'Kuwait', region: 'GCC' },
+  'qatari': { country: 'Qatar', region: 'GCC' },
+  'qatar': { country: 'Qatar', region: 'GCC' },
+  'omani': { country: 'Oman', region: 'GCC' },
+  'oman': { country: 'Oman', region: 'GCC' },
+  // MENA broader
+  'egypt': { country: 'Egypt', region: 'MENA' },
+  'egyptian': { country: 'Egypt', region: 'MENA' },
+  'jordan': { country: 'Jordan', region: 'MENA' },
+  'jordanian': { country: 'Jordan', region: 'MENA' },
+  'lebanon': { country: 'Lebanon', region: 'MENA' },
+  'lebanese': { country: 'Lebanon', region: 'MENA' },
+  'tunisia': { country: 'Tunisia', region: 'MENA' },
+  'tunisian': { country: 'Tunisia', region: 'MENA' },
+  'morocco': { country: 'Morocco', region: 'MENA' },
+  'moroccan': { country: 'Morocco', region: 'MENA' },
+  'morrocan': { country: 'Morocco', region: 'MENA' }, // DB typo
+  'algeria': { country: 'Algeria', region: 'MENA' },
+  'algerian': { country: 'Algeria', region: 'MENA' },
+  'iraq': { country: 'Iraq', region: 'MENA' },
+  'iraqi': { country: 'Iraq', region: 'MENA' },
+  'syria': { country: 'Syria', region: 'MENA' },
+  'syrian': { country: 'Syria', region: 'MENA' },
+  'palestine': { country: 'Palestine', region: 'MENA' },
+  'palestinian': { country: 'Palestine', region: 'MENA' },
+  'libya': { country: 'Libya', region: 'MENA' },
+  'libyan': { country: 'Libya', region: 'MENA' },
+  'yemen': { country: 'Yemen', region: 'MENA' },
+  'yemeni': { country: 'Yemen', region: 'MENA' },
+  'sudan': { country: 'Sudan', region: 'MENA' },
+  'sudanese': { country: 'Sudan', region: 'MENA' },
+  'turkey': { country: 'Turkey', region: 'MENA' },
+  'turkish': { country: 'Turkey', region: 'MENA' },
+  'iran': { country: 'Iran', region: 'MENA' },
+  'iranian': { country: 'Iran', region: 'MENA' },
+  // SEA
+  'philippines': { country: 'Philippines', region: 'SEA' },
+  'filipino': { country: 'Philippines', region: 'SEA' },
+  'philippine': { country: 'Philippines', region: 'SEA' },
+  'indonesia': { country: 'Indonesia', region: 'SEA' },
+  'indonesian': { country: 'Indonesia', region: 'SEA' },
+  'vietnam': { country: 'Vietnam', region: 'SEA' },
+  'vietnamese': { country: 'Vietnam', region: 'SEA' },
+  'thailand': { country: 'Thailand', region: 'SEA' },
+  'thai': { country: 'Thailand', region: 'SEA' },
+  'malaysia': { country: 'Malaysia', region: 'SEA' },
+  'malaysian': { country: 'Malaysia', region: 'SEA' },
+  'singapore': { country: 'Singapore', region: 'SEA' },
+  'singaporean': { country: 'Singapore', region: 'SEA' },
+  'myanmar': { country: 'Myanmar', region: 'SEA' },
+  'burmese': { country: 'Myanmar', region: 'SEA' },
+  'cambodia': { country: 'Cambodia', region: 'SEA' },
+  'cambodian': { country: 'Cambodia', region: 'SEA' },
+  'laos': { country: 'Laos', region: 'SEA' },
+  'laotian': { country: 'Laos', region: 'SEA' },
+  // South Asia
+  'pakistan': { country: 'Pakistan', region: 'South Asia' },
+  'pakistani': { country: 'Pakistan', region: 'South Asia' },
+  'india': { country: 'India', region: 'South Asia' },
+  'indian': { country: 'India', region: 'South Asia' },
+  'bangladesh': { country: 'Bangladesh', region: 'South Asia' },
+  'bangladeshi': { country: 'Bangladesh', region: 'South Asia' },
+  'sri lanka': { country: 'Sri Lanka', region: 'South Asia' },
+  'sri lankan': { country: 'Sri Lanka', region: 'South Asia' },
+  'nepal': { country: 'Nepal', region: 'South Asia' },
+  'nepali': { country: 'Nepal', region: 'South Asia' },
+  'afghanistan': { country: 'Afghanistan', region: 'South Asia' },
+  'afghan': { country: 'Afghanistan', region: 'South Asia' },
+  // East Asia
+  'south korean': { country: 'South Korea', region: 'East Asia' },
+  'south korea': { country: 'South Korea', region: 'East Asia' },
+  'korean': { country: 'South Korea', region: 'East Asia' },
+  'korea': { country: 'South Korea', region: 'East Asia' },
+  'china': { country: 'China', region: 'East Asia' },
+  'chinese': { country: 'China', region: 'East Asia' },
+  'taiwan': { country: 'Taiwan', region: 'East Asia' },
+  'taiwanese': { country: 'Taiwan', region: 'East Asia' },
+  'japan': { country: 'Japan', region: 'East Asia' },
+  'japanese': { country: 'Japan', region: 'East Asia' },
+  'hong kong': { country: 'Hong Kong', region: 'East Asia' },
+  'mongolia': { country: 'Mongolia', region: 'East Asia' },
+  'mongolian': { country: 'Mongolia', region: 'East Asia' },
+  // Europe (covers continental + UK + Balkans + Russia)
+  'british': { country: 'United Kingdom', region: 'Europe' },
+  'uk': { country: 'United Kingdom', region: 'Europe' },
+  'united kingdom': { country: 'United Kingdom', region: 'Europe' },
+  'english': { country: 'United Kingdom', region: 'Europe' },
+  'irish': { country: 'Ireland', region: 'Europe' },
+  'ireland': { country: 'Ireland', region: 'Europe' },
+  'french': { country: 'France', region: 'Europe' },
+  'france': { country: 'France', region: 'Europe' },
+  'german': { country: 'Germany', region: 'Europe' },
+  'germany': { country: 'Germany', region: 'Europe' },
+  'danish': { country: 'Denmark', region: 'Europe' },
+  'denmark': { country: 'Denmark', region: 'Europe' },
+  'swedish': { country: 'Sweden', region: 'Europe' },
+  'sweden': { country: 'Sweden', region: 'Europe' },
+  'norwegian': { country: 'Norway', region: 'Europe' },
+  'norway': { country: 'Norway', region: 'Europe' },
+  'finnish': { country: 'Finland', region: 'Europe' },
+  'finland': { country: 'Finland', region: 'Europe' },
+  'dutch': { country: 'Netherlands', region: 'Europe' },
+  'netherlands': { country: 'Netherlands', region: 'Europe' },
+  'nethelands': { country: 'Netherlands', region: 'Europe' }, // DB typo
+  'spanish': { country: 'Spain', region: 'Europe' },
+  'spain': { country: 'Spain', region: 'Europe' },
+  'italian': { country: 'Italy', region: 'Europe' },
+  'italy': { country: 'Italy', region: 'Europe' },
+  'polish': { country: 'Poland', region: 'Europe' },
+  'poland': { country: 'Poland', region: 'Europe' },
+  'portuguese': { country: 'Portugal', region: 'Europe' },
+  'portugal': { country: 'Portugal', region: 'Europe' },
+  'austrian': { country: 'Austria', region: 'Europe' },
+  'austria': { country: 'Austria', region: 'Europe' },
+  'swiss': { country: 'Switzerland', region: 'Europe' },
+  'switzerland': { country: 'Switzerland', region: 'Europe' },
+  'belgian': { country: 'Belgium', region: 'Europe' },
+  'belgium': { country: 'Belgium', region: 'Europe' },
+  'greek': { country: 'Greece', region: 'Europe' },
+  'greece': { country: 'Greece', region: 'Europe' },
+  'czech': { country: 'Czechia', region: 'Europe' },
+  'czechia': { country: 'Czechia', region: 'Europe' },
+  'slovakia': { country: 'Slovakia', region: 'Europe' },
+  'slovakian': { country: 'Slovakia', region: 'Europe' },
+  'slovak': { country: 'Slovakia', region: 'Europe' },
+  'hungarian': { country: 'Hungary', region: 'Europe' },
+  'hungary': { country: 'Hungary', region: 'Europe' },
+  'romanian': { country: 'Romania', region: 'Europe' },
+  'romania': { country: 'Romania', region: 'Europe' },
+  'bulgarian': { country: 'Bulgaria', region: 'Europe' },
+  'bulgaria': { country: 'Bulgaria', region: 'Europe' },
+  'serbian': { country: 'Serbia', region: 'Europe' },
+  'serbia': { country: 'Serbia', region: 'Europe' },
+  'bosnian': { country: 'Bosnia', region: 'Europe' },
+  'bosnia': { country: 'Bosnia', region: 'Europe' },
+  'croatian': { country: 'Croatia', region: 'Europe' },
+  'croatia': { country: 'Croatia', region: 'Europe' },
+  'north macedonian': { country: 'North Macedonia', region: 'Europe' },
+  'north macedonia': { country: 'North Macedonia', region: 'Europe' },
+  'macedonian': { country: 'North Macedonia', region: 'Europe' },
+  'ukrainian': { country: 'Ukraine', region: 'Europe' },
+  'ukraine': { country: 'Ukraine', region: 'Europe' },
+  'russian': { country: 'Russia', region: 'Europe' },
+  'russia': { country: 'Russia', region: 'Europe' },
+  // North America
+  'american': { country: 'United States', region: 'North America' },
+  'usa': { country: 'United States', region: 'North America' },
+  'us': { country: 'United States', region: 'North America' },
+  'united states': { country: 'United States', region: 'North America' },
+  'canadian': { country: 'Canada', region: 'North America' },
+  'canada': { country: 'Canada', region: 'North America' },
+  // LATAM
+  'mexican': { country: 'Mexico', region: 'LATAM' },
+  'mexico': { country: 'Mexico', region: 'LATAM' },
+  'brazilian': { country: 'Brazil', region: 'LATAM' },
+  'brasilian': { country: 'Brazil', region: 'LATAM' }, // DB typo
+  'brazil': { country: 'Brazil', region: 'LATAM' },
+  'argentinian': { country: 'Argentina', region: 'LATAM' },
+  'argentine': { country: 'Argentina', region: 'LATAM' },
+  'argentina': { country: 'Argentina', region: 'LATAM' },
+  'chilean': { country: 'Chile', region: 'LATAM' },
+  'chile': { country: 'Chile', region: 'LATAM' },
+  'colombian': { country: 'Colombia', region: 'LATAM' },
+  'colombia': { country: 'Colombia', region: 'LATAM' },
+  'venezuelan': { country: 'Venezuela', region: 'LATAM' },
+  'venezuela': { country: 'Venezuela', region: 'LATAM' },
+  'peruvian': { country: 'Peru', region: 'LATAM' },
+  'peru': { country: 'Peru', region: 'LATAM' },
+  // Oceania
+  'australian': { country: 'Australia', region: 'Oceania' },
+  'australia': { country: 'Australia', region: 'Oceania' },
+  'new zealander': { country: 'New Zealand', region: 'Oceania' },
+  'new zealand': { country: 'New Zealand', region: 'Oceania' },
+  'kiwi': { country: 'New Zealand', region: 'Oceania' },
+  'tongan': { country: 'Tonga', region: 'Oceania' },
+  'tonga': { country: 'Tonga', region: 'Oceania' },
+  'fijian': { country: 'Fiji', region: 'Oceania' },
+  'fiji': { country: 'Fiji', region: 'Oceania' },
+};
+
+// Resolve a raw nationality string (possibly dual like "American / Chinese") to country+region.
+// Uses the FIRST recognized token so we don't lose the player when the DB stored a slashed value.
+const natLookupRaw = (nat: string | null | undefined): { country: string; region: string } => {
+  const raw = (nat ?? '').toLowerCase().trim();
+  if (!raw) return { country: 'Unknown', region: 'Other' };
+  // Try whole string first
+  if (NAT_LOOKUP[raw]) return NAT_LOOKUP[raw];
+  // Split on / , & + and "and"  -> try each token
+  const tokens = raw.split(/[\/,&+]| and /).map(s => s.trim()).filter(Boolean);
+  for (const t of tokens) {
+    if (NAT_LOOKUP[t]) return NAT_LOOKUP[t];
+  }
+  return { country: nat ?? 'Unknown', region: 'Other' };
+};
+
 export function ShowcaseContent({ players, creators }: { players: Player[]; creators: Creator[] }) {
   const [tab, setTab] = useState<'players' | 'creators'>('players');
   const [q, setQ] = useState('');
@@ -209,6 +420,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
   const [tier, setTier] = useState('');
   const [game, setGame] = useState('');
   const [region, setRegion] = useState('');
+  const [country, setCountry] = useState('');
   const [championOnly, setChampionOnly] = useState(false);
   const [streamerOnly, setStreamerOnly] = useState(false);
   const [showRates, setShowRates] = useState(false);
@@ -239,16 +451,20 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
 
   const games = useMemo(() => Array.from(new Set(players.map(p => p.game).filter(Boolean))).sort() as string[], [players]);
 
-  const regionOf = (nat: string | null | undefined): string => {
-    const n = (nat ?? '').toLowerCase().trim();
-    if (n.startsWith('saudi')) return 'KSA';
-    if (['emirati','bahraini','kuwaiti','qatari','omani'].includes(n)) return 'GCC';
-    if (['filipino','indonesian','vietnamese','thai','malaysian','singaporean'].includes(n)) return 'SEA';
-    if (['egyptian','jordanian','lebanese','tunisian','moroccan','algerian','iraqi','syrian'].includes(n)) return 'MENA';
-    if (['american','canadian','british','french','german','danish','swedish','norwegian','dutch','spanish','italian','finnish','irish','polish'].includes(n)) return 'NA / EU';
-    if (['korean','chinese','japanese','taiwanese'].includes(n)) return 'East Asia';
-    return 'Other';
-  };
+  // Distinct canonical countries present in the active roster, ordered by talent count desc.
+  const countries = useMemo(() => {
+    const counts = new Map<string, number>();
+    players.forEach(p => {
+      const c = natLookupRaw(p.nationality).country;
+      if (!c || c === 'Unknown') return;
+      counts.set(c, (counts.get(c) ?? 0) + 1);
+    });
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([c]) => c);
+  }, [players]);
+
+  // Region + country resolution from raw nationality string. See module-level NAT_LOOKUP above.
+  const regionOf  = (nat: string | null | undefined): string => natLookupRaw(nat).region;
+  const countryOf = (nat: string | null | undefined): string => natLookupRaw(nat).country;
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -257,6 +473,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
       if (archetypeFilter && ((p as any).archetype_override ?? (p as any).archetype) !== archetypeFilter) return false;
       if (game && p.game !== game) return false;
       if (region && regionOf(p.nationality) !== region) return false;
+      if (country && countryOf(p.nationality) !== country) return false;
       if (championOnly) {
         const isChamp = M5_CHAMPIONS.has(p.nickname) || MAJOR_WINNERS.has(p.nickname) || p.tier_code === 'Tier S';
         if (!isChamp) return false;
@@ -279,7 +496,7 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
       list = list.sort((a, b) => (order[a.tier_code || ''] ?? 9) - (order[b.tier_code || ''] ?? 9) || maxReach(b) - maxReach(a));
     }
     return list;
-  }, [players, q, tier, game, region, championOnly, streamerOnly, sort]);
+  }, [players, q, tier, game, region, country, championOnly, streamerOnly, sort]);
 
   // Org-level stats for the hero
   const stats = useMemo(() => {
@@ -397,9 +614,10 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
       {tab === 'players' && (
         <>
           {/* ─── Filter bar ─────────────────────────────────────────────── */}
-          <div className="card card-p sticky top-0 z-10 -mx-1 sm:mx-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative flex-1 min-w-[180px] max-w-[280px]">
+          <div className="card card-p sticky top-0 z-10 -mx-1 sm:mx-0 space-y-2">
+            {/* Row 1: search input — full width, never gets squeezed by sibling filters */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mute pointer-events-none" />
                 <input
                   value={q}
@@ -413,6 +631,12 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                   </button>
                 )}
               </div>
+              <span className="text-xs text-label tabular-nums whitespace-nowrap pr-1">
+                {filtered.length} of {players.length}
+              </span>
+            </div>
+            {/* Row 2: filter dropdowns + toggles — wraps freely without crushing the search */}
+            <div className="flex flex-wrap items-center gap-2">
               <select value={tier} onChange={e => setTier(e.target.value)} className="input text-sm max-w-[140px]">
                 <option value="">All tiers</option>
                 {distinctTiers.map(t => <option key={t} value={t}>{t}</option>)}
@@ -421,14 +645,23 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                 <option value="">All games</option>
                 {games.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
-              <select value={region} onChange={e => setRegion(e.target.value)} className="input text-sm max-w-[160px]">
+              <select value={region} onChange={e => { setRegion(e.target.value); setCountry(''); }} className="input text-sm max-w-[160px]" title="Filter by region bucket">
                 <option value="">All regions</option>
                 <option value="KSA">KSA</option>
                 <option value="GCC">GCC</option>
                 <option value="MENA">MENA broader</option>
                 <option value="SEA">SEA</option>
-                <option value="NA / EU">NA / EU</option>
+                <option value="South Asia">South Asia</option>
                 <option value="East Asia">East Asia</option>
+                <option value="Europe">Europe</option>
+                <option value="North America">North America</option>
+                <option value="LATAM">LATAM</option>
+                <option value="Oceania">Oceania</option>
+                <option value="Other">Other</option>
+              </select>
+              <select value={country} onChange={e => setCountry(e.target.value)} className="input text-sm max-w-[180px]" title="Filter by exact country">
+                <option value="">All countries</option>
+                {countries.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
               <select value={archetypeFilter} onChange={e => setArchetypeFilter(e.target.value)} className="input text-sm max-w-[200px]" title="Filter by archetype (Mig 074)">
                 <option value="">All archetypes</option>
@@ -483,9 +716,6 @@ export function ShowcaseContent({ players, creators }: { players: Player[]; crea
                   {showRates ? <Eye size={12} /> : <EyeOff size={12} />}
                   {showRates ? 'Rates ON' : 'Pitch mode'}
                 </button>
-                <span className="text-xs text-label tabular-nums whitespace-nowrap">
-                  {filtered.length} of {players.length}
-                </span>
               </div>
             </div>
           </div>
